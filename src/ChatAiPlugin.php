@@ -26,6 +26,7 @@ use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\SpeechManager;
 use Filament\ChatAi\Speech\SpeechProvider;
 use Filament\ChatAi\Speech\VoiceCatalog;
+use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\ChatAi\Support\ContextResolver;
 use Filament\ChatAi\Tools\ArrayToolProvider;
@@ -41,6 +42,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ChatAiPlugin implements Plugin
 {
@@ -156,6 +158,7 @@ class ChatAiPlugin implements Plugin
             'csrf' => csrf_token(),
             'locale' => str_replace('_', '-', app()->getLocale()),
             'label' => $this->getLabel(),
+            ...$this->composerLists(),
             'voice' => $voice = $this->hasVoice(),
             'speechLang' => $this->getSpeechLanguage(),
             'serverVoice' => $serverVoice = $voice && $this->resolveSpeech() !== null,
@@ -432,6 +435,58 @@ class ChatAiPlugin implements Plugin
         ]);
 
         return $parts === [] ? null : implode("\n\n", $parts);
+    }
+
+    /**
+     * What the user picked in the composer for this question: tools mentioned
+     * with @ (only ones they may use) and a skill chosen with /.
+     *
+     * @param  array<int, string>  $mentions
+     */
+    public function turnHints(Authenticatable $user, ChatAiContext $context, array $mentions, ?string $skill): string
+    {
+        $hints = [];
+        $tools = collect($this->resolveTools()->tools($user, $context))->keyBy('name')->except(SkillTool::NAME);
+        $mentioned = $tools->only($mentions);
+
+        if ($mentioned->isNotEmpty()) {
+            $hints[] = 'For this question the user explicitly picked these tools; use them: '
+                .$mentioned->map(fn ($tool): string => "{$tool->name} ({$tool->label()})")->implode(', ').'.';
+        }
+
+        $chosen = filled($skill) ? ToolRegistry::skills()->firstWhere('name', $skill) : null;
+
+        if ($chosen) {
+            $hints[] = "For this question the user chose the skill \"{$chosen->title}\". Follow its instructions:\n{$chosen->instructions}"
+                .($chosen->tools ? "\nTools for this task: ".implode(', ', $chosen->tools).'.' : '');
+        }
+
+        return implode("\n\n", $hints);
+    }
+
+    /**
+     * What the composer offers after @ and /, for the signed-in user.
+     *
+     * @return array{mentions: array<int, array<string, string>>, skills: array<int, array<string, string>>}
+     */
+    protected function composerLists(): array
+    {
+        try {
+            $user = auth()->user();
+            $panel = Filament::getCurrentPanel()?->getId() ?? 'admin';
+            $tools = $user ? $this->resolveTools()->tools($user, new ChatAiContext($panel)) : [];
+
+            return [
+                'mentions' => collect($tools)->reject(fn ($tool): bool => $tool->name === SkillTool::NAME)
+                    ->map(fn ($tool): array => ['name' => $tool->name, 'label' => $tool->label(), 'description' => Str::limit($tool->description, 90)])
+                    ->values()->all(),
+                'skills' => ToolRegistry::skills()
+                    ->map(fn (Skill $skill): array => ['name' => $skill->name, 'label' => $skill->title, 'description' => Str::limit($skill->when_to_use, 90)])
+                    ->values()->all(),
+            ];
+        } catch (\Throwable) {
+            return ['mentions' => [], 'skills' => []];
+        }
     }
 
     /**

@@ -12,7 +12,7 @@
         <template x-for="message in messages" :key="message.id">
             <div class="fi-chatai-message" :class="'fi-chatai-message-' + message.role">
                 <template x-if="message.role === 'user'">
-                    <div class="fi-chatai-bubble fi-chatai-bubble-user" x-text="message.content"></div>
+                    <div class="fi-chatai-bubble fi-chatai-bubble-user" x-html="highlightPicks(message.content)"></div>
                 </template>
 
                 <template x-if="message.role === 'assistant'">
@@ -100,11 +100,30 @@
 
     {{-- Composer: one card with the text on top and the actions below, like the big chat apps. --}}
     <form class="fi-chatai-composer" x-on:submit.prevent="send()">
+        {{-- @ tools / skills list --}}
+        <div class="fi-chatai-picker" x-show="picker && pickerItems().length" x-cloak role="listbox">
+            <p class="fi-chatai-picker-title" x-text="picker?.type === '@' ? @js(__('chatai::chatai.picker_tools')) : @js(__('chatai::chatai.picker_skills'))"></p>
+            <template x-for="(item, i) in pickerItems()" :key="item.name">
+                <button type="button" role="option" class="fi-chatai-picker-item" :class="{ 'fi-active': picker && i === picker.index }" :aria-selected="picker && i === picker.index"
+                        x-on:mousedown.prevent="choose(item)" x-on:mouseenter="picker.index = i">
+                    <span class="fi-chatai-picker-sign" x-text="picker?.type"></span>
+                    <span class="fi-chatai-picker-text">
+                        <span class="fi-chatai-picker-label" x-text="item.label"></span>
+                        <span class="fi-chatai-picker-desc" x-text="item.description"></span>
+                    </span>
+                    <span class="fi-chatai-picker-name" x-text="item.name"></span>
+                </button>
+            </template>
+        </div>
+
         <div class="fi-chatai-composer-box" :class="{ 'fi-recording': listening }" x-on:click.self="$refs.input.focus()">
             <textarea
                 x-ref="input"
                 x-model="input"
                 x-on:keydown="onKeydown($event)"
+                x-on:input="detectPicker($event.target)"
+                x-on:click="detectPicker($event.target)"
+                x-on:blur="setTimeout(() => picker = null, 150)"
                 rows="1"
                 maxlength="4000"
                 placeholder="{{ __('chatai::chatai.placeholder') }}"

@@ -293,6 +293,32 @@
 .fi-chatai-recording-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: currentColor; animation: chatai-blink 1s ease-in-out infinite; }
 @keyframes chatai-blink { 50% { opacity: 0.25; } }
 .fi-chatai-counter { padding: 0 0.5rem; font-size: 0.75rem; color: var(--chatai-muted); font-variant-numeric: tabular-nums; }
+.fi-chatai-composer { position: relative; }
+.fi-chatai-picker {
+    position: absolute;
+    left: 0.9rem;
+    right: 0.9rem;
+    bottom: calc(100% - 0.4rem);
+    max-height: 18rem;
+    overflow-y: auto;
+    padding: 0.35rem;
+    border: 1px solid var(--chatai-border);
+    border-radius: 0.9rem;
+    background: var(--chatai-bg);
+    box-shadow: var(--chatai-shadow);
+    z-index: 6;
+}
+.fi-chatai-picker-title { padding: 0.3rem 0.5rem 0.4rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--chatai-muted); }
+.fi-chatai-picker-item { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.45rem 0.5rem; border-radius: 0.6rem; text-align: left; }
+.fi-chatai-picker-item.fi-active { background: var(--chatai-bubble); }
+.fi-chatai-picker-sign { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; flex-shrink: 0; border-radius: 0.45rem; background: color-mix(in oklab, var(--chatai-accent) 12%, transparent); color: var(--chatai-accent); font-weight: 600; font-size: 0.85rem; }
+.fi-chatai-picker-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.fi-chatai-picker-label { font-size: 0.85rem; font-weight: 500; }
+.fi-chatai-picker-desc { font-size: 0.75rem; color: var(--chatai-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-chatai-picker-name { font-size: 0.7rem; color: var(--chatai-muted); font-family: ui-monospace, monospace; }
+.fi-chatai-pick { display: inline-block; padding: 0 0.35rem; border-radius: 0.35rem; background: rgb(255 255 255 / 0.18); font-weight: 600; }
+.fi-chatai-pick-skill { font-style: italic; }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

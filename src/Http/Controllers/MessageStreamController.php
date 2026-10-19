@@ -24,6 +24,9 @@ class MessageStreamController
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
             'context' => ['nullable', 'array'],
+            'mentions' => ['nullable', 'array', 'max:10'],
+            'mentions.*' => ['string', 'max:64'],
+            'skill' => ['nullable', 'string', 'max:64'],
         ]);
 
         if ($limited = static::rateLimit($request)) {
@@ -47,7 +50,7 @@ class MessageStreamController
             user: $user,
             config: $plugin->resolveLlmConfig(),
             assistantName: $plugin->getLabel(),
-            systemPrompt: $plugin->composeSystemPrompt(),
+            systemPrompt: trim($plugin->composeSystemPrompt()."\n\n".$plugin->turnHints($user, $context, $validated['mentions'] ?? [], $validated['skill'] ?? null)),
         );
 
         return static::sse($events);

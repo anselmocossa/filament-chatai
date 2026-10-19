@@ -179,6 +179,7 @@ document.addEventListener('alpine:init', () => {
         speakingId: null,
         transcribing: false,
         voicePanel: false,
+        picker: null,
         userVoice: config.userVoice || null,
         browserVoices: [],
         browserVoice: storage.get(BROWSER_VOICE_KEY),
@@ -285,10 +286,104 @@ document.addEventListener('alpine:init', () => {
         },
 
         onKeydown(event) {
+            // While the @ / list is open, the keyboard drives it.
+            if (this.picker && this.pickerItems().length) {
+                const items = this.pickerItems()
+
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    const step = event.key === 'ArrowDown' ? 1 : -1
+                    this.picker.index = (this.picker.index + step + items.length) % items.length
+                    return
+                }
+
+                if ((event.key === 'Enter' || event.key === 'Tab') && !event.isComposing) {
+                    event.preventDefault()
+                    this.choose(items[this.picker.index])
+                    return
+                }
+
+                if (event.key === 'Escape') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    this.picker = null
+                    return
+                }
+            }
+
             if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
                 event.preventDefault()
                 this.send()
             }
+        },
+
+        // ---- @ tools and / skills in the composer --------------------------
+
+        // "@ven" or "/res" right before the caret opens the matching list.
+        detectPicker(el) {
+            const before = el.value.slice(0, el.selectionStart)
+            const match = before.match(/(^|\s)([@/])([\w-]*)$/)
+            const type = match?.[2]
+            const source = type === '@' ? config.mentions : type === '/' ? config.skills : null
+
+            if (!match || !source?.length) {
+                this.picker = null
+                return
+            }
+
+            const query = match[3]
+            const sameList = this.picker?.type === type && this.picker?.query === query
+            this.picker = { type, query, start: el.selectionStart - query.length - 1, index: sameList ? this.picker.index : 0 }
+        },
+
+        pickerItems() {
+            if (!this.picker) return []
+
+            const query = this.picker.query.toLowerCase()
+            const source = (this.picker.type === '@' ? config.mentions : config.skills) ?? []
+
+            return source
+                .filter((item) => !query || item.name.toLowerCase().includes(query) || item.label.toLowerCase().includes(query))
+                .slice(0, 8)
+        },
+
+        choose(item) {
+            if (!item || !this.picker) return
+
+            const el = this.$refs.input
+            const token = `${this.picker.type}${item.name} `
+            this.input = this.input.slice(0, this.picker.start) + token + this.input.slice(el.selectionStart)
+
+            const caret = this.picker.start + token.length
+            this.picker = null
+            this.$nextTick(() => {
+                el.focus()
+                el.setSelectionRange(caret, caret)
+            })
+        },
+
+        // What the message picked: known @tools and the first known /skill.
+        picks(text) {
+            const mentions = (config.mentions ?? []).filter((t) => new RegExp(`(^|\\s)@${t.name}(?![\\w-])`).test(text)).map((t) => t.name)
+            const skill = (config.skills ?? []).find((s) => new RegExp(`(^|\\s)/${s.name}(?![\\w-])`).test(text))?.name ?? null
+
+            return { mentions, skill }
+        },
+
+        // User bubbles show picked tools and skills as chips (text escaped first).
+        highlightPicks(text) {
+            const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+            let html = escape(text)
+
+            for (const tool of config.mentions ?? []) {
+                html = html.replace(new RegExp(`(^|\\s)@${tool.name}(?![\\w-])`, 'g'), `$1<span class="fi-chatai-pick">@${escape(tool.label)}</span>`)
+            }
+
+            for (const skill of config.skills ?? []) {
+                html = html.replace(new RegExp(`(^|\\s)/${skill.name}(?![\\w-])`, 'g'), `$1<span class="fi-chatai-pick fi-chatai-pick-skill">/${escape(skill.label)}</span>`)
+            }
+
+            return html
         },
 
         ask(prompt) {
@@ -344,7 +439,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: this.headers(false),
                     credentials: 'same-origin',
-                    body: JSON.stringify({ message: question, context: readContext(), ...this.playgroundDraft() }),
+                    body: JSON.stringify({ message: question, context: readContext(), ...this.picks(question), ...this.playgroundDraft() }),
                 })
 
                 if (!response.ok || !response.body) {
