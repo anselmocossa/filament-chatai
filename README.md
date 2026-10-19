@@ -53,9 +53,25 @@
 
 <img src="art/screenshots/screen-fill.png" alt="Fields filled in on the page and summary in the chat" width="100%">
 
+#### …ending with "review and save" — a click reopens the chat
+
+<img src="art/screenshots/agent-done.png" alt="Form filled in, minimised bar with review and save" width="100%">
+
+#### Suggestions for the page on screen
+
+<img src="art/screenshots/starters.png" alt="Starter questions on a product edit page" width="100%">
+
 #### Opens pages and records for the user
 
 <img src="art/screenshots/navigate.png" alt="The assistant opening a product for editing" width="100%">
+
+#### Every answer: copy, answer again, 👍 / 👎 with a reason
+
+<img src="art/screenshots/answer-controls.png" alt="Answer controls and a not-helpful reason" width="60%">
+
+#### Memory — what each user asked it to remember
+
+<img src="art/screenshots/memory.png" alt="Memory panel" width="100%">
 
 #### Changes ask first — a form prefilled by the model
 
