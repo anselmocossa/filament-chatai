@@ -2,12 +2,16 @@
 
 use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Events\TurnCompleted;
+use Filament\ChatAi\Llm\LlmClient;
+use Filament\ChatAi\Llm\LlmConfig;
 use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Pages\ChatAiSettingsPage;
 use Filament\ChatAi\Pages\ChatAiUsagePage;
 use Filament\ChatAi\Settings\ChatAiSettings;
+use Filament\ChatAi\Testing\FakeLlmClient;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\Facades\Filament;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Livewire\Livewire;
 
 function adminPlugin(): ChatAiPlugin
@@ -64,4 +68,28 @@ it('shows cost and volume on the usage page', function () {
         ->assertSee('5.00');
 
     Livewire::test(ChatAiUsagePage::class)->set('period', 'year')->assertOk();
+});
+
+it('applies the limits saved on the settings page to the chat', function () {
+    adminPlugin()->canManageSettings(fn (): bool => true);
+    $user = adminUser();
+    $this->actingAs($user)->withoutMiddleware(VerifyCsrfToken::class);
+
+    Livewire::test(ChatAiSettingsPage::class)
+        ->set('data.rate_limit.per_minute', 1)
+        ->set('data.max_iterations', 3)
+        ->set('data.timeout', 45)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    ChatAiSettings::flush();
+    app()->instance(LlmClient::class, FakeLlmClient::script([['a'], ['b']]));
+    $conversation = Conversation::start($user, 'admin');
+    $send = fn () => $this->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Olá']);
+
+    $send()->assertOk();
+    $send()->assertStatus(429);
+
+    expect(config('chatai.max_iterations'))->toBe(3)
+        ->and(LlmConfig::fromConfig()->timeout)->toBe(45);
 });

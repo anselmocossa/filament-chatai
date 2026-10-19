@@ -97,6 +97,14 @@ class ChatAiSettingsPage extends Page
                             ->columns(2)->columnSpanFull()->searchable()->bulkToggleable(),
                     ]),
 
+                    Tab::make($t('limits'))->icon('heroicon-m-shield-check')->columns(2)->schema([
+                        TextInput::make('rate_limit.per_minute')->label($t('per_minute'))->numeric()->minValue(1)->helperText($t('per_user')),
+                        TextInput::make('rate_limit.per_day')->label($t('per_day'))->numeric()->minValue(1)->helperText($t('per_user')),
+                        TextInput::make('max_iterations')->label($t('max_iterations'))->numeric()->minValue(1)->maxValue(20)->helperText($t('max_iterations_help')),
+                        TextInput::make('timeout')->label($t('timeout'))->numeric()->minValue(5)->maxValue(600)->suffix('s')->helperText($t('timeout_help')),
+                        TextInput::make('max_tool_result_bytes')->label($t('max_tool_result'))->numeric()->minValue(1000)->suffix('bytes')->helperText($t('max_tool_result_help')),
+                    ]),
+
                     Tab::make($t('prices'))->icon('heroicon-m-banknotes')->columns(2)->schema([
                         Text::make($t('prices_models_help'))->color('gray')->columnSpanFull(),
                         TextInput::make('pricing.currency')->label($t('currency'))->maxLength(3)->placeholder('USD'),

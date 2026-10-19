@@ -70,7 +70,7 @@ it('has no fallback when it is the same provider or unset', function () {
 });
 
 it('does not freeze .env values: only what differs from them is saved', function () {
-    ChatAiSettings::save(['provider' => 'openai', 'timeout' => 1, 'anthropic.effort' => 'low', 'anthropic.model' => 'claude-sonnet-5-5']);
+    ChatAiSettings::save(['provider' => 'openai', 'app.debug' => true, 'anthropic.effort' => 'low', 'anthropic.model' => 'claude-sonnet-5-5']);
 
     expect(Setting::query()->pluck('key')->all())->toBe(['anthropic.model']);
 });

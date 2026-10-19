@@ -21,6 +21,7 @@ final class ChatAiSettings
         'speech.google.api_key', 'speech.google.voice',
         'pricing.currency', 'pricing.models', 'pricing.speech_per_million_characters', 'pricing.transcription_per_hour',
         'instructions', 'http_tools.allowed_hosts',
+        'rate_limit.per_minute', 'rate_limit.per_day', 'max_iterations', 'timeout', 'max_tool_result_bytes',
     ];
 
     /** Never sent back to the browser; a blank field keeps the stored value. */

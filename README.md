@@ -32,61 +32,45 @@ $panel->plugins([
 ]);
 ```
 
-## Settings and usage pages
+## Set it up on screen
 
-Two admin pages, closed until you say who may open them (they hold API keys):
+Everything is configured in the panel, under the **ChatAI** menu. No `.env` editing is needed.
+The admin pages are closed until you say who may open them (they hold API keys):
 
 ```php
 ChatAiPlugin::make()->canManageSettings(fn ($user) => $user->is_admin)
 ```
 
-- **Settings**: main and fallback provider, models, API keys (stored encrypted, never sent back to the
-  browser), voice service and the voices users may pick, and your prices. Saved values override `.env`;
-  values equal to `.env` are not stored, so later `.env` changes still apply. "Test model" sends one tiny request.
-- **Usage**: estimated cost, questions, tokens (with the share served from prompt cache), read-aloud
-  characters and dictation minutes, per day, user and model. Costs use the prices from Settings.
+| Page | What you set |
+|---|---|
+| **Providers** | Each account/endpoint with its own key (encrypted): Anthropic, OpenRouter, OpenAI, a local Ollama… Monthly and daily **spending limits** per provider. |
+| **Models** | The models in order: the first enabled one answers, the next ones take over if it fails (any number of providers). Effort and price per model. "Test" per model. |
+| **Settings** | Assistant instructions and allowed API hosts · Voice (browser, Azure or Google, keys, voices users may pick) · Limits (messages per user, tool steps, timeout) · Currency and voice prices. |
+| **Usage** | Estimated cost, questions, tokens (with the share served from prompt cache), voice, per day, user and model. |
+| **Tools** | Adjust code tools (on/off, wording, profiles) and build new ones without code: query a panel resource, or call an allowed GET API. Full-page editor with a live test chat and the tool as JSON / cURL / laravel/mcp code. |
+| **Skills** | Saved instructions for a kind of task, linked to the tools to use. |
+| **Logs** | Every question: who, tools used, tokens, time and cost. |
 
 Claude requests use prompt caching automatically: system prompt, tools and history are billed at the
 cache-read price on every tool round and follow-up question.
 
-## Configure the model
+## Optional: `.env` defaults
+
+Handy on servers or CI. A provider saved on screen without a key uses these; values saved on screen win.
 
 ```dotenv
-# OpenAI-compatible (default)
-CHATAI_PROVIDER=openai
+ANTHROPIC_API_KEY=...                  # Claude (composer require anthropic-ai/sdk)
+CHATAI_API_KEY=...                     # OpenAI-compatible
 CHATAI_BASE_URL=https://openrouter.ai/api/v1
-CHATAI_API_KEY=...
-CHATAI_MODEL=openai/gpt-4.1-mini
 
-# or Claude (composer require anthropic-ai/sdk)
-CHATAI_PROVIDER=anthropic
-ANTHROPIC_API_KEY=...
-CHATAI_ANTHROPIC_MODEL=claude-opus-5-5
-CHATAI_ANTHROPIC_EFFORT=low   # medium/high think longer before answering
-```
-
-To choose per tenant at runtime: `->llm(fn () => new LlmConfig(...))`.
-
-## Voice
-
-Out of the box the chat uses the browser's own voice (free, but it sounds different on every machine).
-For natural neural voices on every device, add a speech provider:
-
-```dotenv
-CHATAI_SPEECH_PROVIDER=azure          # or google
+CHATAI_SPEECH_PROVIDER=azure           # or google
 AZURE_SPEECH_KEY=...
 AZURE_SPEECH_REGION=westeurope
-CHATAI_SPEECH_VOICE=pt-PT-RaquelNeural  # pt-PT-DuarteNeural, pt-PT-FernandaNeural…
-
-# GOOGLE_SPEECH_API_KEY=...            # voice e.g. pt-PT-Wavenet-A
 ```
 
-Answers are read from the stored message (never free text) and each audio is generated once, kept on
-`CHATAI_SPEECH_DISK` and reused. Dictation records in the browser, converts to 16 kHz WAV and is
-transcribed by the same provider (up to 55 s per question). If the provider fails, the browser voice takes over.
-
-Per panel or tenant: `->speech(fn () => new AzureSpeech($key, $region, 'pt-PT-DuarteNeural'))`.
-Language: `CHATAI_SPEECH_LANGUAGE` (default `pt-PT`), or `->speechLanguage('pt-PT')`. Off: `->voice(false)`.
+On first visit, the Providers and Models pages import whatever is set here, so nothing is typed twice.
+At runtime a panel or tenant can still override the model (`->llm(fn () => new LlmConfig(...))`) and the
+voice (`->speech(fn () => new AzureSpeech(...))`).
 
 ## How it works
 

@@ -6,6 +6,7 @@ use Filament\ChatAi\Agent\AgentEvent;
 use Filament\ChatAi\Agent\Orchestrator;
 use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Llm\LlmClient;
+use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\Budget;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\Facades\Filament;
@@ -93,6 +94,8 @@ class MessageStreamController
 
     public static function rateLimit(Request $request): ?JsonResponse
     {
+        ChatAiSettings::apply(); // limits can be set on the settings page
+
         $key = 'chatai:'.$request->user()->getAuthIdentifier();
         $limits = [
             [$key.':minute', (int) config('chatai.rate_limit.per_minute', 20), 60],
