@@ -44,7 +44,7 @@ final class DocumentTool
                     'title' => ['type' => 'string', 'description' => 'Document title, also used for the file name.'],
                     'format' => ['type' => 'string', 'enum' => self::formats()],
                     'columns' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Table header (csv, xlsx, and optionally a table in the text formats).'],
-                    'rows' => ['type' => 'array', 'items' => ['type' => 'array', 'items' => []], 'description' => 'Table rows, one array of values per row.'],
+                    'rows' => ['type' => 'array', 'items' => ['type' => 'array', 'items' => ['type' => ['string', 'number', 'boolean', 'null']]], 'description' => 'Table rows, one array of values per row.'],
                     'content' => ['type' => 'string', 'description' => 'Body in Markdown, for md, html, txt and pdf.'],
                 ],
                 'required' => ['title', 'format'],

@@ -10,6 +10,7 @@ use Filament\ChatAi\Support\UrlContext;
 use Filament\ChatAi\Testing\FakeLlmClient;
 use Filament\ChatAi\Tests\Fixtures\EditWidgetPage;
 use Filament\ChatAi\Tests\Fixtures\User;
+use Filament\ChatAi\Tools\DocumentTool;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Http\UploadedFile;
@@ -127,4 +128,13 @@ it('keeps files on the disk chosen on the settings page', function () {
     $file = ConversationFile::query()->findOrFail($id);
 
     expect($file->disk)->toBe('s3')->and(Storage::disk('s3')->exists($file->path))->toBeTrue();
+});
+
+it('gives create_document a schema the providers accept (no empty "items" list)', function () {
+    $user = User::query()->create(['name' => 'Ana', 'email' => 'schema@example.com', 'password' => 'x']);
+    $conversation = Conversation::query()->create(['user_type' => $user->getMorphClass(), 'user_id' => $user->getKey(), 'panel_id' => 'admin']);
+
+    $json = json_encode(DocumentTool::make($conversation, $user)->toFunctionDefinition());
+
+    expect($json)->not->toContain('"items":[]');
 });
