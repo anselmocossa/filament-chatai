@@ -364,6 +364,56 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // ---- one approval for a list of changes ----------------------------
+
+        batchPage(component) {
+            component.page ??= 0
+            const size = 10
+            const start = component.page * size
+
+            return { rows: component.rows.slice(start, start + size), from: component.rows.length ? start + 1 : 0, to: Math.min(start + size, component.rows.length), total: component.rows.length, last: start + size >= component.rows.length }
+        },
+
+        batchSelected(component) {
+            return component.rows.filter((r) => r.status === 'pending' && !r.excluded)
+        },
+
+        toggleAllRows(component, on) {
+            component.rows.forEach((r) => { if (r.status === 'pending') r.excluded = !on })
+        },
+
+        async answerBatch(component, confirmed) {
+            if (component.busy || component.status !== 'pending') return
+
+            component.busy = true
+
+            try {
+                const pending = component.rows.filter((r) => r.status === 'pending')
+                const response = await fetch(config.batchUrl, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ ids: pending.map((r) => r.action_id), skip: pending.filter((r) => r.excluded).map((r) => r.action_id), confirmed }),
+                })
+                const data = await response.json().catch(() => ({}))
+
+                if (!response.ok) throw new Error(data.message || config.i18n.unavailable)
+
+                for (const update of data.rows || []) {
+                    const row = component.rows.find((r) => r.action_id === update.action_id)
+                    if (row) Object.assign(row, { status: update.status, error: update.error || null })
+                }
+
+                component.status = data.status
+                if (data.message) this.messages.push(data.message)
+                this.$nextTick(() => this.scrollToEnd?.())
+            } catch (error) {
+                this.notice = error.message
+            } finally {
+                component.busy = false
+            }
+        },
+
         // ---- attachments ---------------------------------------------------
 
         // Files upload as soon as they are picked (button, drop or paste) and ride with the next message.
@@ -616,16 +666,18 @@ document.addEventListener('alpine:init', () => {
 
         apply(type, data, target) {
             switch (type) {
+                case 'step':
+                    // After tools the model writes the real answer; what it said before was narration.
+                    target.restart = true
+                    break
                 case 'delta':
                     target.tool = null
-                    // Text written before and after a tool call: keep them as separate paragraphs.
-                    if (target.afterTool && target.content) target.content += '\n\n'
-                    target.afterTool = false
+                    if (target.restart) target.content = ''
+                    target.restart = false
                     target.content += data.text
                     this.scrollToEnd()
                     break
                 case 'tool_start':
-                    target.afterTool = true
                     target.tool = data.label
                     this.status = data.label
                     break

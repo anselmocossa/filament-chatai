@@ -16,6 +16,11 @@ final class Catalog
     /** Only built by the orchestrator: a change waiting for the user's OK. */
     public const CONFIRM = 'confirm';
 
+    /** Several changes of the same tool, approved at once from one paginated list. */
+    public const CONFIRM_BATCH = 'confirm_batch';
+
+    public const MAX_BATCH = 500;
+
     public const MAX_KPIS = 4;
 
     public const MAX_ROWS = 50;

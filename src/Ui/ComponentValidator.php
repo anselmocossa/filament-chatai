@@ -24,6 +24,10 @@ class ComponentValidator
             return $this->confirm($component);
         }
 
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::CONFIRM_BATCH) {
+            return $this->confirmBatch($component);
+        }
+
         if (! is_array($component) || ! in_array($component['type'] ?? null, Catalog::TYPES, true)) {
             return null;
         }
@@ -244,6 +248,41 @@ class ComponentValidator
             'title' => $this->title($c),
             'fields' => $fields,
             'status' => in_array($c['status'] ?? null, ['pending', 'done', 'cancelled', 'failed'], true) ? $c['status'] : 'pending',
+        ];
+    }
+
+    protected function confirmBatch(array $c): ?array
+    {
+        $statuses = ['pending', 'done', 'cancelled', 'failed', 'partial', 'skipped'];
+        $columns = array_values(array_map(fn (array $col): array => ['key' => $this->str((string) $col['key'], 60), 'label' => $this->str((string) ($col['label'] ?? $col['key']), 60)],
+            array_slice(array_filter((array) ($c['columns'] ?? []), fn ($col) => is_array($col) && $this->scalar($col['key'] ?? null)), 0, 12)));
+        $keys = array_column($columns, 'key');
+
+        $rows = [];
+
+        foreach (array_slice((array) ($c['rows'] ?? []), 0, Catalog::MAX_BATCH) as $row) {
+            if (! is_array($row) || ! $this->scalar($row['action_id'] ?? null)) {
+                continue;
+            }
+
+            $rows[] = array_filter([
+                'action_id' => (string) $row['action_id'],
+                'values' => collect($keys)->mapWithKeys(fn ($k) => [$k => $this->str((string) (($row['values'] ?? [])[$k] ?? ''), 300)])->all(),
+                'status' => in_array($row['status'] ?? null, $statuses, true) ? $row['status'] : 'pending',
+                'error' => isset($row['error']) ? $this->str((string) $row['error'], 300) : null,
+            ], fn ($v) => $v !== null);
+        }
+
+        if ($rows === []) {
+            return null;
+        }
+
+        return [
+            'type' => Catalog::CONFIRM_BATCH,
+            'title' => $this->title($c),
+            'columns' => $columns,
+            'rows' => $rows,
+            'status' => in_array($c['status'] ?? null, $statuses, true) ? $c['status'] : 'pending',
         ];
     }
 

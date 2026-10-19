@@ -101,6 +101,24 @@ class ConversationController
         $panel = Filament::getCurrentPanel();
         $actions = ToolAction::query()->where('conversation_id', $conversation->id)->get()->keyBy('id');
         $withStatus = fn (array $components): array => array_map(function (array $c) use ($actions): array {
+            if (($c['type'] ?? null) === 'confirm_batch') {
+                $c['rows'] = array_map(function (array $row) use ($actions): array {
+                    $action = $actions->get($row['action_id'] ?? '');
+
+                    return $action ? array_filter([...$row, 'status' => $action->status, 'error' => $action->status === ToolAction::FAILED ? ($action->result['error'] ?? null) : null]) : $row;
+                }, (array) ($c['rows'] ?? []));
+                $states = collect($c['rows'])->pluck('status');
+                $c['status'] = match (true) {
+                    $states->contains('pending') => 'pending',
+                    $states->every(fn ($s) => $s === ToolAction::CANCELLED) => ToolAction::CANCELLED,
+                    ! $states->contains(ToolAction::FAILED) => ToolAction::DONE,
+                    ! $states->contains(ToolAction::DONE) => ToolAction::FAILED,
+                    default => 'partial',
+                };
+
+                return $c;
+            }
+
             $action = ($c['type'] ?? null) === 'confirm' ? $actions->get($c['action_id'] ?? '') : null;
 
             if (! $action) {
@@ -120,7 +138,8 @@ class ConversationController
             ->whereIn('role', [Message::ROLE_USER, Message::ROLE_ASSISTANT])
             ->where(fn ($q) => $q->where('role', Message::ROLE_USER)->orWhereNotNull('content')->orWhereNotNull('components'))
             ->get()
-            ->reject(fn (Message $m) => $m->role === Message::ROLE_ASSISTANT && blank($m->content) && blank($m->components))
+            // Lines written just before calling a tool are narration, not the answer.
+            ->reject(fn (Message $m) => $m->role === Message::ROLE_ASSISTANT && (filled($m->tool_calls) || (blank($m->content) && blank($m->components))))
             ->values()
             ->map(fn (Message $m) => [
                 'id' => $m->id,

@@ -16,6 +16,9 @@ final readonly class AgentEvent
 
     public const COMPONENT = 'component';
 
+    /** A new round after tool calls: the answer text starts over (the earlier lines were only narration). */
+    public const STEP = 'step';
+
     public const DONE = 'done';
 
     public const ERROR = 'error';

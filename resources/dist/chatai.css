@@ -372,6 +372,16 @@
 .fi-chatai-confirm-btn.fi-primary { border-color: transparent; background: var(--primary-600, #2563eb); color: #fff; }
 .fi-chatai-confirm-btn.fi-primary:hover { background: var(--primary-500, #3b82f6); }
 .fi-chatai-confirm-btn:disabled { opacity: 0.6; cursor: wait; }
+.fi-chatai-batch-count { margin-left: 0.5rem; font-weight: 400; font-size: 0.8rem; color: var(--chatai-muted); }
+.fi-chatai-batch-table td, .fi-chatai-batch-table th { white-space: nowrap; }
+.fi-chatai-batch-check { width: 2rem; text-align: center; }
+.fi-chatai-batch-table tr.fi-excluded td:not(.fi-chatai-batch-check) { opacity: 0.4; text-decoration: line-through; }
+.fi-chatai-batch-state { font-size: 0.78rem; white-space: normal !important; }
+.fi-chatai-batch-done { color: var(--success-600, #16a34a); font-weight: 700; }
+.fi-chatai-batch-failed { color: var(--danger-600, #dc2626); }
+.fi-chatai-batch-skipped, .fi-chatai-batch-cancelled { color: var(--chatai-muted); }
+.fi-chatai-batch-pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.4rem; font-size: 0.78rem; color: var(--chatai-muted); }
+.fi-chatai-batch-pager .fi-chatai-confirm-btn { padding: 0.2rem 0.6rem; }
 .fi-chatai-confirm-hint { margin-right: auto; font-size: 0.75rem; color: var(--chatai-muted); }
 
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }

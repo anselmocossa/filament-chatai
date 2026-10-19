@@ -108,6 +108,7 @@ class ChatAiPlugin implements Plugin
                     Route::patch('conversations/{conversation}', [ConversationController::class, 'update'])->name('conversations.update');
                     Route::delete('conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
                     Route::post('groups', [ConversationGroupController::class, 'store'])->name('groups.store');
+                    Route::post('actions/batch', [ActionController::class, 'batch'])->name('actions.batch');
                     Route::post('actions/{action}/confirm', [ActionController::class, 'confirm'])->name('actions.confirm');
                     Route::post('actions/{action}/cancel', [ActionController::class, 'cancel'])->name('actions.cancel');
                     Route::patch('groups/{group}', [ConversationGroupController::class, 'update'])->whereNumber('group')->name('groups.update');
@@ -182,6 +183,7 @@ class ChatAiPlugin implements Plugin
             'userVoice' => $serverVoice && auth()->check() ? Preference::voiceFor(auth()->user()) : null,
             'sampleUrl' => $panel->route('chatai.speech.sample'),
             'preferencesUrl' => $panel->route('chatai.preferences.update'),
+            'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
             'filesUrl' => $panel->route('chatai.files.store', ['conversation' => '__conversation__']),

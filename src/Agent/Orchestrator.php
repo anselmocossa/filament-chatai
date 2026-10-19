@@ -73,6 +73,7 @@ class Orchestrator
         $tokensIn = $tokensOut = $cacheRead = $cacheWrite = 0;
         $model = $config->model;
         $components = [];
+        $proposals = [];
         $toolsUsed = [];
 
         try {
@@ -80,6 +81,10 @@ class Orchestrator
                 // Out of tool rounds: ask once more without tools so it must answer.
                 $offer = $iteration < $maxIterations ? $definitions : [];
                 $text = '';
+
+                if ($iteration > 0) {
+                    yield new AgentEvent(AgentEvent::STEP, ['iteration' => $iteration]);
+                }
                 $calls = [];
 
                 foreach ($this->llm->stream($config, $messages, $offer) as $chunk) {
@@ -101,6 +106,14 @@ class Orchestrator
                 }
 
                 if ($calls === [] || $offer === []) {
+                    // Proposed changes go last: one form, or one list to approve when there are several.
+                    foreach ($this->groupProposals($proposals) as $card) {
+                        if (($card = $this->validator->validate($card, fromServer: true)) !== null) {
+                            $components[] = $card;
+                            yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $card]);
+                        }
+                    }
+
                     $answer = $conversation->addMessage(Message::ROLE_ASSISTANT, $text, [
                         'components' => $components ?: null,
                         'model' => $model,
@@ -134,15 +147,13 @@ class Orchestrator
 
                         $result = ToolResult::text('Shown to the user.');
                     } elseif (($tool = $available[$call->toolName] ?? null) !== null && ! $tool->readOnly) {
-                        // A change: nothing runs until the user confirms on the card.
-                        $component = $this->validator->validate($this->propose($conversation, $user, $context, $tool, (array) $call->arguments), fromServer: true);
-                        $components[] = $component;
+                        // A change: nothing runs until the user confirms; shown when the answer ends.
+                        $proposals[] = ['tool' => $tool->name, 'card' => $this->propose($conversation, $user, $context, $tool, (array) $call->arguments)];
                         $toolsUsed[] = $call->toolName;
-                        yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
 
                         $result = ToolResult::data([
                             'status' => 'awaiting_confirmation',
-                            'note' => 'Nothing has changed yet. The user sees a form with these values and can fill in or correct them, then Confirm or Cancel. In one sentence, say what will happen and ask them to check the form and confirm. Do not ask for the missing values in text.',
+                            'note' => 'Nothing has changed yet. The user gets a form with these values (several calls of this tool become one list they approve at once), can correct them, then Confirm or Cancel. For a list (e.g. rows of a file), call the tool once per row. In one sentence, say what will happen and ask them to check and confirm. Do not ask for missing values in text.',
                         ]);
                     } else {
                         $tool = $available[$call->toolName] ?? null;
@@ -289,5 +300,43 @@ class Orchestrator
         $fields = ActionForm::fields($tool->inputSchema, $arguments);
 
         return ['type' => Catalog::CONFIRM, 'action_id' => $action->id, 'title' => $tool->label(), 'fields' => $fields, 'status' => ToolAction::PENDING];
+    }
+
+    /**
+     * One proposal stays a form; several of the same tool become one list
+     * approved at once.
+     *
+     * @param  array<int, array{tool: string, card: array<string, mixed>}>  $proposals
+     * @return array<int, array<string, mixed>>
+     */
+    protected function groupProposals(array $proposals): array
+    {
+        $cards = [];
+
+        foreach (collect($proposals)->groupBy('tool') as $group) {
+            if ($group->count() === 1) {
+                $cards[] = $group->first()['card'];
+
+                continue;
+            }
+
+            $first = $group->first()['card'];
+            $columns = collect($group)->flatMap(fn (array $p) => $p['card']['fields'])->unique('key')
+                ->map(fn (array $f): array => ['key' => $f['key'], 'label' => $f['label']])->values()->all();
+
+            $cards[] = [
+                'type' => Catalog::CONFIRM_BATCH,
+                'title' => $first['title'],
+                'columns' => $columns,
+                'rows' => $group->map(fn (array $p): array => [
+                    'action_id' => $p['card']['action_id'],
+                    'values' => collect($p['card']['fields'])->mapWithKeys(fn (array $f): array => [$f['key'] => is_bool($f['value']) ? ($f['value'] ? '✓' : '') : (string) $f['value']])->all(),
+                    'status' => ToolAction::PENDING,
+                ])->values()->all(),
+                'status' => ToolAction::PENDING,
+            ];
+        }
+
+        return $cards;
     }
 }

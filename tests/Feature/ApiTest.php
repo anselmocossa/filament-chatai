@@ -87,3 +87,17 @@ it('rate limits messages per minute with a friendly message', function () {
         ->assertStatus(429)
         ->assertJsonPath('message', __('chatai::chatai.rate_limited'));
 });
+
+it('shows only the answer in the history, not the line written before a tool call', function () {
+    $user = apiUser();
+    $this->actingAs($user);
+    $conversation = Conversation::start($user, 'admin');
+    $conversation->addMessage('user', 'Encomendas em processamento?');
+    $conversation->addMessage('assistant', 'Vou procurar.', ['tool_calls' => [['id' => 'c1', 'type' => 'function', 'function' => ['name' => 'orders', 'arguments' => '{}']]]]);
+    $conversation->addMessage('tool', '{"total":158}', ['tool_call_id' => 'c1']);
+    $conversation->addMessage('assistant', 'Há 158 encomendas em processamento.');
+
+    $this->getJson(route('filament.admin.chatai.conversations.show', $conversation))
+        ->assertJsonCount(2, 'messages')
+        ->assertJsonPath('messages.1.content', 'Há 158 encomendas em processamento.');
+});

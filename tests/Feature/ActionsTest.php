@@ -120,3 +120,39 @@ it('runs with the values the user filled in on the form, after checking them', f
 
     expect($this->runs)->toBe(1)->and($action->fresh()->arguments)->toBe(['product' => 'Classic Pillow', 'quantity' => 5]);
 });
+
+it('turns several changes of one tool into a single list approved at once, leaving out unticked rows', function () {
+    app()->instance(LlmClient::class, FakeLlmClient::script([
+        [
+            FakeLlmClient::call('adjust-stock', ['product' => 'Pillow', 'quantity' => 1]),
+            FakeLlmClient::call('adjust-stock', ['product' => 'Mug', 'quantity' => 2]),
+            FakeLlmClient::call('adjust-stock', ['product' => 'Sheet', 'quantity' => 3]),
+        ],
+        ['Três ajustes prontos. Confirme a lista.'],
+    ]));
+
+    $conversation = Conversation::start($this->user, 'admin');
+    $this->actingAs($this->user)->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Ajusta estes três'])->assertOk()->streamedContent();
+
+    $components = $conversation->messages()->where('role', Message::ROLE_ASSISTANT)->get()->last()->components;
+    $card = collect($components)->firstWhere('type', 'confirm_batch');
+
+    expect(collect($components)->where('type', 'confirm'))->toHaveCount(0)
+        ->and($card['rows'])->toHaveCount(3)
+        ->and($card['rows'][1]['values'])->toBe(['product' => 'Mug', 'quantity' => '2'])
+        ->and($this->runs)->toBe(0);
+
+    $ids = array_column($card['rows'], 'action_id');
+
+    $this->postJson(route('filament.admin.chatai.actions.batch'), ['ids' => $ids, 'skip' => [$ids[2]], 'confirmed' => true])
+        ->assertOk()
+        ->assertJsonPath('status', 'done')
+        ->assertJsonPath('rows.2.status', 'skipped');
+
+    expect($this->runs)->toBe(2);
+
+    $this->postJson(route('filament.admin.chatai.actions.batch'), ['ids' => $ids, 'confirmed' => true])->assertStatus(409);
+
+    $this->getJson(route('filament.admin.chatai.conversations.show', $conversation))
+        ->assertJsonFragment(['type' => 'confirm_batch', 'status' => 'done']);
+});

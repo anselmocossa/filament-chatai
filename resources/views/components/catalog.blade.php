@@ -194,3 +194,65 @@
         </div>
     </div>
 </template>
+
+{{-- confirm_batch: several changes (e.g. rows of a file), reviewed in a paginated list and approved once --}}
+<template x-if="component.type === 'confirm_batch'">
+    <div class="fi-chatai-confirm fi-chatai-batch" :class="'fi-chatai-confirm-' + component.status">
+        <div class="fi-chatai-confirm-head">
+            <span class="fi-chatai-confirm-icon"><x-filament::icon icon="heroicon-o-queue-list" class="fi-chatai-file-svg" /></span>
+            <span class="fi-chatai-confirm-title">
+                <span x-text="component.title"></span>
+                <span class="fi-chatai-batch-count" x-text="@js(__('chatai::chatai.actions.items')).replace(':count', component.rows.length)"></span>
+            </span>
+            <span class="fi-chatai-confirm-badge" x-show="component.status !== 'pending'"
+                  x-text="{ done: @js(__('chatai::chatai.actions.done_badge')), cancelled: @js(__('chatai::chatai.actions.cancelled_badge')), failed: @js(__('chatai::chatai.actions.failed_badge')), partial: @js(__('chatai::chatai.actions.partial_badge')) }[component.status] || ''"></span>
+        </div>
+
+        <div class="fi-chatai-table-scroll">
+            <table class="fi-chatai-table fi-chatai-batch-table">
+                <thead>
+                    <tr>
+                        <th class="fi-chatai-batch-check">
+                            <input type="checkbox" x-show="component.status === 'pending'" :checked="component.rows.every((r) => r.status !== 'pending' || ! r.excluded)" x-on:change="toggleAllRows(component, $event.target.checked)">
+                        </th>
+                        <template x-for="column in component.columns" :key="column.key">
+                            <th x-text="column.label"></th>
+                        </template>
+                        <th x-show="component.status !== 'pending'"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="row in batchPage(component).rows" :key="row.action_id">
+                        <tr :class="{ 'fi-excluded': row.excluded && row.status === 'pending' }">
+                            <td class="fi-chatai-batch-check">
+                                <input type="checkbox" x-show="row.status === 'pending'" :checked="! row.excluded" x-on:change="row.excluded = ! $event.target.checked">
+                            </td>
+                            <template x-for="column in component.columns" :key="column.key">
+                                <td x-text="row.values[column.key] || '—'"></td>
+                            </template>
+                            <td x-show="component.status !== 'pending'" class="fi-chatai-batch-state">
+                                <span :class="'fi-chatai-batch-' + row.status" :title="row.error || ''"
+                                      x-text="{ done: '✓', failed: '✕ ' + (row.error || ''), skipped: @js(__('chatai::chatai.actions.skipped_badge')), cancelled: @js(__('chatai::chatai.actions.cancelled_badge')), pending: '…' }[row.status] || ''"></span>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="fi-chatai-batch-pager" x-show="component.rows.length > 10">
+            <span x-text="@js(__('chatai::chatai.actions.page')).replace(':from', batchPage(component).from).replace(':to', batchPage(component).to).replace(':total', batchPage(component).total)"></span>
+            <button type="button" class="fi-chatai-confirm-btn" x-on:click="component.page = Math.max(0, (component.page || 0) - 1)" :disabled="! component.page">‹</button>
+            <button type="button" class="fi-chatai-confirm-btn" x-on:click="component.page = (component.page || 0) + 1" :disabled="batchPage(component).last">›</button>
+        </div>
+
+        <div class="fi-chatai-confirm-actions" x-show="component.status === 'pending'">
+            <span class="fi-chatai-confirm-hint" x-text="@js(__('chatai::chatai.actions.selected')).replace(':count', batchSelected(component).length)"></span>
+            <button type="button" class="fi-chatai-confirm-btn" x-on:click="answerBatch(component, false)" :disabled="!! component.busy">{{ __('chatai::chatai.actions.cancel_all') }}</button>
+            <button type="button" class="fi-chatai-confirm-btn fi-primary" x-on:click="answerBatch(component, true)" :disabled="!! component.busy || batchSelected(component).length === 0">
+                <x-filament::icon icon="heroicon-m-check" class="fi-chatai-chip-icon" />
+                <span x-text="@js(__('chatai::chatai.actions.confirm_all')).replace(':count', batchSelected(component).length)"></span>
+            </button>
+        </div>
+    </div>
+</template>

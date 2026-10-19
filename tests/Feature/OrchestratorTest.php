@@ -50,7 +50,7 @@ it('runs tool then text and emits events in order', function () {
     ]));
 
     expect(array_map(fn (AgentEvent $e) => $e->type, $events))
-        ->toBe(['tool_start', 'tool_end', 'delta', 'delta', 'done'])
+        ->toBe(['tool_start', 'tool_end', 'step', 'delta', 'delta', 'done'])
         ->and($events[0]->data['label'])->toBe('Vendas')
         ->and($conversation->messages->pluck('role')->all())
         ->toBe(['user', 'assistant', 'tool', 'assistant'])
