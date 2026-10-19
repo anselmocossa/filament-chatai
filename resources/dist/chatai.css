@@ -1,0 +1,529 @@
+/*
+ * filament-chatai — styles.
+ * Built on Filament's own colour tokens (--primary-*, --gray-*) so the chat
+ * follows the panel's brand colour and dark mode without a theme build.
+ */
+
+[x-cloak] { display: none !important; }
+
+.fi-chatai-floating,
+.fi-chatai-page,
+.fi-chatai-usage {
+    --chatai-bg: #fff;
+    --chatai-surface: var(--gray-50);
+    --chatai-bubble: var(--gray-100);
+    --chatai-border: var(--gray-200);
+    --chatai-text: var(--gray-950);
+    --chatai-muted: var(--gray-500);
+    --chatai-accent: var(--primary-600);
+    --chatai-accent-text: #fff;
+    --chatai-radius: 0.875rem;
+    --chatai-shadow: 0 20px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.04);
+    color: var(--chatai-text);
+}
+
+:is(.dark) .fi-chatai-floating,
+:is(.dark) .fi-chatai-page,
+:is(.dark) .fi-chatai-usage {
+    --chatai-bg: var(--gray-900);
+    --chatai-surface: var(--gray-950);
+    --chatai-bubble: var(--gray-800);
+    --chatai-border: rgb(255 255 255 / 0.1);
+    --chatai-text: #fff;
+    --chatai-muted: var(--gray-400);
+    --chatai-accent: var(--primary-500);
+    --chatai-shadow: 0 20px 50px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* ---------- floating launcher + panel ---------- */
+
+.fi-chatai-floating {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 40;
+}
+
+.fi-chatai-launcher {
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 9999px;
+    background: var(--chatai-accent);
+    color: var(--chatai-accent-text);
+    box-shadow: var(--chatai-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fi-chatai-launcher:hover { transform: translateY(-2px) scale(1.03); }
+.fi-chatai-launcher:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
+.fi-chatai-launcher-icon { width: 1.6rem; height: 1.6rem; }
+
+.fi-chatai-panel {
+    width: min(26rem, calc(100vw - 2.5rem));
+    height: min(40rem, calc(100vh - 2.5rem));
+    border-radius: 1.25rem;
+    background: var(--chatai-bg);
+    box-shadow: var(--chatai-shadow);
+    overflow: hidden;
+}
+
+.fi-chatai-panel-inner { display: flex; flex-direction: column; height: 100%; }
+
+.fi-chatai-enter { transition: opacity 0.18s ease, transform 0.18s ease; transform-origin: bottom right; }
+.fi-chatai-enter-start { opacity: 0; transform: translateY(8px) scale(0.98); }
+.fi-chatai-enter-end { opacity: 1; transform: none; }
+
+@media (max-width: 639px) {
+    .fi-chatai-floating { right: 1rem; bottom: 1rem; }
+    .fi-chatai-panel {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+/* ---------- header ---------- */
+
+.fi-chatai-header,
+.fi-chatai-main-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 0.9rem 0.85rem 1rem;
+    border-bottom: 1px solid var(--chatai-border);
+    background: var(--chatai-bg);
+}
+
+.fi-chatai-header-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: var(--success-500, #22c55e);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--success-500, #22c55e) 25%, transparent);
+    flex-shrink: 0;
+}
+
+.fi-chatai-header-avatar {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    background: color-mix(in oklab, var(--chatai-accent) 12%, transparent);
+    color: var(--chatai-accent);
+    flex-shrink: 0;
+}
+
+.fi-chatai-header-avatar-icon { width: 1.1rem; height: 1.1rem; }
+
+.fi-chatai-header-title,
+.fi-chatai-main-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 0.925rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fi-chatai-header-btn {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    color: var(--chatai-muted);
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.fi-chatai-header-btn:hover { background: var(--chatai-bubble); color: var(--chatai-text); }
+.fi-chatai-header-btn-icon { width: 1.15rem; height: 1.15rem; }
+
+/* ---------- conversation ---------- */
+
+.fi-chatai-conversation { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.fi-chatai-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    scroll-behavior: smooth;
+}
+
+.fi-chatai-empty { margin: auto; text-align: center; max-width: 20rem; padding: 2rem 0; }
+.fi-chatai-empty-icon { width: 2.25rem; height: 2.25rem; margin: 0 auto 0.75rem; color: var(--chatai-accent); }
+.fi-chatai-empty-title { font-weight: 600; font-size: 1rem; }
+.fi-chatai-empty-text { margin-top: 0.35rem; font-size: 0.875rem; color: var(--chatai-muted); }
+
+.fi-chatai-message { display: flex; }
+.fi-chatai-message-user { justify-content: flex-end; }
+
+.fi-chatai-answer { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; min-width: 0; }
+
+.fi-chatai-bubble {
+    max-width: 85%;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--chatai-radius);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.fi-chatai-bubble-user {
+    background: var(--gray-950);
+    color: #fff;
+    border-bottom-right-radius: 0.35rem;
+    white-space: pre-wrap;
+}
+
+:is(.dark) .fi-chatai-bubble-user { background: var(--chatai-accent); }
+
+.fi-chatai-bubble-assistant {
+    align-self: flex-start;
+    background: var(--chatai-bubble);
+    border-bottom-left-radius: 0.35rem;
+}
+
+.fi-chatai-prose p + p,
+.fi-chatai-prose p + ul,
+.fi-chatai-prose p + ol,
+.fi-chatai-prose ul + p,
+.fi-chatai-prose ol + p { margin-top: 0.5rem; }
+.fi-chatai-prose ul { list-style: disc; padding-left: 1.2rem; margin: 0.35rem 0; }
+.fi-chatai-prose ol { list-style: decimal; padding-left: 1.3rem; margin: 0.35rem 0; }
+.fi-chatai-prose strong { font-weight: 600; }
+.fi-chatai-prose a { color: var(--chatai-accent); text-decoration: underline; text-underline-offset: 2px; }
+.fi-chatai-prose code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8em; padding: 0.1rem 0.3rem; border-radius: 0.3rem; background: color-mix(in oklab, var(--chatai-text) 8%, transparent); }
+.fi-chatai-prose pre { margin: 0.5rem 0; padding: 0.7rem; border-radius: 0.5rem; background: var(--gray-950); color: var(--gray-100); overflow-x: auto; font-size: 0.8rem; }
+.fi-chatai-prose pre code { background: none; padding: 0; }
+
+.fi-chatai-status { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--chatai-muted); }
+.fi-chatai-status-spinner { width: 0.95rem; height: 0.95rem; }
+
+.fi-chatai-typing { display: inline-flex; gap: 0.25rem; padding: 0.8rem 0.95rem; border-radius: var(--chatai-radius); background: var(--chatai-bubble); align-self: flex-start; }
+.fi-chatai-typing span { width: 0.4rem; height: 0.4rem; border-radius: 9999px; background: var(--chatai-muted); animation: fi-chatai-blink 1.2s infinite ease-in-out; }
+.fi-chatai-typing span:nth-child(2) { animation-delay: 0.15s; }
+.fi-chatai-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes fi-chatai-blink { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+
+.fi-chatai-retry,
+.fi-chatai-notice button { align-self: flex-start; font-size: 0.8rem; font-weight: 500; color: var(--chatai-accent); }
+.fi-chatai-retry:hover,
+.fi-chatai-notice button:hover { text-decoration: underline; }
+
+.fi-chatai-notice {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 1rem 0.5rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.6rem;
+    font-size: 0.8rem;
+    background: color-mix(in oklab, var(--danger-500, #ef4444) 10%, transparent);
+    color: var(--danger-700, #b91c1c);
+}
+
+:is(.dark) .fi-chatai-notice { color: var(--danger-300, #fca5a5); }
+
+/* ---------- composer ---------- */
+
+.fi-chatai-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.6rem 0.9rem 0.6rem;
+    background: var(--chatai-bg);
+}
+
+.fi-chatai-composer-box {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--chatai-border);
+    border-radius: 1.25rem;
+    background: var(--chatai-bg);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px -8px rgb(0 0 0 / 0.12);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    cursor: text;
+}
+.fi-chatai-composer-box:focus-within { border-color: color-mix(in oklab, var(--chatai-accent) 55%, var(--chatai-border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--chatai-accent) 14%, transparent), 0 4px 16px -8px rgb(0 0 0 / 0.12); }
+.fi-chatai-composer-box.fi-recording { border-color: var(--danger-500, #ef4444); }
+
+.fi-chatai-input {
+    width: 100%;
+    resize: none;
+    min-height: 2.75rem;
+    max-height: 13.75rem;
+    padding: 0.85rem 1rem 0.35rem;
+    border: 0;
+    background: transparent;
+    color: var(--chatai-text);
+    font-size: 0.925rem;
+    line-height: 1.5;
+    outline: none;
+    box-shadow: none;
+}
+.fi-chatai-input:focus { outline: none; box-shadow: none; }
+.fi-chatai-input::placeholder { color: var(--chatai-muted); }
+
+.fi-chatai-composer-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0.45rem 0.45rem; }
+.fi-chatai-composer-tools, .fi-chatai-composer-actions { display: flex; align-items: center; gap: 0.25rem; }
+.fi-chatai-tool { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 9999px; color: var(--chatai-muted); border: 1px solid var(--chatai-border); }
+.fi-chatai-tool:hover { background: var(--chatai-bubble); color: var(--chatai-text); }
+.fi-chatai-tool-icon { width: 1rem; height: 1rem; }
+.fi-chatai-recording { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0 0.5rem; font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--danger-600, #dc2626); }
+.fi-chatai-recording-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: currentColor; animation: chatai-blink 1s ease-in-out infinite; }
+@keyframes chatai-blink { 50% { opacity: 0.25; } }
+.fi-chatai-counter { padding: 0 0.5rem; font-size: 0.75rem; color: var(--chatai-muted); font-variant-numeric: tabular-nums; }
+.fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
+.fi-chatai-floating .fi-chatai-composer-hint { display: none; }
+
+.fi-chatai-send {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 9999px;
+    background: var(--gray-950);
+    color: #fff;
+    flex-shrink: 0;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+:is(.dark) .fi-chatai-send { background: var(--chatai-accent); }
+.fi-chatai-send:disabled { opacity: 0.35; cursor: not-allowed; }
+.fi-chatai-send:not(:disabled):hover { transform: scale(1.05); }
+.fi-chatai-send-icon { width: 1.1rem; height: 1.1rem; }
+
+/* ---------- voice + actions ---------- */
+
+.fi-chatai-mic {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    color: var(--chatai-muted);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.fi-chatai-mic:hover { background: var(--chatai-bubble); color: inherit; }
+.fi-chatai-mic.fi-active { background: var(--danger-600, #dc2626); color: #fff; animation: chatai-pulse 1.4s ease-in-out infinite; }
+@keyframes chatai-pulse { 50% { box-shadow: 0 0 0 0.35rem rgb(220 38 38 / 0.2); } }
+
+.fi-chatai-actions { display: flex; gap: 0.25rem; }
+.fi-chatai-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.45rem;
+    font-size: 0.75rem;
+    color: var(--chatai-muted);
+}
+.fi-chatai-action:hover,
+.fi-chatai-action.fi-active { background: var(--chatai-bubble); color: inherit; }
+.fi-chatai-action-icon { width: 0.95rem; height: 0.95rem; }
+
+.fi-chatai-conversation { position: relative; }
+.fi-chatai-voices {
+    position: absolute;
+    inset: auto 0.75rem 4.5rem 0.75rem;
+    max-width: 24rem;
+    margin-left: auto;
+    max-height: 60%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--chatai-border);
+    border-radius: var(--chatai-radius);
+    background: var(--chatai-bg);
+    box-shadow: var(--chatai-shadow);
+    z-index: 5;
+}
+.fi-chatai-voices-header { display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 0.9rem; }
+.fi-chatai-voices-hint { font-size: 0.75rem; color: var(--chatai-muted); }
+.fi-chatai-voices-list { overflow-y: auto; display: flex; flex-direction: column; gap: 0.15rem; }
+.fi-chatai-voice { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.4rem; border-radius: 0.5rem; font-size: 0.85rem; }
+.fi-chatai-voice:hover { background: var(--chatai-bubble); }
+.fi-chatai-voice label, label.fi-chatai-voice { display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; flex: 1; }
+
+/* ---------- admin pages ---------- */
+
+.fi-chatai-code { display: flex; flex-direction: column; gap: 0.5rem; }
+.fi-chatai-code-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.fi-chatai-code-select { min-width: 12rem; }
+.fi-chatai-code-pre { margin: 0; padding: 1rem; max-height: 32rem; overflow: auto; border-radius: 0.75rem; background: var(--gray-950); color: #e5e7eb; font-size: 0.8rem; line-height: 1.55; white-space: pre; }
+.fi-chatai-code-empty { font-size: 0.85rem; color: var(--gray-500); }
+
+.fi-chatai-editor { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.fi-chatai-editor-test { position: sticky; top: 5rem; }
+.fi-chatai-page.fi-chatai-editor-chat { height: calc(100dvh - 12.5rem); min-height: 28rem; }
+.fi-chatai-editor-chat .fi-chatai-main .fi-chatai-messages { padding: 1rem; }
+.fi-chatai-editor-chat .fi-chatai-main .fi-chatai-bubble { max-width: 90%; }
+.fi-chatai-editor-test-title { display: flex; flex-direction: column; min-width: 0; }
+.fi-chatai-editor-options { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--chatai-border); }
+.fi-chatai-editor-model { flex: 1; min-width: 0; }
+.fi-chatai-editor-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--chatai-border); background: var(--chatai-surface); }
+.fi-chatai-editor-settings label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.8rem; color: var(--chatai-muted); }
+.fi-chatai-editor-settings label b { color: var(--chatai-text); font-weight: 600; }
+.fi-chatai-editor-settings-wide { grid-column: 1 / -1; }
+.fi-chatai-editor-settings > .fi-chatai-action { justify-self: start; }
+.fi-chatai-range { width: 100%; accent-color: var(--chatai-accent); }
+.fi-chatai-header-btn.fi-active { background: var(--chatai-bubble); }
+.fi-chatai-editor-test-hint { font-size: 0.75rem; color: var(--chatai-muted); }
+@media (max-width: 1279px) {
+    .fi-chatai-editor { grid-template-columns: minmax(0, 1fr); }
+    .fi-chatai-editor-test { position: static; }
+}
+
+.fi-chatai-usage { display: flex; flex-direction: column; gap: 1rem; }
+.fi-chatai-usage-toolbar { display: flex; justify-content: flex-end; }
+.fi-chatai-usage-toolbar .fi-input-wrp { min-width: 12rem; }
+.fi-chatai-usage-kpis { border: 0; padding: 0; }
+.fi-chatai-usage-kpis .fi-chatai-kpi-item { background: var(--chatai-bg); border: 1px solid var(--chatai-border); }
+.fi-chatai-usage .fi-chatai-component { background: var(--chatai-bg); }
+.fi-chatai-usage-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.fi-chatai-usage-empty { color: var(--chatai-muted); font-size: 0.85rem; text-align: center; padding: 1rem; }
+.fi-chatai-usage-note { color: var(--chatai-muted); font-size: 0.75rem; }
+@media (max-width: 1023px) { .fi-chatai-usage-columns { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 639px) { .fi-chatai-usage-kpis { --chatai-kpi-cols: 2 !important; } }
+
+/* ---------- generative UI components ---------- */
+
+.fi-chatai-component {
+    border: 1px solid var(--chatai-border);
+    border-radius: var(--chatai-radius);
+    background: var(--chatai-bg);
+    padding: 0.85rem;
+    min-width: 0;
+}
+
+.fi-chatai-component:has(.fi-chatai-suggestions) { border: 0; padding: 0; background: transparent; }
+
+.fi-chatai-component-title { font-size: 0.8rem; font-weight: 600; color: var(--chatai-muted); margin-bottom: 0.6rem; text-transform: none; }
+
+.fi-chatai-kpi-grid {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(var(--chatai-kpi-cols, 2), minmax(0, 1fr));
+}
+
+@container (max-width: 22rem) { .fi-chatai-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fi-chatai-panel .fi-chatai-kpi-grid { grid-template-columns: repeat(min(var(--chatai-kpi-cols, 2), 2), minmax(0, 1fr)); }
+
+.fi-chatai-kpi-item { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.7rem; border-radius: 0.6rem; background: var(--chatai-surface); min-width: 0; }
+.fi-chatai-kpi-label { font-size: 0.75rem; color: var(--chatai-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-chatai-kpi-value { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.fi-chatai-kpi-value small { font-size: 0.75rem; font-weight: 500; color: var(--chatai-muted); margin-left: 0.2rem; }
+.fi-chatai-kpi-change { display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 0.75rem; font-weight: 500; }
+.fi-chatai-kpi-description { color: var(--chatai-muted); font-weight: 400; }
+.fi-chatai-trend-up { color: var(--success-600, #16a34a); }
+.fi-chatai-trend-down { color: var(--danger-600, #dc2626); }
+.fi-chatai-trend-flat { color: var(--chatai-muted); }
+
+.fi-chatai-table-scroll { overflow-x: auto; margin: 0 -0.85rem; padding: 0 0.85rem; }
+.fi-chatai-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.fi-chatai-table th { text-align: left; font-weight: 600; color: var(--chatai-muted); padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--chatai-border); white-space: nowrap; }
+.fi-chatai-table th button { font: inherit; color: inherit; }
+.fi-chatai-table th button:hover { color: var(--chatai-text); }
+.fi-chatai-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--chatai-border); }
+.fi-chatai-table tbody tr:last-child td { border-bottom: 0; }
+.fi-chatai-table tbody tr:hover td { background: var(--chatai-surface); }
+.fi-chatai-num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fi-chatai-badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500; background: color-mix(in oklab, var(--chatai-accent) 12%, transparent); color: var(--chatai-accent); }
+.fi-chatai-table-footer { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.75rem; color: var(--chatai-muted); }
+.fi-chatai-link { color: var(--chatai-accent); font-weight: 500; }
+
+.fi-chatai-chart .fi-wi-chart-frame { position: relative; height: 240px; }
+.fi-chatai-chart canvas { width: 100% !important; max-height: 240px; }
+
+.fi-chatai-suggestions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.fi-chatai-suggestion {
+    padding: 0.4rem 0.8rem;
+    border-radius: 9999px;
+    border: 1px solid var(--chatai-border);
+    background: var(--chatai-bg);
+    font-size: 0.8rem;
+    color: var(--chatai-text);
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.fi-chatai-suggestion:hover:not(:disabled) { border-color: var(--chatai-accent); background: color-mix(in oklab, var(--chatai-accent) 8%, transparent); }
+.fi-chatai-suggestion:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- full page ---------- */
+
+.fi-chatai-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    height: calc(100dvh - 9rem);
+    min-height: 28rem;
+    border: 1px solid var(--chatai-border);
+    border-radius: 1rem;
+    background: var(--chatai-bg);
+    overflow: hidden;
+}
+
+.fi-chatai-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-right: 1px solid var(--chatai-border);
+    background: var(--chatai-surface);
+    min-height: 0;
+}
+
+.fi-chatai-sidebar-new { width: 100%; }
+.fi-chatai-sidebar-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.15rem; margin: 0 -0.35rem; }
+.fi-chatai-sidebar-item { display: flex; align-items: center; border-radius: 0.6rem; }
+.fi-chatai-sidebar-item:hover,
+.fi-chatai-sidebar-item.fi-active { background: var(--chatai-bubble); }
+.fi-chatai-sidebar-item-btn { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; padding: 0.5rem 0.6rem; text-align: left; }
+.fi-chatai-sidebar-item-title { width: 100%; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-chatai-sidebar-item.fi-active .fi-chatai-sidebar-item-title { font-weight: 600; }
+.fi-chatai-sidebar-item-date { font-size: 0.7rem; color: var(--chatai-muted); }
+.fi-chatai-sidebar-item-delete { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; margin-right: 0.25rem; border-radius: 0.45rem; color: var(--chatai-muted); opacity: 0; }
+.fi-chatai-sidebar-item:hover .fi-chatai-sidebar-item-delete,
+.fi-chatai-sidebar-item-delete:focus-visible { opacity: 1; }
+.fi-chatai-sidebar-item-delete:hover { color: var(--danger-600, #dc2626); }
+.fi-chatai-sidebar-empty { font-size: 0.8rem; color: var(--chatai-muted); padding: 0.5rem 0.35rem; }
+
+.fi-chatai-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.fi-chatai-main .fi-chatai-messages,
+.fi-chatai-main .fi-chatai-composer,
+.fi-chatai-main .fi-chatai-notice { width: 100%; max-width: 48rem; margin-left: auto; margin-right: auto; }
+.fi-chatai-main .fi-chatai-composer { padding-bottom: 1rem; }
+.fi-chatai-main .fi-chatai-messages { padding: 1.5rem 1.25rem; }
+.fi-chatai-main .fi-chatai-bubble { max-width: 80%; font-size: 0.925rem; }
+
+/* History is collapsed by default; the toggle in the header opens it. */
+.fi-chatai-page:not(.fi-chatai-sidebar-open) .fi-chatai-sidebar { display: none; }
+.fi-chatai-page.fi-chatai-sidebar-open { grid-template-columns: 17rem minmax(0, 1fr); }
+.fi-chatai-header-actions { margin-left: auto; display: flex; gap: 0.15rem; }
+.fi-chatai-sidebar-open .fi-chatai-header-new { display: none; }
+
+@media (max-width: 767px) {
+    .fi-chatai-page,
+    .fi-chatai-page.fi-chatai-sidebar-open { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - 7rem); position: relative; }
+    .fi-chatai-page:not(.fi-chatai-sidebar-open) .fi-chatai-sidebar { display: flex; }
+    .fi-chatai-sidebar { position: absolute; inset: 0 auto 0 0; width: min(18rem, 85%); z-index: 10; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--chatai-shadow); }
+    .fi-chatai-sidebar-open .fi-chatai-sidebar { transform: none; }
+}
+
+/* The full page already is the chat: no floating launcher on top of it. */
+body:has(.fi-chatai-page) .fi-chatai-floating { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .fi-chatai-floating *, .fi-chatai-page * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,74 @@
+{
+    "name": "anselmokossa/filament-chatai",
+    "description": "An AI assistant for Filament panels — floating chat, a full-page chat and generative UI (KPIs, tables, charts) driven by your own tools.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "ai",
+        "chat",
+        "assistant",
+        "generative-ui",
+        "mcp",
+        "filament-plugin"
+    ],
+    "homepage": "https://github.com/anselmocossa/filament-chatai",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anselmo Kossa",
+            "email": "anselmo.cossa@enh.co.mz",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^5.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "anthropic-ai/sdk": "^0.59.0",
+        "laravel/mcp": "^0.6|^0.7",
+        "laravel/pint": "^1.0",
+        "nunomaduro/collision": "^7.0|^8.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^2.0|^3.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.0"
+    },
+    "suggest": {
+        "laravel/mcp": "Expose your existing Laravel MCP tools to the assistant through LaravelMcpToolProvider.",
+        "anthropic-ai/sdk": "Use Claude natively (provider \"anthropic\") instead of an OpenAI-compatible endpoint."
+    },
+    "autoload": {
+        "psr-4": {
+            "Filament\\ChatAi\\": "src/",
+            "Filament\\ChatAi\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Filament\\ChatAi\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest --no-coverage",
+        "lint": "vendor/bin/pint",
+        "lint-fix": "vendor/bin/pint --repair"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Filament\\ChatAi\\ChatAiServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

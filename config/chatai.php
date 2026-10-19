@@ -1,0 +1,123 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Language model
+    |--------------------------------------------------------------------------
+    |
+    | provider = "openai": any OpenAI-compatible /chat/completions endpoint with
+    | tool calling and streaming (OpenAI, OpenRouter, a local Ollama).
+    | provider = "anthropic": Claude through the official SDK
+    | (composer require anthropic-ai/sdk) — see the "anthropic" block below.
+    |
+    | Values saved on the ChatAI settings page take precedence over these.
+    | A panel can override all of this at runtime, e.g. per tenant, with
+    | ChatAiPlugin::make()->llm(fn () => new LlmConfig(...)).
+    |
+    */
+
+    'provider' => env('CHATAI_PROVIDER', 'openai'),
+
+    // Used when the main provider is down: openai | anthropic | null (with its own block below).
+    'fallback_provider' => env('CHATAI_FALLBACK_PROVIDER'),
+
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('CHATAI_ANTHROPIC_MODEL', 'claude-opus-5-5'),
+        'fallback_models' => array_values(array_filter(explode(',', (string) env('CHATAI_ANTHROPIC_FALLBACK_MODELS', '')))),
+        // low | medium | high | xhigh | max. Low keeps chat replies fast (first text ~1.5s vs ~10s at medium).
+        'effort' => env('CHATAI_ANTHROPIC_EFFORT', 'low'),
+        'base_url' => env('CHATAI_ANTHROPIC_BASE_URL'),
+    ],
+
+    'max_tokens' => (int) env('CHATAI_MAX_TOKENS', 16000),
+
+    'base_url' => env('CHATAI_BASE_URL', 'https://openrouter.ai/api/v1'),
+
+    'api_key' => env('CHATAI_API_KEY'),
+
+    'model' => env('CHATAI_MODEL', 'openai/gpt-4.1-mini'),
+
+    // Tried in order when the main model answers 429 or 5xx before streaming.
+    'fallback_models' => array_values(array_filter(explode(',', (string) env('CHATAI_FALLBACK_MODELS', '')))),
+
+    // Seconds to wait for the model (per request) and for each tool call.
+    'timeout' => (int) env('CHATAI_TIMEOUT', 60),
+
+    'tool_timeout' => (int) env('CHATAI_TOOL_TIMEOUT', 15),
+
+    // Model → tool → model round trips allowed for one question.
+    'max_iterations' => 6,
+
+    // Tool results kept in the conversation history are cut to this size.
+    'max_tool_result_bytes' => 20_000,
+
+    // Extra rules for the assistant written by the admin (tone, business terms).
+    'instructions' => null,
+
+    // Hosts that tools made on screen may call (GET only), e.g. ['api.mystore.co.mz'].
+    'http_tools' => [
+        'allowed_hosts' => [],
+        'timeout' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Voice
+    |--------------------------------------------------------------------------
+    |
+    | Server voice (neural text-to-speech and dictation), same on every device.
+    | Without a provider the chat uses the browser's own voice.
+    |
+    */
+    'speech' => [
+        'enabled' => true, // dictation and read-aloud buttons
+        'provider' => env('CHATAI_SPEECH_PROVIDER'), // azure | google | null
+        'language' => env('CHATAI_SPEECH_LANGUAGE', 'pt-PT'),
+        'timeout' => 30,
+        'disk' => env('CHATAI_SPEECH_DISK', 'local'), // generated audio is kept here and reused
+        'azure' => [
+            'key' => env('AZURE_SPEECH_KEY'),
+            'region' => env('AZURE_SPEECH_REGION'),
+            'voice' => env('CHATAI_SPEECH_VOICE', 'pt-PT-RaquelNeural'),
+        ],
+        'google' => [
+            'api_key' => env('GOOGLE_SPEECH_API_KEY'),
+            'voice' => env('CHATAI_SPEECH_VOICE', 'pt-PT-Wavenet-A'),
+        ],
+        'user_choice' => true, // users may pick their own voice in the chat
+        'voices' => [], // server voices offered to users; empty = every voice of the provider (see VoiceCatalog)
+        'per_minute' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prices (for the usage page)
+    |--------------------------------------------------------------------------
+    |
+    | Your provider's prices, to estimate costs. Set them on the settings page.
+    | models: [['model' => 'claude-opus-5-5', 'input' => 5, 'output' => 25]]
+    | (per million tokens; a name ending in "/" matches every model with that prefix).
+    |
+    */
+    'pricing' => [
+        'currency' => 'USD',
+        'models' => [],
+        'speech_per_million_characters' => null,
+        'transcription_per_hour' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Limits
+    |--------------------------------------------------------------------------
+    */
+
+    'rate_limit' => [
+        'per_minute' => 20,
+        'per_day' => 200,
+    ],
+
+];
