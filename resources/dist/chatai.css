@@ -557,11 +557,11 @@
 .fi-chatai-sidebar-empty { font-size: 0.8rem; color: var(--chatai-muted); padding: 0.5rem 0.35rem; }
 
 .fi-chatai-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-.fi-chatai-main .fi-chatai-messages,
 .fi-chatai-main .fi-chatai-composer,
 .fi-chatai-main .fi-chatai-notice { width: 100%; max-width: 48rem; margin-left: auto; margin-right: auto; }
 .fi-chatai-main .fi-chatai-composer { padding-bottom: 1rem; }
-.fi-chatai-main .fi-chatai-messages { padding: 1.5rem 1.25rem; }
+/* Full width so the scrollbar sits at the edge; the padding keeps the column centred at 48rem. */
+.fi-chatai-main .fi-chatai-messages { width: 100%; padding: 1.5rem max(1.25rem, calc((100% - 48rem) / 2 + 1.25rem)); }
 .fi-chatai-main .fi-chatai-bubble { max-width: 80%; font-size: 0.925rem; }
 
 /* History is collapsed by default; the toggle in the header opens it. */
