@@ -130,14 +130,50 @@
             <span class="fi-chatai-confirm-badge" x-show="component.status !== 'pending'"
                   x-text="{ done: @js(__('chatai::chatai.actions.done_badge')), cancelled: @js(__('chatai::chatai.actions.cancelled_badge')), failed: @js(__('chatai::chatai.actions.failed_badge')) }[component.status] || ''"></span>
         </div>
-        <dl class="fi-chatai-confirm-fields">
-            <template x-for="(field, i) in component.fields" :key="i">
-                <div class="fi-chatai-confirm-field">
-                    <dt x-text="field.label"></dt>
-                    <dd x-text="field.value"></dd>
-                </div>
-            </template>
-        </dl>
+        {{-- While waiting: an editable form built from the tool's schema --}}
+        <template x-if="component.status === 'pending'">
+            <form class="fi-chatai-form" x-on:submit.prevent="answerAction(component, true)">
+                <template x-for="(field, i) in component.fields" :key="field.key || i">
+                    <label class="fi-chatai-form-field" :class="{ 'fi-wide': field.type === 'textarea', 'fi-check': field.type === 'checkbox', 'fi-error': component.errors?.[field.key] }">
+                        <span class="fi-chatai-form-label" x-show="field.type !== 'checkbox'">
+                            <span x-text="field.label"></span><span class="fi-chatai-form-required" x-show="field.required">*</span>
+                        </span>
+                        <template x-if="field.type === 'select'">
+                            <select class="fi-chatai-form-input" x-model="field.value" :required="field.required">
+                                <option value=""></option>
+                                <template x-for="option in field.options" :key="option.value">
+                                    <option :value="option.value" x-text="option.label" :selected="option.value === field.value"></option>
+                                </template>
+                            </select>
+                        </template>
+                        <template x-if="field.type === 'textarea'">
+                            <textarea class="fi-chatai-form-input" rows="3" x-model="field.value" :required="field.required"></textarea>
+                        </template>
+                        <template x-if="field.type === 'checkbox'">
+                            <span class="fi-chatai-form-checkbox"><input type="checkbox" x-model="field.value"> <span x-text="field.label"></span></span>
+                        </template>
+                        <template x-if="! ['select', 'textarea', 'checkbox'].includes(field.type)">
+                            <input class="fi-chatai-form-input" :type="field.type" x-model="field.value" :required="field.required" :placeholder="field.help || ''">
+                        </template>
+                        <span class="fi-chatai-form-error" x-show="component.errors?.[field.key]" x-text="component.errors?.[field.key]"></span>
+                    </label>
+                </template>
+                <button type="submit" hidden></button>
+            </form>
+        </template>
+
+        {{-- Answered: what it ran with --}}
+        <template x-if="component.status !== 'pending'">
+            <dl class="fi-chatai-confirm-fields">
+                <template x-for="(field, i) in component.fields.filter((f) => f.value !== '' && f.value !== null)" :key="field.key || i">
+                    <div class="fi-chatai-confirm-field">
+                        <dt x-text="field.label"></dt>
+                        <dd x-text="field.type === 'checkbox' ? (field.value ? '✓' : '—') : (field.options?.find((o) => o.value === field.value)?.label || field.value)"></dd>
+                    </div>
+                </template>
+            </dl>
+        </template>
+
         <template x-if="component.result?.length">
             <dl class="fi-chatai-confirm-fields fi-chatai-confirm-result">
                 <template x-for="(field, i) in component.result" :key="i">

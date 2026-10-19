@@ -341,7 +341,7 @@
 .fi-chatai-file-meta { font-size: 0.75rem; color: var(--chatai-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fi-chatai-file-action { font-size: 0.8rem; font-weight: 600; color: var(--chatai-accent); flex-shrink: 0; }
 
-.fi-chatai-confirm { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.9rem; }
+.fi-chatai-confirm { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.9rem; container-type: inline-size; }
 .fi-chatai-confirm-head { display: flex; align-items: center; gap: 0.6rem; }
 .fi-chatai-confirm-icon { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 0.6rem; background: color-mix(in oklab, var(--warning-500, #f59e0b) 14%, transparent); color: var(--warning-600, #d97706); flex-shrink: 0; }
 .fi-chatai-confirm-title { font-weight: 600; font-size: 0.9rem; flex: 1; }
@@ -351,6 +351,17 @@
 .fi-chatai-confirm-done .fi-chatai-confirm-icon { background: color-mix(in oklab, var(--success-500, #22c55e) 14%, transparent); color: var(--success-600, #16a34a); }
 .fi-chatai-confirm-cancelled, .fi-chatai-confirm-failed { opacity: 0.8; }
 .fi-chatai-confirm-fields { display: grid; gap: 0.35rem; margin: 0; padding: 0.6rem 0.75rem; border-radius: 0.6rem; background: var(--chatai-surface); }
+.fi-chatai-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem 0.75rem; }
+@container (max-width: 26rem) { .fi-chatai-form { grid-template-columns: minmax(0, 1fr); } }
+.fi-chatai-form-field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.fi-chatai-form-field.fi-wide, .fi-chatai-form-field.fi-check { grid-column: 1 / -1; }
+.fi-chatai-form-label { font-size: 0.78rem; font-weight: 500; color: var(--chatai-text); }
+.fi-chatai-form-required { color: var(--danger-600, #dc2626); margin-left: 0.15rem; }
+.fi-chatai-form-input { width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--chatai-border); border-radius: 0.5rem; background: var(--chatai-bg); font-size: 0.85rem; color: var(--chatai-text); outline: none; }
+.fi-chatai-form-input:focus { border-color: var(--chatai-accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--chatai-accent) 18%, transparent); }
+.fi-chatai-form-field.fi-error .fi-chatai-form-input { border-color: var(--danger-500, #ef4444); }
+.fi-chatai-form-error { font-size: 0.72rem; color: var(--danger-600, #dc2626); }
+.fi-chatai-form-checkbox { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; }
 .fi-chatai-confirm-result { background: color-mix(in oklab, var(--success-500, #22c55e) 8%, transparent); }
 .fi-chatai-confirm-field { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.85rem; }
 .fi-chatai-confirm-field dt { color: var(--chatai-muted); }

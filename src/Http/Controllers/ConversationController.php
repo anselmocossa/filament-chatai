@@ -103,7 +103,16 @@ class ConversationController
         $withStatus = fn (array $components): array => array_map(function (array $c) use ($actions): array {
             $action = ($c['type'] ?? null) === 'confirm' ? $actions->get($c['action_id'] ?? '') : null;
 
-            return $action ? [...$c, 'status' => $action->status, 'result' => $action->status === ToolAction::DONE ? $action->resultFields() : []] : $c;
+            if (! $action) {
+                return $c;
+            }
+
+            // Show the values it actually ran with (the user may have edited the form).
+            $fields = array_map(fn (array $f): array => isset($f['key']) && array_key_exists($f['key'], (array) $action->arguments)
+                ? [...$f, 'value' => is_bool($action->arguments[$f['key']]) ? $action->arguments[$f['key']] : (string) $action->arguments[$f['key']]]
+                : $f, (array) ($c['fields'] ?? []));
+
+            return [...$c, 'fields' => $fields, 'status' => $action->status, 'result' => $action->status === ToolAction::DONE ? $action->resultFields() : []];
         }, $components);
 
         // What the user saw: questions and answers. Tool plumbing stays server-side.

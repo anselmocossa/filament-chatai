@@ -366,6 +366,10 @@ return [
         'failed' => 'Não foi possível concluir :action: :reason',
         'failed_badge' => 'Falhou',
         'no_permission' => 'esta acção não está disponível para si.',
+        'required' => 'Obrigatório.',
+        'invalid' => 'Verifique este valor.',
+        'check_form' => 'Verifique os campos assinalados.',
+        'save' => 'Guardar',
         'already' => 'Esta acção já foi respondida.',
     ],
 ];

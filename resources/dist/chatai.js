@@ -340,10 +340,18 @@ document.addEventListener('alpine:init', () => {
             const url = config.actionUrl.replace('__action__', encodeURIComponent(component.action_id)).replace(/confirm$/, confirmed ? 'confirm' : 'cancel')
 
             try {
-                const response = await fetch(url, { method: 'POST', headers: this.headers(), credentials: 'same-origin' })
+                const values = confirmed ? Object.fromEntries((component.fields || []).filter((f) => f.key).map((f) => [f.key, f.value])) : undefined
+                const response = await fetch(url, { method: 'POST', headers: this.headers(), credentials: 'same-origin', body: JSON.stringify(values ? { values } : {}) })
                 const data = await response.json().catch(() => ({}))
 
+                if (response.status === 422 && data.errors) {
+                    component.errors = data.errors
+                    return
+                }
+
                 if (!response.ok) throw new Error(data.message || config.i18n.unavailable)
+
+                component.errors = null
 
                 component.status = data.status
                 component.result = data.result ?? []

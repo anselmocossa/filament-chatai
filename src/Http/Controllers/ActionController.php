@@ -5,6 +5,7 @@ namespace Filament\ChatAi\Http\Controllers;
 use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
+use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Ui\ComponentValidator;
 use Filament\Facades\Filament;
@@ -27,6 +28,19 @@ class ActionController
 
         // Resolved again for this user now: permissions are checked at the moment it runs.
         $tool = collect($plugin->resolveTools()->tools($request->user(), $context))->firstWhere('name', $action->tool);
+
+        // The form on the card: what the user filled in or corrected.
+        if ($tool && $request->has('values')) {
+            [$values, $errors] = ActionForm::validate($tool->inputSchema, (array) $request->input('values'));
+
+            if ($errors !== []) {
+                $action->update(['status' => ToolAction::PENDING]);
+
+                return response()->json(['message' => __('chatai::chatai.actions.check_form'), 'errors' => $errors], 422);
+            }
+
+            $action->update(['arguments' => $values]);
+        }
 
         $result = $tool?->call((array) $action->arguments);
         $ok = $result !== null && ! $result->isError();

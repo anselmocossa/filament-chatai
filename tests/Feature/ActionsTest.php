@@ -59,7 +59,7 @@ it('does not run a tool that changes data; it shows a confirmation card instead'
         ->and($action->status)->toBe(ToolAction::PENDING)
         ->and($card['action_id'])->toBe($action->id)
         ->and($card['title'])->toBe('Adjust stock')
-        ->and($card['fields'])->toContain(['label' => 'Units to add', 'value' => '2']);
+        ->and(collect($card['fields'])->firstWhere('key', 'quantity'))->toMatchArray(['label' => 'Units to add', 'type' => 'number', 'value' => '2']);
 });
 
 it('runs the change once when the user confirms and records it in the conversation', function () {
@@ -104,4 +104,19 @@ it('offers only read-only tools when changes are switched off', function () {
     $names = collect(actionPlugin()->resolveTools()->tools($this->user, new ChatAiContext(panelId: 'admin')))->pluck('name');
 
     expect($names)->not->toContain('adjust-stock');
+});
+
+it('runs with the values the user filled in on the form, after checking them', function () {
+    [, $action] = proposeChange();
+
+    $this->postJson(route('filament.admin.chatai.actions.confirm', $action), ['values' => ['product' => '', 'quantity' => 'x']])
+        ->assertStatus(422)
+        ->assertJsonStructure(['errors' => ['quantity']]);
+
+    expect($this->runs)->toBe(0)->and($action->fresh()->status)->toBe(ToolAction::PENDING);
+
+    $this->postJson(route('filament.admin.chatai.actions.confirm', $action), ['values' => ['product' => 'Classic Pillow', 'quantity' => '5']])
+        ->assertOk()->assertJsonPath('status', 'done');
+
+    expect($this->runs)->toBe(1)->and($action->fresh()->arguments)->toBe(['product' => 'Classic Pillow', 'quantity' => 5]);
 });

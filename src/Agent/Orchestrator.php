@@ -12,6 +12,7 @@ use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
+use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
@@ -141,7 +142,7 @@ class Orchestrator
 
                         $result = ToolResult::data([
                             'status' => 'awaiting_confirmation',
-                            'note' => 'Nothing has changed yet. The user sees a confirmation card with these values and Confirm / Cancel buttons. In one sentence, say what will change and ask them to confirm on the card.',
+                            'note' => 'Nothing has changed yet. The user sees a form with these values and can fill in or correct them, then Confirm or Cancel. In one sentence, say what will happen and ask them to check the form and confirm. Do not ask for the missing values in text.',
                         ]);
                     } else {
                         $tool = $available[$call->toolName] ?? null;
@@ -285,13 +286,7 @@ class Orchestrator
             'context' => $context->toArray(),
         ]);
 
-        $properties = (array) ($tool->inputSchema['properties'] ?? []);
-        $fields = [];
-
-        foreach ($arguments as $key => $value) {
-            $label = (string) ($properties[$key]['title'] ?? str((string) $key)->replace(['_', '-'], ' ')->ucfirst());
-            $fields[] = ['label' => $label, 'value' => is_scalar($value) ? (is_bool($value) ? ($value ? 'yes' : 'no') : (string) $value) : (string) json_encode($value, JSON_UNESCAPED_UNICODE)];
-        }
+        $fields = ActionForm::fields($tool->inputSchema, $arguments);
 
         return ['type' => Catalog::CONFIRM, 'action_id' => $action->id, 'title' => $tool->label(), 'fields' => $fields, 'status' => ToolAction::PENDING];
     }

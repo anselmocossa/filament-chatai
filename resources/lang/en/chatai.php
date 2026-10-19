@@ -366,6 +366,10 @@ return [
         'failed' => 'Could not complete :action: :reason',
         'failed_badge' => 'Failed',
         'no_permission' => 'this action is not available to you.',
+        'required' => 'Required.',
+        'invalid' => 'Check this value.',
+        'check_form' => 'Check the highlighted fields.',
+        'save' => 'Save',
         'already' => 'This action was already answered.',
     ],
 ];

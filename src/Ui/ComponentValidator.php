@@ -221,9 +221,21 @@ class ComponentValidator
         $fields = [];
 
         foreach (array_slice((array) ($c['fields'] ?? []), 0, 12) as $field) {
-            if (is_array($field) && $this->scalar($field['label'] ?? null)) {
-                $fields[] = ['label' => $this->str((string) $field['label'], 60), 'value' => $this->str((string) ($field['value'] ?? ''), 300)];
+            if (! is_array($field) || ! $this->scalar($field['label'] ?? null)) {
+                continue;
             }
+
+            $type = in_array($field['type'] ?? null, ['text', 'email', 'number', 'date', 'select', 'checkbox', 'textarea'], true) ? $field['type'] : 'text';
+
+            $fields[] = array_filter([
+                'key' => isset($field['key']) ? $this->str((string) $field['key'], 60) : null,
+                'label' => $this->str((string) $field['label'], 60),
+                'type' => $type,
+                'required' => (bool) ($field['required'] ?? false),
+                'help' => isset($field['help']) ? $this->str((string) $field['help'], 140) : null,
+                'options' => $type === 'select' ? array_values(array_map(fn ($o): array => ['value' => $this->str((string) ($o['value'] ?? ''), 80), 'label' => $this->str((string) ($o['label'] ?? $o['value'] ?? ''), 80)], array_slice(array_filter((array) ($field['options'] ?? []), 'is_array'), 0, 30))) : null,
+                'value' => $type === 'checkbox' ? (bool) ($field['value'] ?? false) : $this->str((string) ($field['value'] ?? ''), 2000),
+            ], fn ($v): bool => $v !== null);
         }
 
         return [
