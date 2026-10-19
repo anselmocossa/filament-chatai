@@ -274,3 +274,15 @@
         </dl>
     </div>
 </template>
+
+{{-- navigate: the place the browser opens when the answer ends --}}
+<template x-if="component.type === 'navigate'">
+    <a class="fi-chatai-file fi-chatai-navigate" :href="component.url" wire:navigate>
+        <span class="fi-chatai-file-icon"><x-filament::icon icon="heroicon-o-arrow-top-right-on-square" class="fi-chatai-file-svg" /></span>
+        <span class="fi-chatai-file-text">
+            <span class="fi-chatai-file-meta">{{ __('chatai::chatai.screen.opening') }}</span>
+            <span class="fi-chatai-file-title" x-text="component.label"></span>
+        </span>
+        <span class="fi-chatai-file-action">›</span>
+    </a>
+</template>

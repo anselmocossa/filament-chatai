@@ -65,6 +65,7 @@ return [
     'screen' => [
         'read' => true,
         'fill' => true,
+        'navigate' => true, // open pages and records of the panel for the user
     ],
 
     // Tools that change data: the assistant proposes, the user confirms on a card, then it runs.

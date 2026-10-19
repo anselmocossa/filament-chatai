@@ -79,6 +79,8 @@ class ChatAiPlugin implements Plugin
 
     protected ?bool $fillForms = null;
 
+    protected ?bool $navigate = null;
+
     protected string|Closure|null $adminNavigationGroup = null;
 
     public static function make(): static
@@ -187,7 +189,11 @@ class ChatAiPlugin implements Plugin
             'userVoice' => $serverVoice && auth()->check() ? Preference::voiceFor(auth()->user()) : null,
             'sampleUrl' => $panel->route('chatai.speech.sample'),
             'preferencesUrl' => $panel->route('chatai.preferences.update'),
-            'screen' => ['read' => (bool) config('chatai.screen.read', true), 'fill' => (bool) config('chatai.screen.read', true) && (bool) config('chatai.screen.fill', true)],
+            'screen' => [
+                'read' => (bool) config('chatai.screen.read', true),
+                'fill' => (bool) config('chatai.screen.read', true) && (bool) config('chatai.screen.fill', true),
+                'navigate' => (bool) config('chatai.screen.navigate', true),
+            ],
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
@@ -208,6 +214,7 @@ class ChatAiPlugin implements Plugin
                 'fileTooBig' => __('chatai::chatai.file_too_big'),
                 'tooManyFiles' => __('chatai::chatai.too_many_files'),
                 'filled' => __('chatai::chatai.screen.filled'),
+                'opening' => __('chatai::chatai.screen.opening'),
                 'confirmDeleteGroup' => __('chatai::chatai.history.confirm_delete_group'),
                 'newGroupName' => __('chatai::chatai.history.new_group_name'),
                 'pinned' => __('chatai::chatai.history.pinned'),
@@ -247,7 +254,7 @@ class ChatAiPlugin implements Plugin
         }
 
         // Code defaults for the screen; the settings page still wins.
-        foreach (['read' => $this->readScreen, 'fill' => $this->fillForms] as $key => $value) {
+        foreach (['read' => $this->readScreen, 'fill' => $this->fillForms, 'navigate' => $this->navigate] as $key => $value) {
             if ($value !== null) {
                 config(["chatai.screen.{$key}" => $value]);
                 ChatAiSettings::flush();
@@ -402,6 +409,17 @@ class ChatAiPlugin implements Plugin
     public function fillForms(bool $condition = true): static
     {
         $this->fillForms = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Let the assistant open pages and records of the panel for the user
+     * ("take me to the orders", "open product X"). Permissions still apply.
+     */
+    public function navigate(bool $condition = true): static
+    {
+        $this->navigate = $condition;
 
         return $this;
     }

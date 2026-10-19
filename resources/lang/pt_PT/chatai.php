@@ -73,6 +73,8 @@ return [
         'screen_read_help' => 'Com cada pergunta, envia o que o utilizador está a ver: o título da página, os campos do formulário e os seus valores, e as linhas visíveis das tabelas. «Isto» passa a ser o que está no ecrã.',
         'screen_fill' => 'Preencher formulários no ecrã',
         'screen_fill_help' => 'O assistente pode escrever valores no formulário aberto. Nunca grava: o utilizador revê e carrega em Guardar.',
+        'screen_navigate' => 'Abrir páginas e registos',
+        'screen_navigate_help' => 'O assistente pode levar o utilizador a uma página do menu, a uma lista, à criação ou a um registo. Só o que o utilizador pode abrir.',
         'actions_enabled' => 'Permitir tools que alteram dados',
         'actions_enabled_help' => 'Cada alteração mostra primeiro um cartão de confirmação e só corre quando o utilizador confirma. Desligado: o assistente só consulta.',
         'permissions_enabled' => 'Cada tool exige permissão',
@@ -454,6 +456,7 @@ return [
         'already' => 'Esta acção já foi respondida.',
     ],
     'screen' => [
+        'opening' => 'A abrir',
         'filled' => 'Preenchido no formulário — reveja e carregue em Guardar',
     ],
 ];

@@ -22,6 +22,9 @@ final class Catalog
     /** What the assistant wrote into the form on screen (still to be saved by the user). */
     public const FILLED = 'filled';
 
+    /** A place of the panel the browser opens when the answer ends. */
+    public const NAVIGATE = 'navigate';
+
     public const MAX_BATCH = 500;
 
     public const MAX_KPIS = 4;

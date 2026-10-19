@@ -73,6 +73,8 @@ return [
         'screen_read_help' => 'With each question, send what the user is looking at: the page heading, the form fields and their values, and the visible table rows. "This" then means what is on screen.',
         'screen_fill' => 'Fill in forms on screen',
         'screen_fill_help' => 'The assistant can write values into the form that is open. It never saves: the user reviews and presses Save.',
+        'screen_navigate' => 'Open pages and records',
+        'screen_navigate_help' => 'The assistant can take the user to a menu page, a list, a create page or one record. Only what the user is allowed to open.',
         'actions_enabled' => 'Allow tools that change data',
         'actions_enabled_help' => 'Every change shows the user a confirmation card first and runs only when they confirm. Off: the assistant can only read.',
         'permissions_enabled' => 'Each tool requires a permission',
@@ -454,6 +456,7 @@ return [
         'already' => 'This action was already answered.',
     ],
     'screen' => [
+        'opening' => 'Opening',
         'filled' => 'Filled in on the form — review and press Save',
     ],
 ];

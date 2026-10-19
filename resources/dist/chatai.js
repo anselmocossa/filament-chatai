@@ -275,6 +275,7 @@ document.addEventListener('alpine:init', () => {
         status: null,
         notice: null,
         conversations: [],
+        pendingNavigation: null,
         groups: [],
         collapsedGroups: readCollapsed(),
         editingId: null,
@@ -461,6 +462,19 @@ document.addEventListener('alpine:init', () => {
             } finally {
                 component.busy = false
             }
+        },
+
+        // ---- taking the user somewhere ----------------------------------
+
+        // The answer is read first; then the page changes and the chat reopens there, same conversation.
+        goTo(url) {
+            this.pendingNavigation = null
+            if (this.conversationId) storage.set(config.storageKey, this.conversationId)
+            try { sessionStorage.setItem('chatai-open', '1') } catch {}
+
+            setTimeout(() => {
+                window.Livewire?.navigate ? window.Livewire.navigate(url) : (window.location.href = url)
+            }, 900)
         },
 
         // ---- one approval for a list of changes ----------------------------
@@ -791,6 +805,7 @@ document.addEventListener('alpine:init', () => {
                 case 'component':
                     target.tool = null
                     target.components.push(data.component)
+                    if (data.component.type === 'navigate' && config.screen?.navigate) this.pendingNavigation = data.component.url
                     this.scrollToEnd()
                     break
                 case 'done':
@@ -799,6 +814,7 @@ document.addEventListener('alpine:init', () => {
                     target.id = data.message_id
                     if (data.title) this.title = data.title
                     if (config.withSidebar) this.loadConversations()
+                    if (this.pendingNavigation) this.goTo(this.pendingNavigation)
                     break
                 case 'error':
                     target.tool = null

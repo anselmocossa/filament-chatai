@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-167%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-170%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -139,16 +139,18 @@ They always run through the resource's own query (scopes, tenancy) and its permi
 
 The demo's nine code tools were rebuilt this way and answered the same questions with the same figures.
 
-## The screen: what the user sees, and filling in its form
+## The screen: what the user sees, filling in its form, opening pages
 
 - **Read the screen** — with each question the chat sends what the user is looking at: the page heading and breadcrumbs, every form field with its current value (and the shown name of a choice, not just its id) and the visible table rows. "What am I looking at?" or "is this price right?" are answered from the page itself.
 - **Fill in forms on screen** — on an edit or create page the assistant can write values into the open form (`fill_form`). The fields it changed are highlighted and listed in the chat. **It never saves**: the user reviews and presses Save.
-- Both are switches in **Settings → Assistant**, or in code:
+- **Open pages and records** — "take me to the orders", "open product X to edit", "I want to create a customer": the assistant opens a menu page, a resource's list or create page, or one record (view / edit). Only places of this panel, only what the user may open (`canViewAny`, `canCreate`, `canView`, `canEdit`); when several records match it asks which one. The floating chat stays open on the new page, same conversation.
+- All three are switches in **Settings → Assistant**, or in code:
 
 ```php
 ChatAiPlugin::make()
     ->readScreen()        // false: only the URL and the record id are sent
-    ->fillForms(false);   // read the screen, but never touch the form
+    ->fillForms(false)    // read the screen, but never touch the form
+    ->navigate(false);    // never change the page
 ```
 
 The server applies the same switches: with reading off, a snapshot sent by the browser is ignored; only fields that are on screen can be filled.

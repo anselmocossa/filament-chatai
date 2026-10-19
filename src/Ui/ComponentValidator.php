@@ -24,6 +24,15 @@ class ComponentValidator
             return $this->confirm($component);
         }
 
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::NAVIGATE) {
+            $url = (string) ($component['url'] ?? '');
+
+            // Only places of this application.
+            return str_starts_with($url, url('/')) || (str_starts_with($url, '/') && ! str_starts_with($url, '//'))
+                ? ['type' => Catalog::NAVIGATE, 'url' => $url, 'label' => $this->str((string) ($component['label'] ?? ''), 120)]
+                : null;
+        }
+
         if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::FILLED) {
             $fields = array_values(array_filter(array_map(fn ($f) => is_array($f) && $this->scalar($f['path'] ?? null) ? [
                 'path' => $this->str((string) $f['path'], 120),

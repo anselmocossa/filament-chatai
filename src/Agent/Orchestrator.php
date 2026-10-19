@@ -18,6 +18,7 @@ use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
 use Filament\ChatAi\Tools\FillFormTool;
+use Filament\ChatAi\Tools\NavigateTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\ChatAi\Ui\Catalog;
@@ -66,6 +67,8 @@ class Orchestrator
             ShowUiTool::make(),
             DocumentTool::make($conversation, $user),
             ...(FillFormTool::available($context) ? [FillFormTool::make($context)] : []),
+            // Not in the tool editor's test chat, which tries one tool on its own.
+            ...(NavigateTool::available() && ! str_ends_with($conversation->panel_id, ':playground') ? [NavigateTool::make()] : []),
         ])->keyBy('name')->all();
         $definitions = array_values(array_map(fn (ChatAiTool $t) => $t->toFunctionDefinition(), $available));
 

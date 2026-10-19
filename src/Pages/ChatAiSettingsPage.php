@@ -103,6 +103,7 @@ class ChatAiSettingsPage extends Page
                         Toggle::make('screen.read')->label($t('screen_read'))->helperText($t('screen_read_help'))->live(),
                         Toggle::make('screen.fill')->label($t('screen_fill'))->helperText($t('screen_fill_help'))
                             ->visible(fn (Get $get): bool => (bool) $get('screen.read')),
+                        Toggle::make('screen.navigate')->label($t('screen_navigate'))->helperText($t('screen_navigate_help')),
                         TagsInput::make('http_tools.allowed_hosts')->label($t('allowed_hosts'))->helperText($t('allowed_hosts_help'))->placeholder('api.minhaloja.co.mz'),
                     ]),
 
