@@ -43,6 +43,10 @@
                 </span>
                 <span class="fi-chatai-header-title" x-text="title || @js($label)"></span>
 
+                <button type="button" class="fi-chatai-header-btn" x-on:click="newConversation()" aria-label="{{ __('chatai::chatai.new_conversation') }}" title="{{ __('chatai::chatai.new_conversation') }}">
+                    <x-filament::icon icon="heroicon-m-pencil-square" class="fi-chatai-header-btn-icon" />
+                </button>
+
                 <x-filament::dropdown placement="bottom-end" width="xs">
                     <x-slot name="trigger">
                         <button type="button" class="fi-chatai-header-btn" aria-label="{{ __('chatai::chatai.menu') }}">
@@ -51,9 +55,6 @@
                     </x-slot>
 
                     <x-filament::dropdown.list>
-                        <x-filament::dropdown.list.item icon="heroicon-m-plus" x-on:click="newConversation(); close()">
-                            {{ __('chatai::chatai.new_conversation') }}
-                        </x-filament::dropdown.list.item>
                         <x-filament::dropdown.list.item icon="heroicon-m-speaker-wave" x-show="config.voiceChoice" x-on:click="openVoices(); close()">
                             {{ __('chatai::chatai.voice_menu') }}
                         </x-filament::dropdown.list.item>

@@ -173,9 +173,6 @@
                     <button type="button" class="fi-chatai-tool" x-on:click="$refs.file.click()" title="{{ __('chatai::chatai.attach') }}" aria-label="{{ __('chatai::chatai.attach') }}">
                         <x-filament::icon icon="heroicon-m-paper-clip" class="fi-chatai-tool-icon" />
                     </button>
-                    <button type="button" class="fi-chatai-tool" x-on:click="newConversation()" title="{{ __('chatai::chatai.new_conversation') }}" aria-label="{{ __('chatai::chatai.new_conversation') }}">
-                        <x-filament::icon icon="heroicon-m-plus" class="fi-chatai-tool-icon" />
-                    </button>
                     <button type="button" class="fi-chatai-tool" x-show="config.voiceChoice" x-cloak x-on:click="openVoices()" title="{{ __('chatai::chatai.voice_menu') }}" aria-label="{{ __('chatai::chatai.voice_menu') }}">
                         <x-filament::icon icon="heroicon-m-speaker-wave" class="fi-chatai-tool-icon" />
                     </button>
