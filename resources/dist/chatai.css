@@ -57,6 +57,33 @@
 }
 
 .fi-chatai-launcher:hover { transform: translateY(-2px) scale(1.03); }
+
+/* The assistant at work, minimised on the chat button (like ChatGPT's agent bar). */
+.fi-chatai-agent {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: min(24rem, calc(100vw - 2rem));
+    padding: 0.4rem 0.45rem 0.4rem 0.4rem;
+    border-radius: 9999px;
+    background: var(--chatai-bg);
+    border: 1px solid var(--chatai-border);
+    box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.28), 0 2px 6px rgb(0 0 0 / 0.08);
+}
+.fi-chatai-agent-main { position: relative; display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1; padding-right: 0.5rem; text-align: left; overflow: hidden; border-radius: 9999px; }
+.fi-chatai-agent-avatar { position: relative; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; flex-shrink: 0; border-radius: 9999px; background: var(--chatai-accent); color: #fff; }
+.fi-chatai-agent.fi-done .fi-chatai-agent-avatar { background: var(--success-600, #16a34a); }
+.fi-chatai-agent-icon { width: 1.25rem; height: 1.25rem; border-radius: 9999px; }
+.fi-chatai-agent-ring { position: absolute; inset: -3px; border-radius: 9999px; border: 2.5px solid transparent; border-top-color: var(--chatai-accent); border-right-color: color-mix(in oklab, var(--chatai-accent) 40%, transparent); animation: fi-chatai-spin 0.9s linear infinite; }
+@keyframes fi-chatai-spin { to { transform: rotate(360deg); } }
+.fi-chatai-agent-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.fi-chatai-agent-title { font-size: 0.84rem; font-weight: 600; color: var(--chatai-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-chatai-agent-detail { font-size: 0.75rem; color: var(--chatai-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-chatai-agent-progress { position: absolute; left: 3.25rem; right: 0.75rem; bottom: -0.15rem; height: 2px; border-radius: 2px; background: var(--chatai-border); overflow: hidden; }
+.fi-chatai-agent-progress span { display: block; height: 100%; background: var(--chatai-accent); transition: width 0.2s; }
+.fi-chatai-agent-btn { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; flex-shrink: 0; border-radius: 9999px; color: var(--chatai-muted); }
+.fi-chatai-agent-btn:hover { background: var(--chatai-surface); color: var(--chatai-text); }
+.fi-chatai-agent-btn-icon { width: 1.05rem; height: 1.05rem; }
 .fi-chatai-launcher:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
 .fi-chatai-launcher-icon { width: 1.6rem; height: 1.6rem; }
 

@@ -456,6 +456,12 @@ return [
         'already' => 'This action was already answered.',
     ],
     'screen' => [
+        'filling' => 'Filling in the form',
+        'filled_short' => 'Form filled in',
+        'stopped' => 'Stopped',
+        'review' => ':count fields — review and save',
+        'expand' => 'Open the chat',
+        'stop' => 'Stop',
         'opening' => 'Opening',
         'filled' => 'Filled in on the form — review and press Save',
     ],

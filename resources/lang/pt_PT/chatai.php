@@ -456,6 +456,12 @@ return [
         'already' => 'Esta acção já foi respondida.',
     ],
     'screen' => [
+        'filling' => 'A preencher o formulário',
+        'filled_short' => 'Formulário preenchido',
+        'stopped' => 'Parado',
+        'review' => ':count campos — reveja e guarde',
+        'expand' => 'Abrir o chat',
+        'stop' => 'Parar',
         'opening' => 'A abrir',
         'filled' => 'Preenchido no formulário — reveja e carregue em Guardar',
     ],

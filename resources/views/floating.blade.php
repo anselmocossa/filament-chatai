@@ -5,16 +5,67 @@
         panelOpen: (() => { try { return sessionStorage.getItem('chatai-open') === '1' } catch { return false } })(),
         togglePanel(value) {
             this.panelOpen = value
+            if (value) this.agent = null
             try { sessionStorage.setItem('chatai-open', value ? '1' : '0') } catch {}
             if (value) this.$nextTick(() => this.$root.querySelector('.fi-chatai-input')?.focus())
         },
+        // While the assistant works on the page (filling a form) the chat shrinks
+        // to a small bar on the chat button, so the page stays in view.
+        agent: null,
+        onAgent(detail) {
+            if (detail.state === 'start') {
+                this.agent = { state: 'working', done: 0, total: detail.total, detail: '' }
+                this.panelOpen = false
+            } else if (this.agent && detail.state === 'progress') {
+                Object.assign(this.agent, { done: detail.done, detail: detail.label })
+            } else if (this.agent && detail.state === 'done') {
+                Object.assign(this.agent, { state: detail.stopped ? 'stopped' : 'done', done: detail.done, detail: '' })
+            }
+        },
+        stopAgent() {
+            window.dispatchEvent(new CustomEvent('chatai-agent-stop'))
+        },
     }"
     x-on:keydown.escape.window="panelOpen && togglePanel(false)"
+    x-on:chatai-agent.window="onAgent($event.detail)"
 >
+    {{-- The minimised assistant at work, in place of the chat button --}}
+    <div class="fi-chatai-agent" x-show="agent && ! panelOpen" x-cloak role="status" aria-live="polite"
+         :class="{ 'fi-done': agent?.state !== 'working' }"
+         x-transition:enter="fi-chatai-enter" x-transition:enter-start="fi-chatai-enter-start" x-transition:enter-end="fi-chatai-enter-end">
+        <button type="button" class="fi-chatai-agent-main" x-on:click="togglePanel(true)" aria-label="{{ __('chatai::chatai.screen.expand') }}">
+            <span class="fi-chatai-agent-avatar">
+                <span class="fi-chatai-agent-ring" x-show="agent?.state === 'working'"></span>
+                <template x-if="agent?.state === 'working'">
+                    @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-agent-icon'])
+                </template>
+                <template x-if="agent?.state !== 'working'">
+                    <x-filament::icon icon="heroicon-m-check" class="fi-chatai-agent-icon" />
+                </template>
+            </span>
+            <span class="fi-chatai-agent-text">
+                <span class="fi-chatai-agent-title"
+                      x-text="agent?.state === 'working' ? @js(__('chatai::chatai.screen.filling')) : agent?.state === 'stopped' ? @js(__('chatai::chatai.screen.stopped')) : @js(__('chatai::chatai.screen.filled_short'))"></span>
+                <span class="fi-chatai-agent-detail"
+                      x-text="agent?.state === 'working' ? (agent.detail ? agent.detail + ' · ' : '') + agent.done + '/' + agent.total : @js(__('chatai::chatai.screen.review')).replace(':count', agent?.done ?? 0)"></span>
+            </span>
+            <span class="fi-chatai-agent-progress" x-show="agent?.state === 'working'"><span :style="'width:' + (agent ? Math.round(agent.done / Math.max(1, agent.total) * 100) : 0) + '%'"></span></span>
+        </button>
+        <button type="button" class="fi-chatai-agent-btn" x-show="agent?.state === 'working'" x-on:click="stopAgent()" title="{{ __('chatai::chatai.screen.stop') }}" aria-label="{{ __('chatai::chatai.screen.stop') }}">
+            <x-filament::icon icon="heroicon-s-stop" class="fi-chatai-agent-btn-icon" />
+        </button>
+        <button type="button" class="fi-chatai-agent-btn" x-on:click="togglePanel(true)" title="{{ __('chatai::chatai.screen.expand') }}" aria-label="{{ __('chatai::chatai.screen.expand') }}">
+            <x-filament::icon icon="heroicon-m-arrows-pointing-out" class="fi-chatai-agent-btn-icon" />
+        </button>
+        <button type="button" class="fi-chatai-agent-btn" x-show="agent?.state !== 'working'" x-on:click="agent = null" title="{{ __('chatai::chatai.close') }}" aria-label="{{ __('chatai::chatai.close') }}">
+            <x-filament::icon icon="heroicon-m-x-mark" class="fi-chatai-agent-btn-icon" />
+        </button>
+    </div>
+
     <button
         type="button"
         class="fi-chatai-launcher"
-        x-show="! panelOpen"
+        x-show="! panelOpen && ! agent"
         x-on:click="togglePanel(true)"
         aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
     >

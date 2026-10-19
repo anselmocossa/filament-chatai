@@ -246,11 +246,24 @@ document.addEventListener('alpine:init', () => {
         }
     }
 
-    // Writes the assistant's values into the open form and marks the fields; the user saves.
-    const fillScreen = (fields) => {
+    const agentEvent = (detail) => window.dispatchEvent(new CustomEvent('chatai-agent', { detail }))
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+    // Writes the assistant's values into the open form one field at a time, so the
+    // user can follow it (the chat shrinks to a bar meanwhile). The user saves.
+    const fillScreen = async (fields, labels = {}) => {
         let filled = 0
+        let stopped = false
+        const stop = () => { stopped = true }
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+        window.addEventListener('chatai-agent-stop', stop)
+        agentEvent({ state: 'start', total: fields.length })
+        await pause(reduced ? 0 : 350)
 
         for (const { path, value } of fields) {
+            if (stopped) break
+
             for (const wrapper of document.querySelectorAll('.fi-main .fi-fo-field')) {
                 const found = !wrapper.closest(CHAT) && statePath(wrapper)
                 if (!found || found.path !== path) continue
@@ -258,14 +271,20 @@ document.addEventListener('alpine:init', () => {
                 const wire = window.Livewire?.find(found.el.closest('[wire\\:id]')?.getAttribute('wire:id'))
                 if (!wire) continue
 
+                if (wrapper.offsetParent) wrapper.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
                 wire.set(path, value, false)
                 wrapper.classList.add('fi-chatai-filled')
-                setTimeout(() => wrapper.classList.remove('fi-chatai-filled'), 6000)
-                if (!filled) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                setTimeout(() => wrapper.classList.remove('fi-chatai-filled'), 8000)
                 filled++
                 break
             }
+
+            agentEvent({ state: 'progress', done: filled, label: labels[path] || '' })
+            await pause(reduced ? 0 : 220)
         }
+
+        window.removeEventListener('chatai-agent-stop', stop)
+        agentEvent({ state: 'done', done: filled, stopped })
 
         return filled
     }
@@ -802,7 +821,7 @@ document.addEventListener('alpine:init', () => {
         apply(type, data, target) {
             switch (type) {
                 case 'fill':
-                    if (config.screen?.fill) fillScreen(data.fields || [])
+                    if (config.screen?.fill) fillScreen(data.fields || [], Object.fromEntries((data.fields || []).map((f) => [f.path, f.label])))
                     break
                 case 'step':
                     // After tools the model writes the real answer; what it said before was narration.

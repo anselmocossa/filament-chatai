@@ -9,6 +9,7 @@ use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Testing\FakeLlmClient;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\ChatAi\Tools\ArrayToolProvider;
+use Filament\ChatAi\Tools\FillFormTool;
 
 beforeEach(fn () => ChatAiSettings::flush());
 
@@ -106,4 +107,10 @@ it('fills a wizard: fields of several steps in one call, lists for checkbox list
 
     expect(collect($fill->data['fields'])->pluck('value', 'path')->all())->toBe(['data.name' => 'Ana Muianga', 'data.employment_type' => 'full_time', 'data.skills' => ['PHP', 'Laravel']])
         ->and(collect($card['fields'])->firstWhere('path', 'data.skills')['value'])->toBe('PHP, Laravel');
+});
+
+it('turns 1 or "yes" into true for on/off fields', function () {
+    $context = ChatAiContext::fromArray('admin', ['screen' => ['fields' => [['path' => 'data.is_active', 'label' => 'Active', 'type' => 'toggle']]]]);
+
+    expect(FillFormTool::fields($context, ['fields' => [['path' => 'data.is_active', 'value' => 1]]])[0]['value'])->toBeTrue();
 });

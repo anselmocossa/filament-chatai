@@ -69,6 +69,11 @@ final class FillFormTool
                 $value = array_values(array_map('strval', array_filter($value, 'is_scalar')));
             }
 
+            // On/off fields get a real true/false (models sometimes send 1 or "yes").
+            if (isset($onScreen[$path]) && in_array($onScreen[$path]['type'] ?? null, ['toggle', 'checkbox'], true) && is_scalar($value)) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            }
+
             if (isset($onScreen[$path]) && (is_scalar($value) || is_array($value))) {
                 $fields[$path] = array_filter([
                     'path' => $path,
