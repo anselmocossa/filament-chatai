@@ -9,14 +9,18 @@ use Filament\ChatAi\Llm\LlmConfig;
 use Filament\ChatAi\Llm\LlmException;
 use Filament\ChatAi\Llm\StreamChunk;
 use Filament\ChatAi\Models\Conversation;
+use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
+use Filament\ChatAi\Tools\DocumentTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\ChatAi\Ui\ComponentValidator;
 use Generator;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -42,12 +46,17 @@ class Orchestrator
         LlmConfig $config,
         string $assistantName = 'ChatAI',
         ?string $systemPrompt = null,
+        iterable $attachments = [],
     ): Generator {
         $startedAt = hrtime(true);
         $userMessage = $conversation->addMessage(Message::ROLE_USER, $question, ['context' => $context->toArray()]);
 
+        foreach ($attachments as $file) {
+            $file->update(['message_id' => $userMessage->id]);
+        }
+
         /** @var array<string, ChatAiTool> $available */
-        $available = collect([...$tools->tools($user, $context), ShowUiTool::make()])->keyBy('name')->all();
+        $available = collect([...$tools->tools($user, $context), ShowUiTool::make(), DocumentTool::make($conversation, $user)])->keyBy('name')->all();
         $definitions = array_values(array_map(fn (ChatAiTool $t) => $t->toFunctionDefinition(), $available));
 
         $messages = [
@@ -126,7 +135,7 @@ class Orchestrator
 
                         yield new AgentEvent(AgentEvent::TOOL_END, ['name' => $call->toolName, 'ok' => ! $result->isError()]);
 
-                        if ($result->component !== null && ($component = $this->validator->validate($result->component)) !== null) {
+                        if ($result->component !== null && ($component = $this->validator->validate($result->component, fromServer: true)) !== null) {
                             $components[] = $component;
                             yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
                         }
@@ -164,10 +173,14 @@ class Orchestrator
      */
     protected function history(Conversation $conversation, Message $current): array
     {
+        // Files ride with the question they were attached to (prompt caching keeps re-sends cheap).
+        $files = ConversationFile::query()->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
+            ->whereNotNull('message_id')->orderBy('id')->get()->groupBy('message_id');
+
         return $conversation->messages()
             ->where('status', '!=', Message::STATUS_ERROR)
             ->get()
-            ->map(fn (Message $m): array => match ($m->role) {
+            ->map(fn (Message $m): array => $this->withFiles(match ($m->role) {
                 Message::ROLE_TOOL => ['role' => 'tool', 'tool_call_id' => $m->tool_call_id, 'content' => (string) $m->content],
                 Message::ROLE_ASSISTANT => array_filter([
                     'role' => 'assistant',
@@ -177,8 +190,25 @@ class Orchestrator
                 default => ['role' => 'user', 'content' => $m->is($current)
                     ? (string) $m->content
                     : $this->withScreen($m)],
-            })
+            }, $files->get($m->id)))
             ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     * @param  Collection<int, ConversationFile>|null  $files
+     * @return array<string, mixed>
+     */
+    protected function withFiles(array $message, ?Collection $files): array
+    {
+        if ($message['role'] !== 'user' || $files === null || $files->isEmpty()) {
+            return $message;
+        }
+
+        return [...$message, 'content' => [
+            ['type' => 'text', 'text' => (string) $message['content']],
+            ...$files->flatMap(fn (ConversationFile $file): array => FileParts::for($file))->all(),
+        ]];
     }
 
     /**

@@ -29,6 +29,7 @@
     },
     "require-dev": {
         "anthropic-ai/sdk": "^0.59.0",
+        "dompdf/dompdf": "^3.0",
         "laravel/mcp": "^0.6|^0.7",
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^7.0|^8.0",

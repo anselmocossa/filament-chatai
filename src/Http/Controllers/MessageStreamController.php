@@ -6,9 +6,11 @@ use Filament\ChatAi\Agent\AgentEvent;
 use Filament\ChatAi\Agent\Orchestrator;
 use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Llm\LlmClient;
+use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\Budget;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Support\UrlContext;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +29,8 @@ class MessageStreamController
             'mentions' => ['nullable', 'array', 'max:10'],
             'mentions.*' => ['string', 'max:64'],
             'skill' => ['nullable', 'string', 'max:64'],
+            'attachments' => ['nullable', 'array', 'max:'.(int) config('chatai.files.max_per_message', 5)],
+            'attachments.*' => ['string', 'max:26'],
         ]);
 
         if ($limited = static::rateLimit($request)) {
@@ -50,7 +54,14 @@ class MessageStreamController
             user: $user,
             config: $plugin->resolveLlmConfig(),
             assistantName: $plugin->getLabel(),
-            systemPrompt: trim($plugin->composeSystemPrompt()."\n\n".$plugin->turnHints($user, $context, $validated['mentions'] ?? [], $validated['skill'] ?? null)),
+            attachments: ConversationFile::query()
+                ->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
+                ->whereNull('message_id')->whereIn('id', $validated['attachments'] ?? [])->get(),
+            systemPrompt: trim(implode("\n\n", array_filter([
+                $plugin->composeSystemPrompt(),
+                $plugin->turnHints($user, $context, $validated['mentions'] ?? [], $validated['skill'] ?? null),
+                UrlContext::hint($validated['message']),
+            ]))),
         );
 
         return static::sse($events);

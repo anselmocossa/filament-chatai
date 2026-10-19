@@ -5,6 +5,7 @@ namespace Filament\ChatAi;
 use Closure;
 use Filament\ChatAi\Contracts\ToolProvider;
 use Filament\ChatAi\Http\Controllers\ConversationController;
+use Filament\ChatAi\Http\Controllers\FileController;
 use Filament\ChatAi\Http\Controllers\MessageStreamController;
 use Filament\ChatAi\Http\Controllers\PlaygroundController;
 use Filament\ChatAi\Http\Controllers\PreferenceController;
@@ -70,6 +71,8 @@ class ChatAiPlugin implements Plugin
 
     protected ?Closure $userRoles = null;
 
+    protected ?string $filesDisk = null;
+
     protected string|Closure|null $adminNavigationGroup = null;
 
     public static function make(): static
@@ -106,6 +109,8 @@ class ChatAiPlugin implements Plugin
                     Route::post('transcriptions', [SpeechController::class, 'transcribe'])->name('speech.transcribe');
                     Route::post('speech/sample', [SpeechController::class, 'sample'])->name('speech.sample');
                     Route::post('preferences', [PreferenceController::class, 'update'])->name('preferences.update');
+                    Route::post('conversations/{conversation}/files', [FileController::class, 'store'])->name('files.store');
+                    Route::get('files/{file}', [FileController::class, 'download'])->name('files.download');
                     Route::post('playground', [PlaygroundController::class, 'store'])->name('playground.store');
                     Route::get('playground/{conversation}', [ConversationController::class, 'show'])->name('playground.show');
                     Route::post('playground/{conversation}/messages', [PlaygroundController::class, 'message'])->name('playground.messages');
@@ -169,6 +174,12 @@ class ChatAiPlugin implements Plugin
             'userVoice' => $serverVoice && auth()->check() ? Preference::voiceFor(auth()->user()) : null,
             'sampleUrl' => $panel->route('chatai.speech.sample'),
             'preferencesUrl' => $panel->route('chatai.preferences.update'),
+            'filesUrl' => $panel->route('chatai.files.store', ['conversation' => '__conversation__']),
+            'files' => [
+                'accept' => '.'.str_replace(',', ',.', FileController::ACCEPTED),
+                'maxKb' => (int) config('chatai.files.max_kb', 10240),
+                'max' => (int) config('chatai.files.max_per_message', 5),
+            ],
             'i18n' => [
                 'unavailable' => __('chatai::chatai.unavailable'),
                 'confirmDelete' => __('chatai::chatai.confirm_delete'),
@@ -177,6 +188,8 @@ class ChatAiPlugin implements Plugin
                 'exportedOn' => __('chatai::chatai.exported_on'),
                 'speechUnavailable' => __('chatai::chatai.speech_unavailable'),
                 'preparing' => __('chatai::chatai.preparing'),
+                'fileTooBig' => __('chatai::chatai.file_too_big'),
+                'tooManyFiles' => __('chatai::chatai.too_many_files'),
                 'voiceSample' => __('chatai::chatai.voice_sample', [], str_replace('-', '_', (string) ($this->getSpeechLanguage() ?? app()->getLocale()))),
             ],
         ];
@@ -201,6 +214,12 @@ class ChatAiPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
+        // Code default for the files disk; a disk chosen on the settings page still wins.
+        if ($this->filesDisk !== null) {
+            config(['chatai.files.disk' => $this->filesDisk]);
+            ChatAiSettings::flush();
+        }
+
         // Lists the chat/tool permissions in Shield's roles editor (and creates them) when enabled.
         ChatAiPermissions::register($this);
     }
@@ -319,6 +338,16 @@ class ChatAiPlugin implements Plugin
     public function getAdminNavigationGroup(): ?string
     {
         return value($this->adminNavigationGroup) ?? $this->getLabel();
+    }
+
+    /**
+     * Where attachments and generated documents are kept: any filesystem disk (local, s3…).
+     */
+    public function filesDisk(?string $disk): static
+    {
+        $this->filesDisk = $disk;
+
+        return $this;
     }
 
     public function floatingWidget(bool $condition = true): static

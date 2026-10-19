@@ -63,6 +63,13 @@ who may use what. A user without a tool's permission does not get that tool, so 
 has no access to that data. A tool can require an existing permission instead (e.g. `ViewAny:Order`).
 Resource tools also follow the resource's policies, and Shield's super admin always passes.
 
+## Files
+
+- **Attach** with the paperclip, by dropping files on the box or pasting an image. Images and PDF go to the model as they are; text, CSV, JSON and Excel go as text.
+- **Links** to records of this panel pasted in the question are recognised: the assistant is told which resource and record they point to.
+- **Documents**: the `create_document` tool makes CSV, Excel, Markdown, HTML, text or PDF (PDF needs `dompdf/dompdf`). The user gets a download card; only the conversation owner can download.
+- Where files are kept (`local`, `s3`, any disk in `config/filesystems.php`), the size limit and files per message are set in **Settings → Files**, or with `->filesDisk('s3')` on the plugin.
+
 ## Optional: `.env` defaults
 
 Handy on servers or CI. A provider saved on screen without a key uses these; values saved on screen win.

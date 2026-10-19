@@ -11,8 +11,15 @@ class ComponentValidator
     /**
      * @return array<string, mixed>|null
      */
-    public function validate(mixed $component): ?array
+    /**
+     * @param  bool  $fromServer  tool results may carry a file card; show_ui (the model) may not
+     */
+    public function validate(mixed $component, bool $fromServer = false): ?array
     {
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::FILE) {
+            return $this->file($component);
+        }
+
         if (! is_array($component) || ! in_array($component['type'] ?? null, Catalog::TYPES, true)) {
             return null;
         }
@@ -179,6 +186,28 @@ class ComponentValidator
      * @param  array<string, mixed>  $c
      * @return array<string, mixed>|null
      */
+    /**
+     * @param  array<string, mixed>  $c
+     * @return array<string, mixed>|null
+     */
+    protected function file(array $c): ?array
+    {
+        $url = (string) ($c['url'] ?? '');
+
+        if (! $this->scalar($c['name'] ?? null) || ! (str_starts_with($url, '/') || str_starts_with($url, url('/')))) {
+            return null;
+        }
+
+        return [
+            'type' => Catalog::FILE,
+            'title' => $this->title($c),
+            'name' => $this->str($c['name'], 180),
+            'format' => $this->str((string) ($c['format'] ?? ''), 10),
+            'size' => (int) ($c['size'] ?? 0),
+            'url' => $url,
+        ];
+    }
+
     protected function suggestions(array $c): ?array
     {
         $items = [];

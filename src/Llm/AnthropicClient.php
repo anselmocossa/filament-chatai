@@ -129,7 +129,10 @@ class AnthropicClient implements LlmClient
                 continue; // the Messages API rejects empty text turns
             }
 
-            $converted[] = ['role' => $role === 'assistant' ? 'assistant' : 'user', 'content' => (string) $message['content']];
+            $converted[] = [
+                'role' => $role === 'assistant' ? 'assistant' : 'user',
+                'content' => is_array($message['content']) ? $this->parts($message['content']) : (string) $message['content'],
+            ];
         }
 
         return array_filter([
@@ -148,6 +151,32 @@ class AnthropicClient implements LlmClient
             'cacheControl' => ['type' => 'ephemeral'],
             'fallbacks' => 'default',
         ], fn ($value) => $value !== null);
+    }
+
+    /**
+     * OpenAI-style content parts (text, image_url, file) as Claude blocks.
+     *
+     * @param  array<int, array<string, mixed>>  $parts
+     * @return array<int, array<string, mixed>>
+     */
+    protected function parts(array $parts): array
+    {
+        $blocks = [];
+
+        foreach ($parts as $part) {
+            $type = $part['type'] ?? null;
+            $data = $type === 'image_url' ? ($part['image_url']['url'] ?? '') : ($type === 'file' ? ($part['file']['file_data'] ?? '') : '');
+
+            if ($type === 'text') {
+                $blocks[] = ['type' => 'text', 'text' => (string) $part['text']];
+            } elseif (preg_match('#^data:([^;]+);base64,(.*)$#s', (string) $data, $m)) {
+                $blocks[] = $type === 'image_url'
+                    ? ['type' => 'image', 'source' => ['type' => 'base64', 'mediaType' => $m[1], 'data' => $m[2]]]
+                    : ['type' => 'document', 'source' => ['type' => 'base64', 'mediaType' => $m[1], 'data' => $m[2]], 'title' => (string) ($part['file']['filename'] ?? 'document')];
+            }
+        }
+
+        return $blocks;
     }
 
     /**

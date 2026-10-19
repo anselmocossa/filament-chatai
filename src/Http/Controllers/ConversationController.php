@@ -3,6 +3,7 @@
 namespace Filament\ChatAi\Http\Controllers;
 
 use Filament\ChatAi\Models\Conversation;
+use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\Message;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,10 @@ class ConversationController
     {
         $conversation = static::authorized($conversation, 'view');
 
+        $files = ConversationFile::query()->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
+            ->whereNotNull('message_id')->orderBy('id')->get()->groupBy('message_id');
+        $panel = Filament::getCurrentPanel();
+
         // What the user saw: questions and answers. Tool plumbing stays server-side.
         $messages = $conversation->messages()
             ->whereIn('role', [Message::ROLE_USER, Message::ROLE_ASSISTANT])
@@ -55,6 +60,10 @@ class ConversationController
                 'content' => $m->content,
                 'components' => $m->components ?? [],
                 'status' => $m->status,
+                'attachments' => ($files->get($m->id) ?? collect())->map(fn (ConversationFile $f): array => [
+                    ...$f->summary(),
+                    'url' => $panel->route('chatai.files.download', ['file' => $f->id]),
+                ])->values()->all(),
             ]);
 
         return response()->json([

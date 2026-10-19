@@ -180,6 +180,8 @@ document.addEventListener('alpine:init', () => {
         transcribing: false,
         voicePanel: false,
         picker: null,
+        attachments: [],
+        dragging: false,
         userVoice: config.userVoice || null,
         browserVoices: [],
         browserVoice: storage.get(BROWSER_VOICE_KEY),
@@ -317,6 +319,75 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // ---- attachments ---------------------------------------------------
+
+        // Files upload as soon as they are picked (button, drop or paste) and ride with the next message.
+        async attach(fileList) {
+            const files = [...(fileList ?? [])]
+            const limits = config.files ?? { max: 5, maxKb: 10240 }
+
+            if (!files.length) return
+
+            if (this.attachments.length + files.length > limits.max) {
+                this.notice = config.i18n.tooManyFiles.replace(':max', limits.max)
+                return
+            }
+
+            let conversation
+
+            try {
+                conversation = await this.ensureConversation()
+            } catch (error) {
+                this.notice = error.message
+                return
+            }
+
+            for (const file of files) {
+                if (file.size > limits.maxKb * 1024) {
+                    this.notice = config.i18n.fileTooBig.replace(':name', file.name)
+                    continue
+                }
+
+                const item = { key: `${Date.now()}-${file.name}`, id: null, name: file.name, size: file.size, uploading: true }
+                this.attachments.push(item)
+
+                const body = new FormData()
+                body.append('file', file)
+
+                try {
+                    const { 'Content-Type': _json, ...headers } = this.headers()
+                    const response = await fetch(config.filesUrl.replace('__conversation__', encodeURIComponent(conversation)), { method: 'POST', headers, body, credentials: 'same-origin' })
+                    const data = await response.json().catch(() => ({}))
+
+                    if (!response.ok) throw new Error(data.message || config.i18n.unavailable)
+
+                    const uploaded = this.attachments.find((a) => a.key === item.key)
+                    if (uploaded) Object.assign(uploaded, { id: data.id, uploading: false })
+                } catch (error) {
+                    this.attachments = this.attachments.filter((a) => a.key !== item.key)
+                    this.notice = error.message
+                }
+            }
+        },
+
+        removeAttachment(key) {
+            this.attachments = this.attachments.filter((a) => a.key !== key)
+        },
+
+        // Images pasted into the box are attached too.
+        pasteFiles(event) {
+            const files = [...(event.clipboardData?.files ?? [])]
+
+            if (files.length) {
+                event.preventDefault()
+                this.attach(files)
+            }
+        },
+
+        formatSize(bytes) {
+            return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
+        },
+
         // ---- @ tools and / skills in the composer --------------------------
 
         // "@ven" or "/res" right before the caret opens the matching list.
@@ -420,13 +491,15 @@ document.addEventListener('alpine:init', () => {
         async send() {
             const question = this.input.trim()
 
-            if (!question || this.busy) return
+            if (!question || this.busy || this.attachments.some((a) => a.uploading)) return
 
+            const files = this.attachments.filter((a) => a.id)
+            this.attachments = []
             this.input = ''
             this.busy = true
             this.notice = null
             this.lastQuestion = question
-            this.messages.push({ id: `local-${Date.now()}`, role: 'user', content: question, components: [] })
+            this.messages.push({ id: `local-${Date.now()}`, role: 'user', content: question, components: [], attachments: files })
 
             const answer = { id: `answer-${Date.now()}`, role: 'assistant', content: '', components: [], status: 'streaming', tool: null }
             this.messages.push(answer)
@@ -439,7 +512,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: this.headers(false),
                     credentials: 'same-origin',
-                    body: JSON.stringify({ message: question, context: readContext(), ...this.picks(question), ...this.playgroundDraft() }),
+                    body: JSON.stringify({ message: question, context: readContext(), attachments: files.map((f) => f.id), ...this.picks(question), ...this.playgroundDraft() }),
                 })
 
                 if (!response.ok || !response.body) {

@@ -74,6 +74,14 @@ return [
         'disk' => 'public',
     ],
 
+    // Attachments and generated documents (private disk; downloads check the conversation owner).
+    'files' => [
+        'disk' => env('CHATAI_FILES_DISK', 'local'),
+        'max_kb' => 10240,
+        'max_per_message' => 5,
+        'max_text_chars' => 100_000, // text/CSV/Excel content passed to the model
+    ],
+
     // Extra rules for the assistant written by the admin (tone, business terms).
     'instructions' => null,
 

@@ -112,7 +112,7 @@ it('tests the unsaved tool in the test chat, kept out of the chat history', func
     ])->assertOk()->streamedContent();
 
     expect($body)->toContain('event: tool_end')->toContain('Encontrei o Bruno.')
-        ->and(collect($llm->requests[0]['tools'])->pluck('function.name')->all())->toBe(['find-users', 'show_ui'])
+        ->and(collect($llm->requests[0]['tools'])->pluck('function.name')->all())->toBe(['find-users', 'show_ui', 'create_document'])
         ->and(CustomTool::query()->count())->toBe(0)
         ->and($this->getJson(route('filament.admin.chatai.conversations.index'))->json('data'))->toBe([]);
 });
@@ -229,7 +229,7 @@ it('loads the linked skills in the test chat', function () {
         'draft' => ['mode' => 'code', 'tool' => 'sales-stats', 'data' => ['skills' => [$skill->id]]],
     ])->assertOk()->streamedContent();
 
-    expect(collect($llm->requests[0]['tools'])->pluck('function.name')->all())->toBe(['sales-stats', 'use_skill', 'show_ui'])
+    expect(collect($llm->requests[0]['tools'])->pluck('function.name')->all())->toBe(['sales-stats', 'use_skill', 'show_ui', 'create_document'])
         ->and($llm->requests[0]['messages'][0]['content'])->toContain('daily: Quando pedirem o resumo do dia')
         ->and($body)->toContain('"name":"use_skill"');
 });

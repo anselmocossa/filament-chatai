@@ -46,8 +46,10 @@ it('saves the assistant settings and keeps keys off this page', function () {
     adminPlugin()->canManageSettings(fn (): bool => true);
     $this->actingAs(adminUser());
 
+    ChatAiSettings::save(['anthropic.api_key' => 'sk-ant-secret-123']);
+
     Livewire::test(ChatAiSettingsPage::class)
-        ->assertDontSee('sk-')
+        ->assertDontSee('sk-ant-secret-123')
         ->set('data.instructions', 'Valores sempre em MZN.')
         ->call('save')
         ->assertHasNoErrors();

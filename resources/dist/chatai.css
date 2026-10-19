@@ -319,6 +319,28 @@
 .fi-chatai-pick { display: inline-block; padding: 0 0.35rem; border-radius: 0.35rem; background: rgb(255 255 255 / 0.18); font-weight: 600; }
 .fi-chatai-pick-skill { font-style: italic; }
 
+.fi-chatai-file-input { display: none; }
+.fi-chatai-composer-box.fi-dragging { border-style: dashed; border-color: var(--chatai-accent); }
+.fi-chatai-drop-hint { padding: 0.6rem 1rem 0; font-size: 0.8rem; color: var(--chatai-accent); }
+.fi-chatai-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.6rem 0.75rem 0; }
+.fi-chatai-chips-sent { justify-content: flex-end; padding: 0.3rem 0 0; }
+.fi-chatai-chip { display: inline-flex; align-items: center; gap: 0.35rem; max-width: 16rem; padding: 0.25rem 0.5rem; border: 1px solid var(--chatai-border); border-radius: 0.6rem; background: var(--chatai-surface); font-size: 0.75rem; color: var(--chatai-text); }
+.fi-chatai-chip.fi-uploading { opacity: 0.7; }
+.fi-chatai-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-chatai-chip-size { color: var(--chatai-muted); flex-shrink: 0; }
+.fi-chatai-chip-icon { width: 0.85rem; height: 0.85rem; flex-shrink: 0; }
+.fi-chatai-chip-remove { display: grid; place-items: center; color: var(--chatai-muted); }
+.fi-chatai-chip-remove:hover { color: var(--danger-600, #dc2626); }
+.fi-chatai-user-turn { display: flex; flex-direction: column; align-items: flex-end; max-width: 100%; }
+.fi-chatai-file { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; text-decoration: none; color: inherit; }
+.fi-chatai-component:has(.fi-chatai-file):hover { border-color: var(--chatai-accent); }
+.fi-chatai-file-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.7rem; background: color-mix(in oklab, var(--chatai-accent) 12%, transparent); color: var(--chatai-accent); flex-shrink: 0; }
+.fi-chatai-file-svg { width: 1.3rem; height: 1.3rem; }
+.fi-chatai-file-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.fi-chatai-file-title { font-weight: 600; font-size: 0.9rem; }
+.fi-chatai-file-meta { font-size: 0.75rem; color: var(--chatai-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-chatai-file-action { font-size: 0.8rem; font-weight: 600; color: var(--chatai-accent); flex-shrink: 0; }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

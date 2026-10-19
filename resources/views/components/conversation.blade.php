@@ -12,7 +12,19 @@
         <template x-for="message in messages" :key="message.id">
             <div class="fi-chatai-message" :class="'fi-chatai-message-' + message.role">
                 <template x-if="message.role === 'user'">
-                    <div class="fi-chatai-bubble fi-chatai-bubble-user" x-html="highlightPicks(message.content)"></div>
+                    <div class="fi-chatai-user-turn">
+                        <div class="fi-chatai-bubble fi-chatai-bubble-user" x-html="highlightPicks(message.content)"></div>
+                        <template x-if="message.attachments?.length">
+                            <div class="fi-chatai-chips fi-chatai-chips-sent">
+                                <template x-for="file in message.attachments" :key="file.id">
+                                    <a class="fi-chatai-chip" :href="file.url || null" target="_blank" rel="noopener">
+                                        <x-filament::icon icon="heroicon-m-paper-clip" class="fi-chatai-chip-icon" />
+                                        <span x-text="file.name"></span>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
                 </template>
 
                 <template x-if="message.role === 'assistant'">
@@ -116,7 +128,27 @@
             </template>
         </div>
 
-        <div class="fi-chatai-composer-box" :class="{ 'fi-recording': listening }" x-on:click.self="$refs.input.focus()">
+        <div class="fi-chatai-composer-box" :class="{ 'fi-recording': listening, 'fi-dragging': dragging }" x-on:click.self="$refs.input.focus()"
+             x-on:dragover.prevent="dragging = true" x-on:dragleave.prevent="dragging = false"
+             x-on:drop.prevent="dragging = false; attach($event.dataTransfer.files)">
+            <p class="fi-chatai-drop-hint" x-show="dragging" x-cloak>{{ __('chatai::chatai.drop_files') }}</p>
+
+            <template x-if="attachments.length">
+                <div class="fi-chatai-chips">
+                    <template x-for="file in attachments" :key="file.key">
+                        <span class="fi-chatai-chip" :class="{ 'fi-uploading': file.uploading }">
+                            <x-filament::loading-indicator class="fi-chatai-chip-icon" x-show="file.uploading" />
+                            <x-filament::icon icon="heroicon-m-paper-clip" class="fi-chatai-chip-icon" x-show="! file.uploading" />
+                            <span class="fi-chatai-chip-name" x-text="file.name"></span>
+                            <span class="fi-chatai-chip-size" x-text="formatSize(file.size)"></span>
+                            <button type="button" class="fi-chatai-chip-remove" x-on:click="removeAttachment(file.key)" aria-label="{{ __('chatai::chatai.remove') }}">
+                                <x-filament::icon icon="heroicon-m-x-mark" class="fi-chatai-chip-icon" />
+                            </button>
+                        </span>
+                    </template>
+                </div>
+            </template>
+
             <textarea
                 x-ref="input"
                 x-model="input"
@@ -124,6 +156,7 @@
                 x-on:input="detectPicker($event.target)"
                 x-on:click="detectPicker($event.target)"
                 x-on:blur="setTimeout(() => picker = null, 150)"
+                x-on:paste="pasteFiles($event)"
                 rows="1"
                 maxlength="4000"
                 placeholder="{{ __('chatai::chatai.placeholder') }}"
@@ -136,6 +169,10 @@
 
             <div class="fi-chatai-composer-bar">
                 <div class="fi-chatai-composer-tools">
+                    <input type="file" multiple class="fi-chatai-file-input" x-ref="file" :accept="config.files?.accept" x-on:change="attach($event.target.files); $event.target.value = ''">
+                    <button type="button" class="fi-chatai-tool" x-on:click="$refs.file.click()" title="{{ __('chatai::chatai.attach') }}" aria-label="{{ __('chatai::chatai.attach') }}">
+                        <x-filament::icon icon="heroicon-m-paper-clip" class="fi-chatai-tool-icon" />
+                    </button>
                     <button type="button" class="fi-chatai-tool" x-on:click="newConversation()" title="{{ __('chatai::chatai.new_conversation') }}" aria-label="{{ __('chatai::chatai.new_conversation') }}">
                         <x-filament::icon icon="heroicon-m-plus" class="fi-chatai-tool-icon" />
                     </button>
@@ -159,7 +196,7 @@
                         <x-filament::loading-indicator class="fi-chatai-send-icon" x-show="transcribing" x-cloak />
                     </button>
 
-                    <button type="submit" class="fi-chatai-send" :disabled="busy || ! input.trim()" aria-label="{{ __('chatai::chatai.send') }}">
+                    <button type="submit" class="fi-chatai-send" :disabled="busy || ! input.trim() || attachments.some((a) => a.uploading)" aria-label="{{ __('chatai::chatai.send') }}">
                         <x-filament::icon icon="heroicon-m-arrow-up" class="fi-chatai-send-icon" x-show="! busy" />
                         <x-filament::loading-indicator class="fi-chatai-send-icon" x-show="busy" x-cloak />
                     </button>

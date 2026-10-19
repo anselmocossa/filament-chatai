@@ -108,3 +108,15 @@
         </template>
     </div>
 </template>
+
+{{-- file (only built by server tools, e.g. create_document) --}}
+<template x-if="component.type === 'file'">
+    <a class="fi-chatai-file" :href="component.url" download>
+        <span class="fi-chatai-file-icon"><x-filament::icon icon="heroicon-o-document-arrow-down" class="fi-chatai-file-svg" /></span>
+        <span class="fi-chatai-file-text">
+            <span class="fi-chatai-file-title" x-text="component.title || component.name"></span>
+            <span class="fi-chatai-file-meta" x-text="component.name + ' · ' + formatSize(component.size)"></span>
+        </span>
+        <span class="fi-chatai-file-action">{{ __('chatai::chatai.download') }}</span>
+    </a>
+</template>

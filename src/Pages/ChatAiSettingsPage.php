@@ -136,6 +136,14 @@ class ChatAiSettingsPage extends Page
                             ->visible(fn (Get $get): bool => (bool) $get('permissions.enabled')),
                     ]),
 
+                    Tab::make($t('files'))->icon('heroicon-m-paper-clip')->columns(2)->schema([
+                        Select::make('files.disk')->label($t('files_disk'))->native(false)->required()
+                            ->options(fn (): array => collect(array_keys((array) config('filesystems.disks', [])))->mapWithKeys(fn (string $disk): array => [$disk => $disk.' ('.config("filesystems.disks.{$disk}.driver").')'])->all())
+                            ->helperText($t('files_disk_help')),
+                        TextInput::make('files.max_kb')->label($t('files_max_kb'))->numeric()->minValue(100)->maxValue(102400)->suffix('KB'),
+                        TextInput::make('files.max_per_message')->label($t('files_max_per_message'))->numeric()->minValue(1)->maxValue(20),
+                    ]),
+
                     Tab::make($t('limits'))->icon('heroicon-m-shield-check')->columns(2)->schema([
                         TextInput::make('rate_limit.per_minute')->label($t('per_minute'))->numeric()->minValue(1)->helperText($t('per_user')),
                         TextInput::make('rate_limit.per_day')->label($t('per_day'))->numeric()->minValue(1)->helperText($t('per_user')),

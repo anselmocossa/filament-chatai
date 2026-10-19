@@ -10,6 +10,9 @@ final class Catalog
 {
     public const TYPES = ['kpi', 'table', 'chart', 'suggestions'];
 
+    /** Only built by server tools (never by show_ui): a document to download. */
+    public const FILE = 'file';
+
     public const MAX_KPIS = 4;
 
     public const MAX_ROWS = 50;
