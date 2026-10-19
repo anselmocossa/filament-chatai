@@ -182,8 +182,9 @@ class ActionController
      */
     protected function answer(ToolAction $action, string $content, ?array $component = null): array
     {
-        $message = $action->conversation->addMessage(Message::ROLE_ASSISTANT, $content, ['components' => $component ? [$component] : null]);
+        // Status "action": a result written by the app, not by the model (no rating, no "answer again").
+        $message = $action->conversation->addMessage(Message::ROLE_ASSISTANT, $content, ['components' => $component ? [$component] : null, 'status' => 'action']);
 
-        return ['id' => $message->id, 'role' => Message::ROLE_ASSISTANT, 'content' => $content, 'components' => $component ? [$component] : []];
+        return ['id' => $message->id, 'role' => Message::ROLE_ASSISTANT, 'content' => $content, 'components' => $component ? [$component] : [], 'status' => 'action'];
     }
 }

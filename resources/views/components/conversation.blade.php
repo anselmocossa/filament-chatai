@@ -80,10 +80,10 @@
                                     <x-filament::icon icon="heroicon-m-clipboard-document" class="fi-chatai-action-icon" x-show="! message.copied" />
                                     <x-filament::icon icon="heroicon-m-check" class="fi-chatai-action-icon" x-show="message.copied" x-cloak />
                                 </button>
-                                <button type="button" class="fi-chatai-action" x-show="message === lastAssistant() && ! busy" x-on:click="regenerate()" title="{{ __('chatai::chatai.regenerate') }}" aria-label="{{ __('chatai::chatai.regenerate') }}">
+                                <button type="button" class="fi-chatai-action" x-show="message === lastAssistant() && ! busy && message.status !== 'action'" x-on:click="regenerate()" title="{{ __('chatai::chatai.regenerate') }}" aria-label="{{ __('chatai::chatai.regenerate') }}">
                                     <x-filament::icon icon="heroicon-m-arrow-path" class="fi-chatai-action-icon" />
                                 </button>
-                                <template x-if="message.id && ! String(message.id).startsWith('answer-')">
+                                <template x-if="message.id && ! String(message.id).startsWith('answer-') && message.status !== 'action'">
                                     <span class="fi-chatai-rate">
                                         <button type="button" class="fi-chatai-action" :class="{ 'fi-active': message.feedback === 'up' }" x-on:click="rate(message, 'up')" title="{{ __('chatai::chatai.helpful') }}" aria-label="{{ __('chatai::chatai.helpful') }}">
                                             <x-filament::icon icon="heroicon-m-hand-thumb-up" class="fi-chatai-action-icon" />
