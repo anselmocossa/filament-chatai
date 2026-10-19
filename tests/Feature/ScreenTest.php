@@ -82,3 +82,28 @@ it('reads the screen but does not offer to fill it when filling is off', functio
     expect(collect($llm->requests[0]['tools'])->pluck('function.name'))->not->toContain('fill_form')
         ->and($llm->requests[0]['messages'][0]['content'])->toContain('Edit Bamboo Card Holder');
 });
+
+it('fills a wizard: fields of several steps in one call, lists for checkbox lists', function () {
+    $context = ChatAiContext::fromArray('admin', ['screen' => ['fields' => [
+        ['path' => 'data.name', 'label' => 'Name', 'section' => 'Step 1: Personal'],
+        ['path' => 'data.employment_type', 'label' => 'Employment type', 'type' => 'radio', 'section' => 'Step 2: Job', 'options' => ['full_time = Full Time', 'intern = Intern']],
+        ['path' => 'data.skills', 'label' => 'Skills', 'type' => 'checkbox_list', 'section' => 'Step 4: Skills', 'options' => ['PHP', 'Laravel']],
+    ]]]);
+
+    expect($context->screenFields()['data.employment_type'])->toMatchArray(['section' => 'Step 2: Job', 'options' => ['full_time = Full Time', 'intern = Intern']]);
+
+    $events = screenTurn(FakeLlmClient::script([
+        [FakeLlmClient::call('fill_form', ['fields' => [
+            ['path' => 'data.name', 'value' => 'Ana Muianga'],
+            ['path' => 'data.employment_type', 'value' => 'full_time'],
+            ['path' => 'data.skills', 'value' => ['PHP', 'Laravel', ['nested']]],
+        ]])],
+        ['Preenchi os três passos.'],
+    ]), $context);
+
+    $fill = collect($events)->firstWhere('type', AgentEvent::FILL);
+    $card = collect($events)->where('type', AgentEvent::COMPONENT)->first()->data['component'];
+
+    expect(collect($fill->data['fields'])->pluck('value', 'path')->all())->toBe(['data.name' => 'Ana Muianga', 'data.employment_type' => 'full_time', 'data.skills' => ['PHP', 'Laravel']])
+        ->and(collect($card['fields'])->firstWhere('path', 'data.skills')['value'])->toBe('PHP, Laravel');
+});

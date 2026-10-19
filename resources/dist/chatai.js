@@ -153,7 +153,8 @@ document.addEventListener('alpine:init', () => {
     // ---- the screen: what the user is looking at, and filling in its form ----
 
     const CHAT = '.fi-chatai-panel, .fi-chatai-page, .fi-chatai-floating'
-    const text = (el) => (el?.innerText || '').replace(/\s+/g, ' ').trim()
+    // textContent, not innerText: fields in hidden wizard steps or tabs have no innerText.
+    const text = (el) => (el?.textContent || '').replace(/\s+/g, ' ').trim()
 
     // The Livewire state path of a Filament field: wire:model="data.qty" or $entangle('data.qty').
     const statePath = (field) => {
@@ -180,10 +181,27 @@ document.addEventListener('alpine:init', () => {
             const wire = window.Livewire?.find(found.el.closest('[wire\\:id]')?.getAttribute('wire:id'))
             let value = wire ? wire.get(found.path) : (found.el.value ?? '')
             if (Array.isArray(value)) value = value.join(', ')
+            if (value === null || value === undefined) value = ''
             if (value && typeof value === 'object') value = JSON.stringify(value).slice(0, 300)
 
             const input = wrapper.querySelector('input, textarea, select')
-            const options = [...wrapper.querySelectorAll('select option, [role=option]')].map((o) => o.value || text(o)).filter(Boolean).slice(0, 30)
+            const choices = wrapper.querySelectorAll('input[type=radio], input[type=checkbox]')
+
+            // Choices as "value = name", so the model can pick by what the user reads.
+            const named = (value, label) => (label && label !== value ? `${value} = ${label}` : value)
+            const options = [
+                ...[...wrapper.querySelectorAll('select option')].filter((o) => o.value !== '').map((o) => named(o.value, text(o))),
+                ...(choices.length > 1 ? [...choices].map((c) => named(c.value, text(c.labels?.[0] || c.closest('label')))) : []),
+            ].filter(Boolean).slice(0, 40)
+
+            // Which step of a wizard (or which tab / section) the field is in.
+            const step = wrapper.closest('.fi-sc-wizard-step')
+            const steps = step ? [...step.closest('.fi-sc-wizard')?.querySelectorAll('.fi-sc-wizard-header-step') || []] : []
+            const stepIndex = step ? [...step.parentElement.querySelectorAll(':scope > .fi-sc-wizard-step')].indexOf(step) : -1
+            const section = step
+                ? `Step ${stepIndex + 1}${steps[stepIndex] ? ': ' + text(steps[stepIndex]).replace(/^\d+\s*/, '') : ''}`
+                : text(wrapper.closest('.fi-section')?.querySelector('.fi-section-header-heading'))
+            const many = choices.length > 1 && [...choices].every((c) => c.type === 'checkbox')
 
             // What the user reads for a choice (a name, not its id).
             const shown = text(wrapper.querySelector('.fi-select-input-value-ctn, .fi-select-input-value-label'))
@@ -192,7 +210,11 @@ document.addEventListener('alpine:init', () => {
                 path: found.path,
                 display: shown && shown !== String(value) ? shown.slice(0, 300) : undefined,
                 label: text(wrapper.querySelector('.fi-fo-field-label-content, label')).replace(/\*$/, ''),
-                type: input?.type || (wrapper.querySelector('[role=switch], .fi-toggle') ? 'toggle' : wrapper.querySelector('.fi-select-input, select') ? 'select' : 'text'),
+                section: section || undefined,
+                // The format the field expects, so the model writes "#2563eb" and not "blue".
+                type: wrapper.querySelector('.fi-fo-color-picker') ? 'color (hex, e.g. #2563eb)'
+                    : wrapper.querySelector('.fi-fo-date-time-picker') ? 'date (YYYY-MM-DD)'
+                    : many ? 'checkbox_list' : choices.length > 1 ? 'radio' : wrapper.querySelector('select') ? (wrapper.querySelector('select').multiple ? 'multi_select' : 'select') : input?.type || (wrapper.querySelector('[role=switch], .fi-toggle') ? 'toggle' : 'text'),
                 value: value ?? '',
                 options: options.length ? options : undefined,
             })

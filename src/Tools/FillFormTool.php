@@ -25,7 +25,8 @@ final class FillFormTool
         return new ChatAiTool(
             name: self::NAME,
             description: 'Fill in or change fields of the form the user has open on screen. Use the field paths listed under "On screen now". '
-                .'The values appear in the form for the user to review; nothing is saved until they press Save.',
+                .'Fields of every step of a wizard (or every tab) can be filled in one call; the user goes through the steps and presses the final button. '
+                .'The values appear in the form for the user to review; nothing is saved until they press Save / Create.',
             inputSchema: [
                 'type' => 'object',
                 'properties' => [
@@ -35,7 +36,7 @@ final class FillFormTool
                             'type' => 'object',
                             'properties' => [
                                 'path' => ['type' => 'string', 'enum' => $paths],
-                                'value' => ['type' => ['string', 'number', 'boolean']],
+                                'value' => ['type' => ['string', 'number', 'boolean', 'array'], 'items' => ['type' => 'string'], 'description' => 'For choices use the value before "=" in the options; for checkbox lists and multi-selects an array of values.'],
                             ],
                             'required' => ['path', 'value'],
                         ],
@@ -53,7 +54,7 @@ final class FillFormTool
      * Only fields that are on screen, with plain values.
      *
      * @param  array<string, mixed>  $arguments
-     * @return array<int, array{path: string, label: string, value: string|int|float|bool}>
+     * @return array<int, array{path: string, label: string, value: string|int|float|bool|array<int, string>}>
      */
     public static function fields(ChatAiContext $context, array $arguments): array
     {
@@ -64,11 +65,42 @@ final class FillFormTool
             $path = is_array($field) ? (string) ($field['path'] ?? '') : '';
             $value = is_array($field) ? ($field['value'] ?? null) : null;
 
-            if (isset($onScreen[$path]) && is_scalar($value)) {
-                $fields[$path] = ['path' => $path, 'label' => (string) ($onScreen[$path]['label'] ?? $path), 'value' => is_string($value) ? mb_substr($value, 0, 5000) : $value];
+            if (is_array($value)) {
+                $value = array_values(array_map('strval', array_filter($value, 'is_scalar')));
+            }
+
+            if (isset($onScreen[$path]) && (is_scalar($value) || is_array($value))) {
+                $fields[$path] = array_filter([
+                    'path' => $path,
+                    'label' => (string) ($onScreen[$path]['label'] ?? $path),
+                    'value' => is_string($value) ? mb_substr($value, 0, 5000) : $value,
+                    'shown' => self::shown($onScreen[$path], $value),
+                ], fn ($v) => $v !== null);
             }
         }
 
         return array_values($fields);
+    }
+
+    /**
+     * For a choice, the name the user reads ("Finance") instead of its value ("2").
+     *
+     * @param  array<string, mixed>  $field
+     */
+    protected static function shown(array $field, mixed $value): ?string
+    {
+        $names = collect((array) ($field['options'] ?? []))
+            ->filter(fn ($o) => str_contains((string) $o, ' = '))
+            ->mapWithKeys(function ($o): array {
+                [$key, $name] = explode(' = ', (string) $o, 2);
+
+                return [$key => $name];
+            });
+
+        if ($names->isEmpty()) {
+            return null;
+        }
+
+        return collect((array) $value)->map(fn ($v) => $names[(string) $v] ?? (string) $v)->implode(', ');
     }
 }

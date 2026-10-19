@@ -37,7 +37,12 @@ class ComponentValidator
             $fields = array_values(array_filter(array_map(fn ($f) => is_array($f) && $this->scalar($f['path'] ?? null) ? [
                 'path' => $this->str((string) $f['path'], 120),
                 'label' => $this->str((string) ($f['label'] ?? $f['path']), 80),
-                'value' => is_bool($f['value'] ?? null) ? ($f['value'] ? '✓' : '—') : $this->str((string) ($f['value'] ?? ''), 300),
+                'value' => match (true) {
+                    filled($f['shown'] ?? null) => $this->str((string) $f['shown'], 300),
+                    is_bool($f['value'] ?? null) => $f['value'] ? '✓' : '—',
+                    is_array($f['value'] ?? null) => $this->str(implode(', ', array_filter($f['value'], 'is_scalar')), 300),
+                    default => $this->str((string) ($f['value'] ?? ''), 300),
+                },
             ] : null, array_slice((array) ($component['fields'] ?? []), 0, 60))));
 
             return $fields === [] ? null : ['type' => Catalog::FILLED, 'fields' => $fields];

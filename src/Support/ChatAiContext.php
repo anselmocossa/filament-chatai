@@ -79,10 +79,11 @@ final readonly class ChatAiContext
                 $fields[] = array_filter([
                     'path' => (string) $field['path'],
                     'label' => $str($field['label'] ?? '', 80),
-                    'type' => $str($field['type'] ?? 'text', 20),
+                    'type' => $str($field['type'] ?? 'text', 40),
                     'value' => $str($field['value'] ?? ''),
                     'display' => $str($field['display'] ?? ''),
-                    'options' => array_values(array_map(fn ($o) => $str($o, 80), array_slice((array) ($field['options'] ?? []), 0, 30))) ?: null,
+                    'section' => $str($field['section'] ?? '', 80),
+                    'options' => array_values(array_map(fn ($o) => $str($o, 120), array_slice((array) ($field['options'] ?? []), 0, 40))) ?: null,
                 ], fn ($v) => $v !== null && $v !== '');
             }
         }
