@@ -37,12 +37,13 @@
 
 <img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
 
-<table>
-<tr>
-<td width="50%"><img src="art/screenshots/files.png" alt="Attached CSV and generated Excel file"><br><em>Attach a file, get an Excel back</em></td>
-<td width="50%"><img src="art/screenshots/mentions.png" alt="@ to pick a tool"><br><em><code>@</code> picks a tool, <code>/</code> applies a skill</em></td>
-</tr>
-</table>
+#### Attach a file, get an Excel back
+
+<img src="art/screenshots/files.png" alt="Attached CSV and generated Excel file" width="100%">
+
+#### `@` picks a tool, `/` applies a skill
+
+<img src="art/screenshots/mentions.png" alt="@ to pick a tool" width="60%">
 
 #### Tool editor — build a tool on screen and test it by chatting
 
@@ -52,16 +53,17 @@
 
 <img src="art/screenshots/usage.png" alt="Usage page" width="100%">
 
-<table>
-<tr>
-<td width="50%"><img src="art/screenshots/models.png" alt="Models in fallback order"><br><em>Models — the first enabled answers, the next take over</em></td>
-<td width="50%"><img src="art/screenshots/logs.png" alt="Logs of every question"><br><em>Logs — question, tools, model, tokens and time</em></td>
-</tr>
-<tr>
-<td width="50%"><img src="art/screenshots/settings.png" alt="Settings tabs"><br><em>Settings — assistant, voice, permissions, files, limits, prices</em></td>
-<td width="50%"></td>
-</tr>
-</table>
+#### Models — the first enabled answers, the next take over
+
+<img src="art/screenshots/models.png" alt="Models in fallback order" width="100%">
+
+#### Logs — question, tools, model, tokens and time
+
+<img src="art/screenshots/logs.png" alt="Logs of every question" width="100%">
+
+#### Settings — assistant, voice, permissions, files, limits, prices
+
+<img src="art/screenshots/settings.png" alt="Settings tabs" width="100%">
 
 ## Install
 
