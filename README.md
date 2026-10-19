@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-154%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-161%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -122,6 +122,22 @@ ChatAiPlugin::make()->canManageSettings(fn ($user) => $user->is_admin)
 
 Claude requests use prompt caching automatically: system prompt, tools and history are billed at the
 cache-read price on every tool round and follow-up question.
+
+## Tools made on screen (no code)
+
+**Tools → New tool** builds a tool from a form, tried in a test chat next to it before saving. Five kinds:
+
+| Kind | What it does | Example |
+|---|---|---|
+| **List records** | Rows of a resource: fields (also of related records, `customer.name`), a search over several columns, filters, fixed conditions (`status ≠ cancelled`, `qty < security_stock`), counts per value, totals of related records (orders, total spent) and their latest rows | orders, low stock, a customer card |
+| **Totals for a period** | Count / sum / average… for today, the week, month, year or custom dates, compared with the previous period, broken down by day, month, a column or a related record — over the records or a relation of them | sales of the month, best sellers, headcount per department |
+| **Create a record** | The chosen columns become the form; unique columns are checked | new customer |
+| **Change a record** | Finds the record by one of the lookup columns; each column is set or added to, never below zero | adjust stock, change order status |
+| **API call** | GET to an allowed host, with query/path parameters and a key | an external service |
+
+They always run through the resource's own query (scopes, tenancy) and its permissions (`canViewAny`, `canCreate`, `canEdit`). Create and change tools go through the confirmation form below.
+
+The demo's nine code tools were rebuilt this way and answered the same questions with the same figures.
 
 ## Tools that change data
 
