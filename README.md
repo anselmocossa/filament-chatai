@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-145%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-151%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -21,7 +21,8 @@
 - **Floating chat** in the corner of every page, aware of the record on screen.
 - **Full-page chat** (`/{panel}/chatai`) with a history you can organise: pinned conversations, groups, renaming — the same conversation as the floating one.
 - **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts and follow-up suggestions, not just text.
-- **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form. Read-only, for now.
+- **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form.
+- **Changes with confirmation**: tools that change data never run straight away — the user sees a card with the exact values and confirms or cancels.
 - **Files**: attach documents, paste links to records of the panel, and get CSV, Excel or PDF files back.
 - **Voice and export**: dictate, hear answers read aloud, export a conversation to Markdown.
 - **Control**: models with fallbacks, several provider keys with spending limits, usage and cost per user and model, a log of every question, and Filament Shield permissions per tool.
@@ -40,6 +41,10 @@
 #### Floating chat — knows the record on screen
 
 <img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
+
+#### Changes — the assistant proposes, the user confirms
+
+<img src="art/screenshots/actions.png" alt="Confirmation card for a change" width="100%">
 
 #### Attach a file, get an Excel back
 
@@ -113,6 +118,32 @@ ChatAiPlugin::make()->canManageSettings(fn ($user) => $user->is_admin)
 
 Claude requests use prompt caching automatically: system prompt, tools and history are billed at the
 cache-read price on every tool round and follow-up question.
+
+## Tools that change data
+
+A `laravel/mcp` tool **without** `#[IsReadOnly]` changes data. The assistant never runs it straight away:
+
+1. It calls the tool with the values it understood; the app keeps the call and shows a **confirmation card** (the tool's title and each argument, using the schema `title` as label).
+2. **Confirm** runs it — with the user's permissions checked again at that moment — and the card shows what the tool returned. **Cancel** changes nothing.
+3. Either way, the outcome goes into the conversation, so the model knows it in the next question.
+
+```php
+#[Name('adjust-stock')]
+#[Title('Adjust stock')]
+class AdjustStockTool extends Tool   // no #[IsReadOnly]: needs confirmation
+{
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'product' => $schema->string()->title('Product')->required(),
+            'quantity' => $schema->integer()->title('Units to add')->required(),
+        ];
+    }
+    // handle() makes the change and returns what changed (e.g. before / after)
+}
+```
+
+Switch it off in **Settings → Permissions** (read-only tools only), or keep a provider read-only with `new LaravelMcpToolProvider($tools, readOnlyOnly: true)`.
 
 ## Filament Shield
 
