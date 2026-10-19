@@ -12,6 +12,7 @@ use Filament\ChatAi\Pages\Concerns\ChecksChatAiManager;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\VoiceCatalog;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -52,6 +53,22 @@ class ChatAiSettingsPage extends Page
         $this->form->fill(ChatAiSettings::formState());
     }
 
+    /** Icons offered for the assistant (any Heroicon name also works in config). */
+    public const ICONS = [
+        'heroicon-o-sparkles' => 'Sparkles',
+        'heroicon-o-chat-bubble-left-right' => 'Chat',
+        'heroicon-o-light-bulb' => 'Light bulb',
+        'heroicon-o-cpu-chip' => 'Chip',
+        'heroicon-o-bolt' => 'Bolt',
+        'heroicon-o-academic-cap' => 'Cap',
+        'heroicon-o-face-smile' => 'Smile',
+        'heroicon-o-star' => 'Star',
+        'heroicon-o-rocket-launch' => 'Rocket',
+        'heroicon-o-command-line' => 'Terminal',
+        'heroicon-o-shopping-bag' => 'Shop',
+        'heroicon-o-user-circle' => 'Person',
+    ];
+
     public static function getNavigationLabel(): string
     {
         return __('chatai::chatai.settings.title');
@@ -71,6 +88,16 @@ class ChatAiSettingsPage extends Page
             ->components([
                 Tabs::make('settings')->persistTabInQueryString('tab')->tabs([
                     Tab::make($t('assistant'))->icon('heroicon-m-chat-bubble-left-right')->schema([
+                        Grid::make(2)->schema([
+                            TextInput::make('assistant.name')->label($t('assistant_name'))->maxLength(40)->placeholder('ChatAI'),
+                            Select::make('assistant.icon')->label($t('assistant_icon'))->native(false)->placeholder('Sparkles')
+                                ->allowHtml()
+                                ->options(collect(self::ICONS)->mapWithKeys(fn (string $label, string $icon): array => [
+                                    $icon => '<span style="display:inline-flex;align-items:center;gap:.5rem">'.svg($icon, '', ['style' => 'width:1.1rem;height:1.1rem'])->toHtml().e($label).'</span>',
+                                ])->all()),
+                        ]),
+                        FileUpload::make('assistant.avatar')->label($t('assistant_avatar'))->helperText($t('assistant_avatar_help'))
+                            ->image()->avatar()->disk(fn (): string => (string) config('chatai.assistant.disk', 'public'))->directory('chatai')->maxSize(1024),
                         Textarea::make('instructions')->label($t('instructions'))->rows(8)->helperText($t('instructions_help')),
                         TagsInput::make('http_tools.allowed_hosts')->label($t('allowed_hosts'))->helperText($t('allowed_hosts_help'))->placeholder('api.minhaloja.co.mz'),
                     ]),

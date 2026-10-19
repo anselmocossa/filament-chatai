@@ -18,7 +18,11 @@
         x-on:click="togglePanel(true)"
         aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
     >
-        <x-filament::icon icon="heroicon-o-chat-bubble-left-right" class="fi-chatai-launcher-icon" />
+        @if ($avatarUrl)
+            @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-launcher-icon fi-chatai-launcher-avatar'])
+        @else
+            <x-filament::icon icon="heroicon-o-chat-bubble-left-right" class="fi-chatai-launcher-icon" />
+        @endif
     </button>
 
     <section
@@ -34,7 +38,7 @@
         <div class="fi-chatai-panel-inner" x-data="chataiChat(@js($config))">
             <header class="fi-chatai-header">
                 <span class="fi-chatai-header-avatar" aria-hidden="true">
-                    <x-filament::icon icon="heroicon-m-sparkles" class="fi-chatai-header-avatar-icon" />
+                    @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-header-avatar-icon'])
                     <span class="fi-chatai-header-dot"></span>
                 </span>
                 <span class="fi-chatai-header-title" x-text="title || @js($label)"></span>

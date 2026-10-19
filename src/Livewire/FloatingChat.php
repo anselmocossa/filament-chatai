@@ -18,6 +18,8 @@ class FloatingChat extends Component
 
         return view('filament-chatai::floating', [
             'label' => $plugin->getLabel(),
+            'icon' => $plugin->getIcon(),
+            'avatarUrl' => $plugin->getAvatarUrl(),
             'config' => $plugin->clientConfig(remember: true),
         ]);
     }

@@ -280,6 +280,8 @@ class ChatAiToolEditorPage extends Page
 
         return [
             'label' => $plugin->getLabel(),
+            'icon' => $plugin->getIcon(),
+            'avatarUrl' => $plugin->getAvatarUrl(),
             'config' => [
                 ...$plugin->clientConfig(remember: false),
                 'endpoint' => Filament::getCurrentPanel()->route('chatai.playground.store'),

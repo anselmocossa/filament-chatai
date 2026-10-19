@@ -39,6 +39,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 class ChatAiPlugin implements Plugin
 {
@@ -206,9 +207,32 @@ class ChatAiPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * The name set on the settings page, else the one given in code.
+     */
     public function getLabel(): string
     {
-        return value($this->label) ?? 'ChatAI';
+        ChatAiSettings::apply();
+
+        return (string) (config('chatai.assistant.name') ?: value($this->label) ?? 'ChatAI');
+    }
+
+    public function getIcon(): string
+    {
+        ChatAiSettings::apply();
+
+        return (string) (config('chatai.assistant.icon') ?: 'heroicon-o-sparkles');
+    }
+
+    /**
+     * An uploaded image used instead of the icon, if any.
+     */
+    public function getAvatarUrl(): ?string
+    {
+        ChatAiSettings::apply();
+        $path = config('chatai.assistant.avatar');
+
+        return filled($path) ? Storage::disk((string) config('chatai.assistant.disk', 'public'))->url((string) $path) : null;
     }
 
     /**

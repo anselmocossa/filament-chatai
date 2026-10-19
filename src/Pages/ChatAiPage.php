@@ -42,6 +42,11 @@ class ChatAiPage extends Page
         return $plugin->hasPage() && $plugin->isAccessible();
     }
 
+    public static function getNavigationIcon(): string|BackedEnum|Htmlable|null
+    {
+        return ChatAiPlugin::get()->getIcon();
+    }
+
     public static function getNavigationLabel(): string
     {
         return ChatAiPlugin::get()->getLabel();
@@ -71,6 +76,8 @@ class ChatAiPage extends Page
 
         return [
             'label' => $plugin->getLabel(),
+            'icon' => $plugin->getIcon(),
+            'avatarUrl' => $plugin->getAvatarUrl(),
             'config' => $plugin->clientConfig(remember: false, withSidebar: true, conversationId: $this->conversation),
         ];
     }

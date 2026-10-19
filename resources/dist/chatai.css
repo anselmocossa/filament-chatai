@@ -98,6 +98,11 @@
     background: var(--chatai-bg);
 }
 
+.fi-chatai-avatar-img { object-fit: cover; border-radius: inherit; }
+.fi-chatai-header-avatar .fi-chatai-avatar-img { width: 100%; height: 100%; border-radius: 0.6rem; }
+.fi-chatai-launcher-avatar { width: 100%; height: 100%; border-radius: 9999px; }
+.fi-chatai-empty .fi-chatai-avatar-img { width: 3rem; height: 3rem; border-radius: 0.9rem; }
+
 /* "Online" badge on the avatar's corner. */
 .fi-chatai-header-dot {
     position: absolute;

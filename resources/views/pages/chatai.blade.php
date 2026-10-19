@@ -37,7 +37,7 @@
                     <x-filament::icon icon="heroicon-m-bars-3" class="fi-chatai-header-btn-icon" />
                 </button>
                 <span class="fi-chatai-header-avatar" aria-hidden="true">
-                    <x-filament::icon icon="heroicon-m-sparkles" class="fi-chatai-header-avatar-icon" />
+                    @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-header-avatar-icon'])
                 </span>
                 <h1 class="fi-chatai-main-title" x-text="title || @js($label)"></h1>
                 <div class="fi-chatai-header-actions">

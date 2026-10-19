@@ -3,7 +3,7 @@
     <div class="fi-chatai-messages" x-ref="scroller" aria-live="polite">
         <template x-if="messages.length === 0 && ! loading">
             <div class="fi-chatai-empty">
-                <x-filament::icon icon="heroicon-o-sparkles" class="fi-chatai-empty-icon" />
+                @include('filament-chatai::components.avatar', ['icon' => $icon ?? 'heroicon-o-sparkles', 'avatarUrl' => $avatarUrl ?? null, 'class' => 'fi-chatai-empty-icon'])
                 <p class="fi-chatai-empty-title">{{ __('chatai::chatai.empty_title', ['name' => $label]) }}</p>
                 <p class="fi-chatai-empty-text">{{ $emptyText ?? __('chatai::chatai.empty_text') }}</p>
             </div>

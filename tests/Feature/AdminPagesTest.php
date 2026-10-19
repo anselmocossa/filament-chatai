@@ -5,6 +5,7 @@ use Filament\ChatAi\Events\TurnCompleted;
 use Filament\ChatAi\Llm\LlmClient;
 use Filament\ChatAi\Llm\LlmConfig;
 use Filament\ChatAi\Models\Conversation;
+use Filament\ChatAi\Pages\ChatAiPage;
 use Filament\ChatAi\Pages\ChatAiSettingsPage;
 use Filament\ChatAi\Pages\ChatAiUsagePage;
 use Filament\ChatAi\Settings\ChatAiSettings;
@@ -12,6 +13,7 @@ use Filament\ChatAi\Testing\FakeLlmClient;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 function adminPlugin(): ChatAiPlugin
@@ -92,4 +94,32 @@ it('applies the limits saved on the settings page to the chat', function () {
 
     expect(config('chatai.max_iterations'))->toBe(3)
         ->and(LlmConfig::fromConfig()->timeout)->toBe(45);
+});
+
+it('renames the assistant and changes its icon from the settings page', function () {
+    adminPlugin()->canManageSettings(fn (): bool => true);
+    $this->actingAs(adminUser());
+
+    Livewire::test(ChatAiSettingsPage::class)
+        ->set('data.assistant.name', 'Joule')
+        ->set('data.assistant.icon', 'heroicon-o-light-bulb')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    ChatAiSettings::flush();
+
+    expect(adminPlugin()->getLabel())->toBe('Joule')
+        ->and(adminPlugin()->getIcon())->toBe('heroicon-o-light-bulb')
+        ->and(ChatAiPage::getNavigationLabel())->toBe('Joule');
+
+    $this->get('/admin/chatai')->assertSee('Joule')->assertSee('fi-chatai-header-avatar', false);
+});
+
+it('shows an uploaded image as the assistant avatar', function () {
+    Storage::fake('public');
+    ChatAiSettings::save(['assistant.avatar' => 'chatai/logo.png']);
+    ChatAiSettings::flush();
+
+    expect(adminPlugin()->getAvatarUrl())->toContain('chatai/logo.png');
+    $this->actingAs(adminUser())->get('/admin/chatai')->assertSee('chatai/logo.png');
 });

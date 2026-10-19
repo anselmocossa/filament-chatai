@@ -54,6 +54,14 @@ return [
     // Tool results kept in the conversation history are cut to this size.
     'max_tool_result_bytes' => 20_000,
 
+    // Name, icon (any Heroicon) and optional image of the assistant; set on the settings page.
+    'assistant' => [
+        'name' => null,
+        'icon' => null,
+        'avatar' => null,
+        'disk' => 'public',
+    ],
+
     // Extra rules for the assistant written by the admin (tone, business terms).
     'instructions' => null,
 
