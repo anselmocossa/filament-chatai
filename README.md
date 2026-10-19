@@ -12,14 +12,14 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-141%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-145%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
 ---
 
 - **Floating chat** in the corner of every page, aware of the record on screen.
-- **Full-page chat** (`/{panel}/chatai`) with conversation history — the same conversation as the floating one.
+- **Full-page chat** (`/{panel}/chatai`) with a history you can organise: pinned conversations, groups, renaming — the same conversation as the floating one.
 - **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts and follow-up suggestions, not just text.
 - **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form. Read-only, for now.
 - **Files**: attach documents, paste links to records of the panel, and get CSV, Excel or PDF files back.
@@ -29,9 +29,13 @@
 
 ## Screenshots
 
-#### Full-page chat — history, KPIs and charts from the shop data
+#### Full-page chat — KPIs and charts from the shop data
 
 <img src="art/screenshots/full-page.png" alt="Full-page chat with KPIs and a chart" width="100%">
+
+#### History — pin conversations, group them in folders, rename in place
+
+<img src="art/screenshots/history.png" alt="History with pinned conversations and groups" width="280">
 
 #### Floating chat — knows the record on screen
 
