@@ -515,15 +515,20 @@ document.addEventListener('alpine:init', () => {
 
         // ---- taking the user somewhere ----------------------------------
 
+        // A table row that is a record: open it, keeping the chat (same as navigate).
+        openRecord(url) {
+            if (url) this.goTo(url, 0)
+        },
+
         // The answer is read first; then the page changes and the chat reopens there, same conversation.
-        goTo(url) {
+        goTo(url, delay = 900) {
             this.pendingNavigation = null
             if (this.conversationId) storage.set(config.storageKey, this.conversationId)
             try { sessionStorage.setItem('chatai-open', '1') } catch {}
 
             setTimeout(() => {
                 window.Livewire?.navigate ? window.Livewire.navigate(url) : (window.location.href = url)
-            }, 900)
+            }, delay)
         },
 
         // ---- one approval for a list of changes ----------------------------

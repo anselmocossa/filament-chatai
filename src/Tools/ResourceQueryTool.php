@@ -160,8 +160,16 @@ final class ResourceQueryTool
                 $total = (clone $query)->count();
                 $records = $query->orderBy($sort, $direction)->limit(max(1, min((int) ($args['limit'] ?? $limit), $limit)))->get();
 
-                $rows = $records->map(function ($record) use ($fields, $relatedFields, $totals, $related): array {
+                $rows = $records->map(function ($record) use ($resource, $fields, $relatedFields, $totals, $related): array {
                     $row = Arr::only($record->attributesToArray(), $fields);
+
+                    // Where the record opens, if the user may open it (for clickable rows).
+                    foreach (['view', 'edit'] as $page) {
+                        if ($resource::hasPage($page) && rescue(fn () => $page === 'view' ? $resource::canView($record) : $resource::canEdit($record), false, false)) {
+                            $row['_url'] = rescue(fn () => $resource::getUrl($page, ['record' => $record]), null, false);
+                            break;
+                        }
+                    }
 
                     foreach ($relatedFields as $field) {
                         [$relation, $column] = explode('.', $field, 2);

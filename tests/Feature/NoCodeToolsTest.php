@@ -146,3 +146,9 @@ it('shows a change as before → after on the card', function () {
 
     expect($action->resultFields())->toBe([['label' => 'Record', 'value' => 'Classic Pillow'], ['label' => 'Qty', 'value' => '2 → 5']]);
 });
+
+it('gives each listed row the address of its record, for clickable rows', function () {
+    $rows = noCode(CustomTool::TYPE_RESOURCE, ['resource' => ProductResource::class, 'fields' => ['name'], 'sort' => 'id', 'sort_dir' => 'asc'])->call([])->data['rows'];
+
+    expect($rows[0]['_url'])->toEndWith('/products/'.Product::query()->orderBy('id')->value('id').'/edit');
+});

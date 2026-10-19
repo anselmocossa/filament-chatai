@@ -51,7 +51,7 @@
                 </thead>
                 <tbody>
                     <template x-for="(row, r) in (sortKey ? [...component.rows].sort((a, b) => (a[sortKey] > b[sortKey] ? 1 : a[sortKey] < b[sortKey] ? -1 : 0) * sortDir) : component.rows)" :key="r">
-                        <tr>
+                        <tr :class="{ 'fi-chatai-row-link': row._url }" x-on:click="row._url && openRecord(row._url)" :title="row._url ? @js(__('chatai::chatai.open_record')) : null">
                             <template x-for="column in component.columns" :key="column.key">
                                 <td :class="{ 'fi-chatai-num': ['number', 'money'].includes(column.format) }">
                                     <template x-if="column.format === 'badge'">

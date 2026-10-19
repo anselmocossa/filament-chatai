@@ -30,6 +30,7 @@ return [
     'not_helpful' => 'Not helpful',
     'why_not_helpful' => 'What went wrong? (optional)',
     'thanks_feedback' => 'Thanks — this helps improve the assistant.',
+    'open_record' => 'Open',
     'retry' => 'Try again',
     'placeholder' => 'Type your question…',
     'send' => 'Send',

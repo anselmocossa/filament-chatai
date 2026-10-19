@@ -157,6 +157,11 @@ class ComponentValidator
                 $out[$key] = $this->scalar($value) ? (is_string($value) ? $this->str($value, 200) : $value) : null;
             }
 
+            // A row can open its record — only places of this application.
+            if ($this->internalUrl($row['_url'] ?? null)) {
+                $out['_url'] = (string) $row['_url'];
+            }
+
             return $out;
         }, array_slice($rows, 0, Catalog::MAX_ROWS));
 
@@ -361,5 +366,11 @@ class ComponentValidator
     {
         // Only same-app paths or http(s) URLs — never javascript: or data:.
         return is_string($link) && preg_match('#^(https?://|/)#i', $link) ? mb_substr($link, 0, 500) : null;
+    }
+
+    protected function internalUrl(mixed $url): bool
+    {
+        return is_string($url) && $url !== '' && mb_strlen($url) <= 500
+            && (str_starts_with($url, url('/').'/') || (str_starts_with($url, '/') && ! str_starts_with($url, '//')));
     }
 }

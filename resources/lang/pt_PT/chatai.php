@@ -30,6 +30,7 @@ return [
     'not_helpful' => 'Não útil',
     'why_not_helpful' => 'O que correu mal? (opcional)',
     'thanks_feedback' => 'Obrigado — ajuda a melhorar o assistente.',
+    'open_record' => 'Abrir',
     'retry' => 'Tentar de novo',
     'placeholder' => 'Escreva a sua pergunta…',
     'send' => 'Enviar',

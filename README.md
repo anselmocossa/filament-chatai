@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-180%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -218,6 +218,10 @@ editor, **Custom permissions** tab (enable `shield_resource.tabs.custom_permissi
 who may use what. A user without a tool's permission does not get that tool, so the assistant tells them it
 has no access to that data. A tool can require an existing permission instead (e.g. `ViewAny:Order`).
 Resource tools also follow the resource's policies, and Shield's super admin always passes.
+
+## Clickable records
+
+Rows of a table that come from a list tool open their record: the tool hands the model each row's address (only when the user may open that record) and a click takes the user there, with the chat following. Addresses outside the application are dropped.
 
 ## Memory
 

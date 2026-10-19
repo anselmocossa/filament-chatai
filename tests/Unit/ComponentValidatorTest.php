@@ -64,3 +64,19 @@ it('describes the four component types in the show_ui tool schema', function () 
         ->toBe(['kpi', 'table', 'chart', 'suggestions'])
         ->and(json_encode($schema))->toBeJson();
 });
+
+it('keeps a row link only when it points inside the application', function () {
+    $table = (new ComponentValidator)->validate([
+        'type' => 'table',
+        'columns' => [['key' => 'name', 'label' => 'Name']],
+        'rows' => [
+            ['name' => 'Ok', '_url' => '/admin/products/1/edit'],
+            ['name' => 'Out', '_url' => 'https://evil.example/x'],
+            ['name' => 'Protocol-relative', '_url' => '//evil.example/x'],
+        ],
+    ]);
+
+    expect($table['rows'][0]['_url'])->toBe('/admin/products/1/edit')
+        ->and($table['rows'][1])->not->toHaveKey('_url')
+        ->and($table['rows'][2])->not->toHaveKey('_url');
+});

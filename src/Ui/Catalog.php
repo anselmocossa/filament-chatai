@@ -73,7 +73,7 @@ final class Catalog
                             ],
                             'rows' => [
                                 'type' => 'array',
-                                'description' => 'table: objects keyed by column key (max 50).',
+                                'description' => 'table: objects keyed by column key (max 50). Copy a row\'s "_url" from the tool result when it has one, so the row opens that record.',
                                 'items' => ['type' => 'object'],
                             ],
                             'chart_type' => ['type' => 'string', 'enum' => self::CHART_TYPES],

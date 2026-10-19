@@ -442,6 +442,9 @@
 .fi-chatai-memory-note-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fi-chatai-component:has(.fi-chatai-memory-note) { border: 0; background: transparent; padding: 0; }
 
+.fi-chatai-row-link { cursor: pointer; }
+.fi-chatai-row-link:hover td { background: color-mix(in oklab, var(--chatai-accent) 7%, transparent); }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

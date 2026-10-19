@@ -185,7 +185,8 @@ class Orchestrator
                             yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
                         }
 
-                        $result = ToolResult::text('Shown to the user.');
+                        // Said here because this is where the model decides how to refer to it.
+                        $result = ToolResult::text('Shown to the user, under your text. Do not say where it is ("above", "below", "in the table"); just give the key finding.');
                     } elseif ($call->toolName === FillFormTool::NAME && isset($available[FillFormTool::NAME])) {
                         // The browser writes these into the open form; the user saves.
                         $filled = FillFormTool::fields($context, (array) $call->arguments);
