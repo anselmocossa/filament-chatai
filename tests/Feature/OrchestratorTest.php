@@ -73,6 +73,20 @@ it('renders show_ui components and stores them on the answer', function () {
         ->and($conversation->messages->last()->components[0]['type'])->toBe('kpi');
 });
 
+it('shows the same component and the follow-up suggestions only once per answer', function () {
+    $suggestions = ['type' => 'suggestions', 'items' => [['label' => 'Top', 'prompt' => 'Top products']]];
+    $kpi = ['type' => 'kpi', 'items' => [['label' => 'Vendas', 'value' => 1]]];
+
+    [$events, $conversation] = runTurn(FakeLlmClient::script([
+        [FakeLlmClient::call('show_ui', ['components' => [$kpi, $suggestions]])],
+        [FakeLlmClient::call('show_ui', ['components' => [$kpi, ['type' => 'suggestions', 'items' => [['label' => 'Other', 'prompt' => 'Other']]]]])],
+        ['Feito.'],
+    ]));
+
+    expect(collect($events)->where('type', 'component'))->toHaveCount(2)
+        ->and(collect($conversation->messages->last()->components)->pluck('type')->all())->toBe(['kpi', 'suggestions']);
+});
+
 it('stops after the maximum number of tool iterations and still answers', function () {
     config(['chatai.max_iterations' => 2]);
 

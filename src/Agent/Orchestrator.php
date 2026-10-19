@@ -120,6 +120,10 @@ class Orchestrator
                 foreach ($calls as $call) {
                     if ($call->toolName === ShowUiTool::NAME) {
                         foreach ($this->validator->validateMany((array) ($call->arguments['components'] ?? [])) as $component) {
+                            if ($this->alreadyShown($components, $component)) {
+                                continue;
+                            }
+
                             $components[] = $component;
                             yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
                         }
@@ -228,5 +232,23 @@ class Orchestrator
     protected function elapsedMs(int $startedAt): int
     {
         return (int) ((hrtime(true) - $startedAt) / 1_000_000);
+    }
+
+    /**
+     * Models sometimes call show_ui again with what they already showed; one
+     * copy of a component, and one set of follow-up suggestions, per answer.
+     *
+     * @param  array<int, array<string, mixed>>  $components
+     * @param  array<string, mixed>  $component
+     */
+    protected function alreadyShown(array $components, array $component): bool
+    {
+        foreach ($components as $shown) {
+            if ($shown == $component || ($component['type'] === 'suggestions' && $shown['type'] === 'suggestions')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
