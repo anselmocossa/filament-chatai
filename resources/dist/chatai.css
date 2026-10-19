@@ -554,6 +554,22 @@
 .fi-chatai-sidebar-item:hover .fi-chatai-sidebar-item-delete,
 .fi-chatai-sidebar-item-delete:focus-visible { opacity: 1; }
 .fi-chatai-sidebar-item-delete:hover { color: var(--danger-600, #dc2626); }
+.fi-chatai-history-add { display: flex; align-items: center; gap: 0.5rem; width: 100%; margin-bottom: 0.4rem; padding: 0.5rem 0.55rem; border-radius: 0.6rem; font-size: 0.85rem; color: var(--chatai-text); }
+.fi-chatai-history-more { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 0.45rem; color: var(--chatai-muted); }
+.fi-chatai-history-add:hover, .fi-chatai-history-more:hover { background: var(--chatai-surface); }
+.fi-chatai-history-icon { width: 0.95rem; height: 0.95rem; flex-shrink: 0; }
+.fi-chatai-history-section { display: flex; flex-direction: column; gap: 0.1rem; }
+.fi-chatai-history-section + .fi-chatai-history-section { margin-top: 0.6rem; }
+.fi-chatai-history-heading { display: flex; align-items: center; gap: 0.25rem; min-height: 1.8rem; }
+.fi-chatai-history-heading .fi-chatai-history-more { opacity: 0; }
+.fi-chatai-history-heading:hover .fi-chatai-history-more, .fi-chatai-history-more:focus-visible { opacity: 1; }
+.fi-chatai-history-title { display: flex; align-items: center; gap: 0.4rem; flex: 1; min-width: 0; padding: 0 0.35rem; font-size: 0.72rem; font-weight: 600; color: var(--chatai-muted); text-align: left; }
+.fi-chatai-history-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-group .fi-chatai-history-title { font-size: 0.82rem; color: var(--chatai-text); }
+.fi-chatai-history-chevron { width: 0.85rem; height: 0.85rem; margin-left: auto; transition: transform 0.15s; }
+.fi-chatai-history-chevron.fi-collapsed { transform: rotate(-90deg); }
+.fi-group .fi-chatai-sidebar-item { padding-left: 0.9rem; }
+.fi-chatai-history-input { width: 100%; margin: 0.15rem 0; padding: 0.4rem 0.55rem; border: 1px solid var(--chatai-accent); border-radius: 0.5rem; background: var(--chatai-bg); font-size: 0.85rem; color: var(--chatai-text); outline: none; }
 .fi-chatai-sidebar-empty { font-size: 0.8rem; color: var(--chatai-muted); padding: 0.5rem 0.35rem; }
 
 .fi-chatai-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }

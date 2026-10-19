@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
  * @property ?string $tenant_id
  * @property ?string $title
  * @property ?Carbon $last_message_at
+ * @property ?Carbon $pinned_at
+ * @property ?int $group_id
  */
 class Conversation extends Model
 {
@@ -34,6 +36,7 @@ class Conversation extends Model
     {
         return [
             'last_message_at' => 'datetime',
+            'pinned_at' => 'datetime',
         ];
     }
 

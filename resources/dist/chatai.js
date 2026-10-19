@@ -87,6 +87,13 @@ document.addEventListener('alpine:init', () => {
 
     const SIDEBAR_KEY = 'chatai.sidebar'
 
+    // Groups the user folded in the history.
+    const COLLAPSED_KEY = 'chatai.collapsed-groups'
+
+    const readCollapsed = () => {
+        try { return JSON.parse(storage.get(COLLAPSED_KEY) || '[]') } catch { return [] }
+    }
+
     const BROWSER_VOICE_KEY = 'chatai.voice'
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -169,6 +176,11 @@ document.addEventListener('alpine:init', () => {
         status: null,
         notice: null,
         conversations: [],
+        groups: [],
+        collapsedGroups: readCollapsed(),
+        editingId: null,
+        editingGroupId: null,
+        editingText: '',
         search: '',
         sidebarOpen: false,
         stickToEnd: true,
@@ -641,7 +653,115 @@ document.addEventListener('alpine:init', () => {
             const query = this.search.trim() ? `?search=${encodeURIComponent(this.search.trim())}` : ''
             const response = await fetch(this.url() + query, { headers: this.headers(), credentials: 'same-origin' })
 
-            if (response.ok) this.conversations = (await response.json()).data
+            if (response.ok) {
+                const data = await response.json()
+                this.conversations = data.data
+                this.groups = data.groups ?? []
+            }
+        },
+
+        // ---- history: pinned, groups, then by date ------------------------
+
+        historySections() {
+            const t = config.i18n
+            const day = 86400000
+            const startOfToday = new Date(new Date().toDateString()).getTime()
+            const buckets = [
+                { key: 'today', label: t.today, from: startOfToday },
+                { key: 'yesterday', label: t.yesterday, from: startOfToday - day },
+                { key: 'week', label: t.week, from: startOfToday - 7 * day },
+                { key: 'month', label: t.month, from: startOfToday - 30 * day },
+                { key: 'older', label: t.older, from: -Infinity },
+            ].map((b) => ({ ...b, items: [] }))
+
+            const pinned = this.conversations.filter((c) => c.pinned)
+            const groups = this.groups.map((g) => ({ key: `group-${g.id}`, label: g.name, group: g, items: this.conversations.filter((c) => !c.pinned && c.group_id === g.id) }))
+
+            for (const c of this.conversations.filter((c) => !c.pinned && !this.groups.some((g) => g.id === c.group_id))) {
+                const when = new Date(c.last_message_at).getTime()
+                buckets.find((b) => when >= b.from).items.push(c)
+            }
+
+            return [{ key: 'pinned', label: t.pinned, items: pinned }, ...groups, ...buckets]
+        },
+
+        async patchConversation(item, body) {
+            const response = await fetch(this.url(item.id), { method: 'PATCH', headers: this.headers(), credentials: 'same-origin', body: JSON.stringify(body) })
+
+            if (response.ok) Object.assign(item, await response.json())
+            if (item.id === this.conversationId && 'title' in body) this.title = item.title
+
+            return response.ok
+        },
+
+        togglePin(item) {
+            this.patchConversation(item, { pinned: !item.pinned })
+        },
+
+        startRename(item) {
+            this.editingGroupId = null
+            this.editingText = item.title || ''
+            this.editingId = item.id
+        },
+
+        saveRename(item) {
+            if (this.editingId !== item.id) return
+            this.editingId = null
+            if ((this.editingText.trim() || null) !== (item.title || null)) this.patchConversation(item, { title: this.editingText.trim() || null })
+        },
+
+        moveTo(item, groupId) {
+            if (groupId) this.collapsedGroups = this.collapsedGroups.filter((id) => id !== groupId)
+            this.patchConversation(item, { group_id: groupId })
+        },
+
+        // A new group starts with a default name, ready to be renamed in place.
+        async createGroup(item = null) {
+            const response = await fetch(config.groupsUrl, { method: 'POST', headers: this.headers(), credentials: 'same-origin', body: JSON.stringify({ name: config.i18n.newGroupName }) })
+
+            if (!response.ok) return
+
+            const group = await response.json()
+            this.groups.push(group)
+            if (item) await this.moveTo(item, group.id)
+            this.startGroupRename(group)
+        },
+
+        startGroupRename(group) {
+            this.editingId = null
+            this.editingText = group.name
+            this.editingGroupId = group.id
+        },
+
+        async saveGroup(group) {
+            if (this.editingGroupId !== group.id) return
+            this.editingGroupId = null
+            const name = this.editingText.trim()
+
+            if (!name || name === group.name) return
+
+            const response = await fetch(`${config.groupsUrl}/${group.id}`, { method: 'PATCH', headers: this.headers(), credentials: 'same-origin', body: JSON.stringify({ name }) })
+            if (response.ok) group.name = name
+        },
+
+        async deleteGroup(group) {
+            if (!window.confirm(config.i18n.confirmDeleteGroup)) return
+
+            const response = await fetch(`${config.groupsUrl}/${group.id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' })
+
+            if (response.ok) {
+                this.groups = this.groups.filter((g) => g.id !== group.id)
+                this.conversations.forEach((c) => { if (c.group_id === group.id) c.group_id = null })
+            }
+        },
+
+        isCollapsed(id) {
+            return this.collapsedGroups.includes(id)
+        },
+
+        toggleGroup(id) {
+            this.collapsedGroups = this.isCollapsed(id) ? this.collapsedGroups.filter((g) => g !== id) : [...this.collapsedGroups, id]
+            storage.set(COLLAPSED_KEY, JSON.stringify(this.collapsedGroups))
         },
 
         async remove(id) {

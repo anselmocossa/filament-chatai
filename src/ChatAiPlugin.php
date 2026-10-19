@@ -5,6 +5,7 @@ namespace Filament\ChatAi;
 use Closure;
 use Filament\ChatAi\Contracts\ToolProvider;
 use Filament\ChatAi\Http\Controllers\ConversationController;
+use Filament\ChatAi\Http\Controllers\ConversationGroupController;
 use Filament\ChatAi\Http\Controllers\FileController;
 use Filament\ChatAi\Http\Controllers\MessageStreamController;
 use Filament\ChatAi\Http\Controllers\PlaygroundController;
@@ -103,7 +104,11 @@ class ChatAiPlugin implements Plugin
                     Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');
                     Route::post('conversations', [ConversationController::class, 'store'])->name('conversations.store');
                     Route::get('conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+                    Route::patch('conversations/{conversation}', [ConversationController::class, 'update'])->name('conversations.update');
                     Route::delete('conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
+                    Route::post('groups', [ConversationGroupController::class, 'store'])->name('groups.store');
+                    Route::patch('groups/{group}', [ConversationGroupController::class, 'update'])->whereNumber('group')->name('groups.update');
+                    Route::delete('groups/{group}', [ConversationGroupController::class, 'destroy'])->whereNumber('group')->name('groups.destroy');
                     Route::post('conversations/{conversation}/messages', MessageStreamController::class)->name('messages.store');
                     Route::post('messages/{message}/speech', [SpeechController::class, 'synthesize'])->name('speech.synthesize');
                     Route::post('transcriptions', [SpeechController::class, 'transcribe'])->name('speech.transcribe');
@@ -174,6 +179,7 @@ class ChatAiPlugin implements Plugin
             'userVoice' => $serverVoice && auth()->check() ? Preference::voiceFor(auth()->user()) : null,
             'sampleUrl' => $panel->route('chatai.speech.sample'),
             'preferencesUrl' => $panel->route('chatai.preferences.update'),
+            'groupsUrl' => $panel->route('chatai.groups.store'),
             'filesUrl' => $panel->route('chatai.files.store', ['conversation' => '__conversation__']),
             'files' => [
                 'accept' => '.'.str_replace(',', ',.', FileController::ACCEPTED),
@@ -190,6 +196,14 @@ class ChatAiPlugin implements Plugin
                 'preparing' => __('chatai::chatai.preparing'),
                 'fileTooBig' => __('chatai::chatai.file_too_big'),
                 'tooManyFiles' => __('chatai::chatai.too_many_files'),
+                'confirmDeleteGroup' => __('chatai::chatai.history.confirm_delete_group'),
+                'newGroupName' => __('chatai::chatai.history.new_group_name'),
+                'pinned' => __('chatai::chatai.history.pinned'),
+                'today' => __('chatai::chatai.history.today'),
+                'yesterday' => __('chatai::chatai.history.yesterday'),
+                'week' => __('chatai::chatai.history.week'),
+                'month' => __('chatai::chatai.history.month'),
+                'older' => __('chatai::chatai.history.older'),
                 'voiceSample' => __('chatai::chatai.voice_sample', [], str_replace('-', '_', (string) ($this->getSpeechLanguage() ?? app()->getLocale()))),
             ],
         ];

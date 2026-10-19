@@ -4,6 +4,7 @@ namespace Filament\ChatAi\Http\Controllers;
 
 use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
+use Filament\ChatAi\Models\ConversationGroup;
 use Filament\ChatAi\Models\Message;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
@@ -20,16 +21,67 @@ class ConversationController
         $conversations = Conversation::forUser($request->user(), static::tenantId())
             ->where('panel_id', Filament::getCurrentPanel()->getId())
             ->when($search !== '', fn ($q) => $q->where('title', 'like', '%'.addcslashes($search, '%_').'%'))
+            ->orderByRaw('pinned_at is null')
             ->orderByDesc('last_message_at')
             ->orderByDesc('created_at')
-            ->limit(50)
-            ->get(['id', 'title', 'last_message_at', 'created_at']);
+            ->limit(100)
+            ->get(['id', 'title', 'last_message_at', 'created_at', 'pinned_at', 'group_id']);
 
-        return response()->json(['data' => $conversations->map(fn (Conversation $c) => [
-            'id' => $c->id,
-            'title' => $c->title,
-            'last_message_at' => ($c->last_message_at ?? $c->created_at)?->toIso8601String(),
-        ])]);
+        $groups = ConversationGroup::forUser($request->user(), static::tenantId(), Filament::getCurrentPanel()->getId())
+            ->orderBy('sort')->orderBy('name')->get(['id', 'name']);
+
+        return response()->json([
+            'data' => $conversations->map(fn (Conversation $c) => [
+                'id' => $c->id,
+                'title' => $c->title,
+                'last_message_at' => ($c->last_message_at ?? $c->created_at)?->toIso8601String(),
+                'pinned' => $c->pinned_at !== null,
+                'group_id' => $c->group_id,
+            ]),
+            'groups' => $groups->map(fn (ConversationGroup $g): array => ['id' => $g->id, 'name' => $g->name]),
+        ]);
+    }
+
+    /**
+     * Rename, pin/unpin or move a conversation to one of the user's groups.
+     */
+    public function update(Request $request, string $conversation): JsonResponse
+    {
+        $conversation = static::authorized($conversation, 'update');
+
+        $data = $request->validate([
+            'title' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'pinned' => ['sometimes', 'boolean'],
+            'group_id' => ['sometimes', 'nullable', 'integer'],
+        ]);
+
+        if (array_key_exists('group_id', $data) && $data['group_id'] !== null) {
+            abort_unless(
+                ConversationGroup::forUser($request->user(), static::tenantId(), Filament::getCurrentPanel()->getId())->whereKey($data['group_id'])->exists(),
+                422,
+            );
+        }
+
+        if (array_key_exists('title', $data)) {
+            $conversation->title = filled($data['title']) ? trim($data['title']) : null;
+        }
+
+        if (array_key_exists('pinned', $data)) {
+            $conversation->pinned_at = $data['pinned'] ? now() : null;
+        }
+
+        if (array_key_exists('group_id', $data)) {
+            $conversation->group_id = $data['group_id'];
+        }
+
+        $conversation->save();
+
+        return response()->json([
+            'id' => $conversation->id,
+            'title' => $conversation->title,
+            'pinned' => $conversation->pinned_at !== null,
+            'group_id' => $conversation->group_id,
+        ]);
     }
 
     public function store(Request $request): JsonResponse
