@@ -22,7 +22,8 @@
 - **Full-page chat** (`/{panel}/chatai`) with a history you can organise: pinned conversations, groups, renaming — the same conversation as the floating one.
 - **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts and follow-up suggestions, not just text.
 - **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form.
-- **Changes with confirmation**: tools that change data never run straight away — the user sees a card with the exact values and confirms or cancels.
+- **Changes with confirmation**: tools that change data never run straight away — the user gets a form prefilled by the model, or one paginated list for many changes, and approves once.
+- **Sees the screen and acts on it**: answers about the page the user is on, fills in the open form (every step of a wizard), and opens pages and records — while it works the chat shrinks to a bar on the chat button. It never saves on its own.
 - **Files**: attach documents, paste links to records of the panel, and get CSV, Excel or PDF files back.
 - **Voice and export**: dictate, hear answers read aloud, export a conversation to Markdown.
 - **Control**: models with fallbacks, several provider keys with spending limits, usage and cost per user and model, a log of every question, and Filament Shield permissions per tool.
@@ -30,7 +31,7 @@
 
 ## Screenshots
 
-#### Full-page chat — KPIs and charts from the shop data
+#### Full-page chat — KPIs and charts from your data
 
 <img src="art/screenshots/full-page.png" alt="Full-page chat with KPIs and a chart" width="100%">
 
@@ -42,13 +43,31 @@
 
 <img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
 
-#### Forms in the chat — the assistant fills in what it understood, the user completes it
+#### Fills in the form on screen — the chat shrinks to a bar on the chat button while it works
+
+<img src="art/screenshots/agent.png" alt="The assistant filling a form, minimised to a bar" width="100%">
+
+#### …every step of a wizard in one go; the user reviews and saves
+
+<img src="art/screenshots/wizard.png" alt="Wizard step filled in by the assistant" width="100%">
+
+<img src="art/screenshots/screen-fill.png" alt="Fields filled in on the page and summary in the chat" width="100%">
+
+#### Opens pages and records for the user
+
+<img src="art/screenshots/navigate.png" alt="The assistant opening a product for editing" width="100%">
+
+#### Changes ask first — a form prefilled by the model
 
 <img src="art/screenshots/form.png" alt="A form in the chat to register a customer" width="100%">
 
-#### Changes — after Confirm, the card shows what changed
+#### …and many at once as one paginated list with a single approval
 
-<img src="art/screenshots/actions.png" alt="Confirmation card for a change" width="100%">
+<img src="art/screenshots/batch.png" alt="Fifteen customers from a CSV, approved at once" width="100%">
+
+#### After Confirm, the card shows what changed
+
+<img src="art/screenshots/actions.png" alt="Confirmation card with before and after" width="100%">
 
 #### Attach a file, get an Excel back
 
@@ -58,7 +77,13 @@
 
 <img src="art/screenshots/mentions.png" alt="@ to pick a tool" width="60%">
 
-#### Tool editor — build a tool on screen and test it by chatting
+#### Tools made on screen — no code
+
+<img src="art/screenshots/tools.png" alt="Tools page with no-code tools" width="100%">
+
+<img src="art/screenshots/nocode-editor.png" alt="Editor of a Totals for a period tool" width="60%">
+
+#### Tool editor — test the tool by chatting before saving
 
 <img src="art/screenshots/tool-editor.png" alt="Tool editor with a test chat" width="100%">
 
@@ -74,7 +99,7 @@
 
 <img src="art/screenshots/logs.png" alt="Logs of every question" width="100%">
 
-#### Settings — assistant, voice, permissions, files, limits, prices
+#### Settings — assistant, screen, voice, permissions, files, limits, prices
 
 <img src="art/screenshots/settings.png" alt="Settings tabs" width="100%">
 
