@@ -6,6 +6,11 @@
                 @include('filament-chatai::components.avatar', ['icon' => $icon ?? 'heroicon-o-sparkles', 'avatarUrl' => $avatarUrl ?? null, 'class' => 'fi-chatai-empty-icon'])
                 <p class="fi-chatai-empty-title">{{ __('chatai::chatai.empty_title', ['name' => $label]) }}</p>
                 <p class="fi-chatai-empty-text">{{ $emptyText ?? __('chatai::chatai.empty_text') }}</p>
+                <div class="fi-chatai-starters" x-show="starters().length">
+                    <template x-for="prompt in starters()" :key="prompt">
+                        <button type="button" class="fi-chatai-suggestion" x-on:click="ask(prompt)" x-text="prompt"></button>
+                    </template>
+                </div>
             </div>
         </template>
 

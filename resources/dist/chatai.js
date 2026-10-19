@@ -179,7 +179,10 @@ document.addEventListener('alpine:init', () => {
             if (!found || fields.some((f) => f.path === found.path)) continue
 
             const wire = window.Livewire?.find(found.el.closest('[wire\\:id]')?.getAttribute('wire:id'))
-            let value = wire ? wire.get(found.path) : (found.el.value ?? '')
+            // Rich text: what the user reads, not the editor's internal JSON; not filled in (needs its own format).
+            const rich = wrapper.querySelector('.fi-fo-rich-editor, .fi-fo-markdown-editor')
+            let value = rich ? text(rich.querySelector('.ProseMirror, .tiptap, .fi-fo-rich-editor-content, textarea') || rich).slice(0, 2000)
+                : wire ? wire.get(found.path) : (found.el.value ?? '')
             if (Array.isArray(value)) value = value.join(', ')
             if (value === null || value === undefined) value = ''
             if (value && typeof value === 'object') value = JSON.stringify(value).slice(0, 300)
@@ -212,7 +215,8 @@ document.addEventListener('alpine:init', () => {
                 label: text(wrapper.querySelector('.fi-fo-field-label-content, label')).replace(/\*$/, ''),
                 section: section || undefined,
                 // The format the field expects, so the model writes "#2563eb" and not "blue".
-                type: wrapper.querySelector('.fi-fo-color-picker') ? 'color (hex, e.g. #2563eb)'
+                type: rich ? 'rich_text (read-only)'
+                    : wrapper.querySelector('.fi-fo-color-picker') ? 'color (hex, e.g. #2563eb)'
                     : wrapper.querySelector('.fi-fo-date-time-picker') ? 'date (YYYY-MM-DD)'
                     : many ? 'checkbox_list' : choices.length > 1 ? 'radio' : wrapper.querySelector('select') ? (wrapper.querySelector('select').multiple ? 'multi_select' : 'select') : input?.type || (wrapper.querySelector('[role=switch], .fi-toggle') ? 'toggle' : 'text'),
                 value: value ?? '',
@@ -711,6 +715,26 @@ document.addEventListener('alpine:init', () => {
         ask(prompt) {
             this.input = prompt
             this.send()
+        },
+
+        // ---- starters: questions for an empty chat -------------------------
+
+        // The page on screen first (edit / create / list), then the ones set by the admin.
+        starters() {
+            const t = config.i18n
+            const found = []
+
+            if (config.startersFromScreen && !document.querySelector('.fi-chatai-page')) {
+                const hasForm = document.querySelector('.fi-main .fi-fo-field:not(.fi-chatai-panel *)')
+                const hasTable = document.querySelector('.fi-main .fi-ta-table')
+                const path = window.location.pathname
+
+                if (hasForm && /\/create\/?$/.test(path)) found.push(...(t.starterCreate || []))
+                else if (hasForm) found.push(...(t.starterEdit || []))
+                else if (hasTable) found.push(...(t.starterList || []))
+            }
+
+            return [...new Set([...found, ...(config.starters || [])])].slice(0, 4)
         },
 
         // ---- answer controls: stop, copy, regenerate, edit, rate ----------

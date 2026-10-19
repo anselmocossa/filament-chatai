@@ -82,6 +82,9 @@ class ChatAiPlugin implements Plugin
 
     protected ?bool $navigate = null;
 
+    /** @var array<int, string>|Closure|null */
+    protected array|Closure|null $starters = null;
+
     protected string|Closure|null $adminNavigationGroup = null;
 
     public static function make(): static
@@ -198,6 +201,9 @@ class ChatAiPlugin implements Plugin
                 'navigate' => (bool) config('chatai.screen.navigate', true),
             ],
             'feedbackUrl' => $panel->route('chatai.messages.feedback', ['message' => '__message__']),
+            'starters' => array_slice($this->resolveStarters(), 0, 4),
+            'startersFromScreen' => (bool) config('chatai.starters_from_screen', true),
+            'shortcut' => filled($key = config('chatai.shortcut')) ? strtolower(substr((string) $key, 0, 1)) : null,
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
@@ -218,6 +224,9 @@ class ChatAiPlugin implements Plugin
                 'fileTooBig' => __('chatai::chatai.file_too_big'),
                 'tooManyFiles' => __('chatai::chatai.too_many_files'),
                 'filled' => __('chatai::chatai.screen.filled'),
+                'starterEdit' => [__('chatai::chatai.starters.edit_summary'), __('chatai::chatai.starters.edit_check')],
+                'starterCreate' => [__('chatai::chatai.starters.create_help')],
+                'starterList' => [__('chatai::chatai.starters.list_summary')],
                 'opening' => __('chatai::chatai.screen.opening'),
                 'confirmDeleteGroup' => __('chatai::chatai.history.confirm_delete_group'),
                 'newGroupName' => __('chatai::chatai.history.new_group_name'),
@@ -426,6 +435,29 @@ class ChatAiPlugin implements Plugin
         $this->navigate = $condition;
 
         return $this;
+    }
+
+    /**
+     * Questions offered when the chat is empty (a list, or a closure receiving the user).
+     * Added to the ones set on the settings page.
+     *
+     * @param  array<int, string>|Closure|null  $starters
+     */
+    public function starters(array|Closure|null $starters): static
+    {
+        $this->starters = $starters;
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function resolveStarters(): array
+    {
+        $fromCode = $this->starters instanceof Closure ? (array) app()->call($this->starters, ['user' => auth()->user()]) : (array) ($this->starters ?? []);
+
+        return array_values(array_unique(array_filter(array_map(fn ($s) => trim((string) $s), [...$fromCode, ...(array) config('chatai.starters', [])]))));
     }
 
     public function floatingWidget(bool $condition = true): static

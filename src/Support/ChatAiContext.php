@@ -33,6 +33,16 @@ final readonly class ChatAiContext
     }
 
     /**
+     * Fields the assistant may write into (not the read-only ones, e.g. rich text).
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function fillableFields(): array
+    {
+        return array_filter($this->screenFields(), fn (array $f): bool => ! str_contains((string) ($f['type'] ?? ''), 'read-only'));
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(string $panelId, array $data, ?string $tenantId = null): self

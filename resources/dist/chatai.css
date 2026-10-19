@@ -431,6 +431,8 @@
 .fi-chatai-edit-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
 .fi-chatai-stop { background: var(--chatai-text) !important; color: var(--chatai-bg) !important; }
 
+.fi-chatai-starters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem; margin-top: 1rem; max-width: 30rem; }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-176%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-177%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -218,6 +218,11 @@ editor, **Custom permissions** tab (enable `shield_resource.tabs.custom_permissi
 who may use what. A user without a tool's permission does not get that tool, so the assistant tells them it
 has no access to that data. A tool can require an existing permission instead (e.g. `ViewAny:Order`).
 Resource tools also follow the resource's policies, and Shield's super admin always passes.
+
+## Starters and shortcut
+
+- With the chat empty it suggests up to four questions: for the page on screen (*"Summarise this record"*, *"Is anything odd or missing here?"* on an edit page; *"Help me fill in this form"* on a create page; *"Summarise this list"* on a list) plus the ones you set in **Settings → Assistant** or in code with `->starters(['How did sales go this week?'])` (or a closure receiving the user).
+- **⌘/Ctrl + J** opens and closes the chat; change the key or switch it off in Settings.
 
 ## Answer controls
 

@@ -27,6 +27,10 @@
         },
     }"
     x-on:keydown.escape.window="panelOpen && togglePanel(false)"
+    @if ($shortcut = $config['shortcut'] ?? null)
+        {{-- ⌘/Ctrl + key opens and closes the chat --}}
+        x-on:keydown.window="if (($event.metaKey || $event.ctrlKey) && ! $event.altKey && $event.key.toLowerCase() === @js($shortcut)) { $event.preventDefault(); togglePanel(! panelOpen) }"
+    @endif
     x-on:chatai-agent.window="onAgent($event.detail)"
 >
     {{-- The minimised assistant at work, in place of the chat button --}}
@@ -68,6 +72,7 @@
         x-show="! panelOpen && ! agent"
         x-on:click="togglePanel(true)"
         aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
+        title="{{ __('chatai::chatai.open', ['name' => $label]) }}{{ ($config['shortcut'] ?? null) ? ' (⌘/Ctrl+'.strtoupper($config['shortcut']).')' : '' }}"
     >
         @if ($avatarUrl)
             @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-launcher-icon fi-chatai-launcher-avatar'])

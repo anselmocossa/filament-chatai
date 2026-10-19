@@ -100,6 +100,11 @@ class ChatAiSettingsPage extends Page
                         FileUpload::make('assistant.avatar')->label($t('assistant_avatar'))->helperText($t('assistant_avatar_help'))
                             ->image()->avatar()->disk(fn (): string => (string) config('chatai.assistant.disk', 'public'))->directory('chatai')->maxSize(1024),
                         Textarea::make('instructions')->label($t('instructions'))->rows(8)->helperText($t('instructions_help')),
+                        TagsInput::make('starters')->label($t('starters'))->helperText($t('starters_help'))->placeholder($t('starters_placeholder')),
+                        Grid::make(2)->schema([
+                            Toggle::make('starters_from_screen')->label($t('starters_from_screen'))->inline(false),
+                            TextInput::make('shortcut')->label($t('shortcut'))->helperText($t('shortcut_help'))->maxLength(1)->prefix('⌘ / Ctrl +'),
+                        ]),
                         Toggle::make('screen.read')->label($t('screen_read'))->helperText($t('screen_read_help'))->live(),
                         Toggle::make('screen.fill')->label($t('screen_fill'))->helperText($t('screen_fill_help'))
                             ->visible(fn (Get $get): bool => (bool) $get('screen.read')),

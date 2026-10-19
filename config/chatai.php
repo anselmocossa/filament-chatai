@@ -59,6 +59,12 @@ return [
     | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
     | "Custom permissions" tab — and the chat can require UseChatAi.
     */
+    // Shown when the chat is empty: questions set here, plus ones for the page on screen
+    // (edit, create, list). The shortcut opens/closes the chat with ⌘/Ctrl + that key (null = off).
+    'starters' => [],
+    'starters_from_screen' => true,
+    'shortcut' => 'j',
+
     // Longest a single answer may take (several tools plus a long text), in seconds.
     'max_turn_seconds' => 300,
 

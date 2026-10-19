@@ -16,7 +16,7 @@ class SystemPrompt
         // What the user is looking at right now (only when reading the screen is switched on).
         $screen = $context->screen !== []
             ? "\nOn screen now (the user sees this; \"this\" or \"here\" means it): ".json_encode($context->screen, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                .($context->screenFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved." : '')
+                .($context->fillableFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved." : '')
             : '';
 
         $prompt = <<<PROMPT

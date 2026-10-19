@@ -15,12 +15,12 @@ final class FillFormTool
 
     public static function available(ChatAiContext $context): bool
     {
-        return $context->screenFields() !== [] && (bool) config('chatai.screen.fill', true);
+        return $context->fillableFields() !== [] && (bool) config('chatai.screen.fill', true);
     }
 
     public static function make(ChatAiContext $context): ChatAiTool
     {
-        $paths = array_keys($context->screenFields());
+        $paths = array_keys($context->fillableFields());
 
         return new ChatAiTool(
             name: self::NAME,
@@ -58,7 +58,7 @@ final class FillFormTool
      */
     public static function fields(ChatAiContext $context, array $arguments): array
     {
-        $onScreen = $context->screenFields();
+        $onScreen = $context->fillableFields();
         $fields = [];
 
         foreach ((array) ($arguments['fields'] ?? []) as $field) {

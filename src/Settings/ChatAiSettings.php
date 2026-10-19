@@ -22,7 +22,7 @@ final class ChatAiSettings
         'pricing.currency', 'pricing.models', 'pricing.speech_per_million_characters', 'pricing.transcription_per_hour',
         'instructions', 'http_tools.allowed_hosts',
         'assistant.name', 'assistant.icon', 'assistant.avatar',
-        'screen.read', 'screen.fill', 'screen.navigate', 'actions.enabled', 'permissions.enabled', 'permissions.require_chat',
+        'screen.read', 'screen.fill', 'screen.navigate', 'starters', 'starters_from_screen', 'shortcut', 'actions.enabled', 'permissions.enabled', 'permissions.require_chat',
         'files.disk', 'files.max_kb', 'files.max_per_message',
         'rate_limit.per_minute', 'rate_limit.per_day', 'max_iterations', 'timeout', 'max_tool_result_bytes',
     ];

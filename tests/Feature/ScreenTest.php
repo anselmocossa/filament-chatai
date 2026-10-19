@@ -114,3 +114,14 @@ it('turns 1 or "yes" into true for on/off fields', function () {
 
     expect(FillFormTool::fields($context, ['fields' => [['path' => 'data.is_active', 'value' => 1]]])[0]['value'])->toBeTrue();
 });
+
+it('reads rich text fields but never writes into them', function () {
+    $context = ChatAiContext::fromArray('admin', ['screen' => ['fields' => [
+        ['path' => 'data.description', 'label' => 'Description', 'type' => 'rich_text (read-only)', 'value' => 'Lovely card holder'],
+        ['path' => 'data.name', 'label' => 'Name'],
+    ]]]);
+
+    expect(array_keys($context->screenFields()))->toBe(['data.description', 'data.name'])
+        ->and(FillFormTool::make($context)->inputSchema['properties']['fields']['items']['properties']['path']['enum'])->toBe(['data.name'])
+        ->and(FillFormTool::fields($context, ['fields' => [['path' => 'data.description', 'value' => 'x']]]))->toBe([]);
+});
