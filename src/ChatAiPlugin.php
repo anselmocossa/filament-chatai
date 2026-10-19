@@ -75,6 +75,10 @@ class ChatAiPlugin implements Plugin
 
     protected ?string $filesDisk = null;
 
+    protected ?bool $readScreen = null;
+
+    protected ?bool $fillForms = null;
+
     protected string|Closure|null $adminNavigationGroup = null;
 
     public static function make(): static
@@ -183,6 +187,7 @@ class ChatAiPlugin implements Plugin
             'userVoice' => $serverVoice && auth()->check() ? Preference::voiceFor(auth()->user()) : null,
             'sampleUrl' => $panel->route('chatai.speech.sample'),
             'preferencesUrl' => $panel->route('chatai.preferences.update'),
+            'screen' => ['read' => (bool) config('chatai.screen.read', true), 'fill' => (bool) config('chatai.screen.read', true) && (bool) config('chatai.screen.fill', true)],
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
@@ -202,6 +207,7 @@ class ChatAiPlugin implements Plugin
                 'preparing' => __('chatai::chatai.preparing'),
                 'fileTooBig' => __('chatai::chatai.file_too_big'),
                 'tooManyFiles' => __('chatai::chatai.too_many_files'),
+                'filled' => __('chatai::chatai.screen.filled'),
                 'confirmDeleteGroup' => __('chatai::chatai.history.confirm_delete_group'),
                 'newGroupName' => __('chatai::chatai.history.new_group_name'),
                 'pinned' => __('chatai::chatai.history.pinned'),
@@ -238,6 +244,14 @@ class ChatAiPlugin implements Plugin
         if ($this->filesDisk !== null) {
             config(['chatai.files.disk' => $this->filesDisk]);
             ChatAiSettings::flush();
+        }
+
+        // Code defaults for the screen; the settings page still wins.
+        foreach (['read' => $this->readScreen, 'fill' => $this->fillForms] as $key => $value) {
+            if ($value !== null) {
+                config(["chatai.screen.{$key}" => $value]);
+                ChatAiSettings::flush();
+            }
         }
 
         // Lists the chat/tool permissions in Shield's roles editor (and creates them) when enabled.
@@ -366,6 +380,28 @@ class ChatAiPlugin implements Plugin
     public function filesDisk(?string $disk): static
     {
         $this->filesDisk = $disk;
+
+        return $this;
+    }
+
+    /**
+     * Send what the user is looking at (heading, form fields and values, visible
+     * table rows) with each question, so "this" means what is on screen.
+     */
+    public function readScreen(bool $condition = true): static
+    {
+        $this->readScreen = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Let the assistant fill in the form open on screen. It never saves: the
+     * user reviews the values and presses Save.
+     */
+    public function fillForms(bool $condition = true): static
+    {
+        $this->fillForms = $condition;
 
         return $this;
     }

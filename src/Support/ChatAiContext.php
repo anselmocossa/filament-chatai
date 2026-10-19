@@ -2,6 +2,8 @@
 
 namespace Filament\ChatAi\Support;
 
+use Filament\ChatAi\Settings\ChatAiSettings;
+
 /**
  * Where the user was when they asked: lets "how much stock does this have?"
  * resolve "this" to the record open on screen. Indicative only — tools must
@@ -16,7 +18,19 @@ final readonly class ChatAiContext
         public ?string $recordId = null,
         public ?string $tenantId = null,
         public ?string $pageTitle = null,
+        /** What is on screen (heading, form fields with their values, visible table rows), when reading the screen is on. */
+        public array $screen = [],
     ) {}
+
+    /**
+     * Form fields on screen the assistant may fill in, by state path.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function screenFields(): array
+    {
+        return collect($this->screen['fields'] ?? [])->keyBy('path')->all();
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -34,7 +48,62 @@ final readonly class ChatAiContext
             recordId: $clean('record_id', 64),
             tenantId: $tenantId,
             pageTitle: $clean('page_title'),
+            screen: self::readsScreen() ? self::screen($data['screen'] ?? null) : [],
         );
+    }
+
+    protected static function readsScreen(): bool
+    {
+        ChatAiSettings::apply();
+
+        return (bool) config('chatai.screen.read', true);
+    }
+
+    /**
+     * Keeps the screen snapshot small and plain: strings only, capped.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function screen(mixed $screen): array
+    {
+        if (! is_array($screen)) {
+            return [];
+        }
+
+        $str = fn ($v, int $max = 300): string => mb_substr(is_scalar($v) ? (string) $v : '', 0, $max);
+
+        $fields = [];
+
+        foreach (array_slice((array) ($screen['fields'] ?? []), 0, 60) as $field) {
+            if (is_array($field) && preg_match('/^[A-Za-z0-9_.\-]{1,120}$/', (string) ($field['path'] ?? ''))) {
+                $fields[] = array_filter([
+                    'path' => (string) $field['path'],
+                    'label' => $str($field['label'] ?? '', 80),
+                    'type' => $str($field['type'] ?? 'text', 20),
+                    'value' => $str($field['value'] ?? ''),
+                    'display' => $str($field['display'] ?? ''),
+                    'options' => array_values(array_map(fn ($o) => $str($o, 80), array_slice((array) ($field['options'] ?? []), 0, 30))) ?: null,
+                ], fn ($v) => $v !== null && $v !== '');
+            }
+        }
+
+        $tables = [];
+
+        foreach (array_slice((array) ($screen['tables'] ?? []), 0, 2) as $table) {
+            if (is_array($table)) {
+                $tables[] = [
+                    'headers' => array_map(fn ($h) => $str($h, 60), array_slice((array) ($table['headers'] ?? []), 0, 12)),
+                    'rows' => array_map(fn ($r) => array_map(fn ($c) => $str($c, 120), array_slice((array) $r, 0, 12)), array_slice((array) ($table['rows'] ?? []), 0, 15)),
+                ];
+            }
+        }
+
+        return array_filter([
+            'heading' => $str($screen['heading'] ?? '', 160),
+            'breadcrumbs' => $str($screen['breadcrumbs'] ?? '', 200),
+            'fields' => $fields,
+            'tables' => $tables,
+        ]);
     }
 
     /**

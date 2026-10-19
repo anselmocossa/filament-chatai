@@ -17,6 +17,7 @@ use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
+use Filament\ChatAi\Tools\FillFormTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\ChatAi\Ui\Catalog;
@@ -60,7 +61,12 @@ class Orchestrator
         }
 
         /** @var array<string, ChatAiTool> $available */
-        $available = collect([...$tools->tools($user, $context), ShowUiTool::make(), DocumentTool::make($conversation, $user)])->keyBy('name')->all();
+        $available = collect([
+            ...$tools->tools($user, $context),
+            ShowUiTool::make(),
+            DocumentTool::make($conversation, $user),
+            ...(FillFormTool::available($context) ? [FillFormTool::make($context)] : []),
+        ])->keyBy('name')->all();
         $definitions = array_values(array_map(fn (ChatAiTool $t) => $t->toFunctionDefinition(), $available));
 
         $messages = [
@@ -146,6 +152,24 @@ class Orchestrator
                         }
 
                         $result = ToolResult::text('Shown to the user.');
+                    } elseif ($call->toolName === FillFormTool::NAME && isset($available[FillFormTool::NAME])) {
+                        // The browser writes these into the open form; the user saves.
+                        $filled = FillFormTool::fields($context, (array) $call->arguments);
+                        $toolsUsed[] = $call->toolName;
+
+                        if ($filled !== []) {
+                            yield new AgentEvent(AgentEvent::FILL, ['fields' => $filled]);
+                            $card = $this->validator->validate(['type' => Catalog::FILLED, 'fields' => $filled], fromServer: true);
+
+                            if ($card !== null) {
+                                $components[] = $card;
+                                yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $card]);
+                            }
+                        }
+
+                        $result = $filled === []
+                            ? ToolResult::error('None of those fields is on screen. Use the paths listed under "On screen now".')
+                            : ToolResult::data(['filled' => array_column($filled, 'path'), 'note' => 'The values are in the form on screen. Nothing is saved: tell the user to review them and press Save.']);
                     } elseif (($tool = $available[$call->toolName] ?? null) !== null && ! $tool->readOnly) {
                         // A change: nothing runs until the user confirms; shown when the answer ends.
                         $proposals[] = ['tool' => $tool->name, 'card' => $this->propose($conversation, $user, $context, $tool, (array) $call->arguments)];

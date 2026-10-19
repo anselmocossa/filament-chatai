@@ -69,6 +69,10 @@ return [
         'assistant_avatar_help' => 'Replaces the icon in the chat (e.g. your company logo). Square, up to 1 MB.',
         'permissions' => 'Permissions',
         'permissions_help' => 'Filament Shield integration: ChatAI permissions appear in Shield\'s roles editor, «Custom permissions» tab. The super admin always passes.',
+        'screen_read' => 'Read the screen',
+        'screen_read_help' => 'With each question, send what the user is looking at: the page heading, the form fields and their values, and the visible table rows. "This" then means what is on screen.',
+        'screen_fill' => 'Fill in forms on screen',
+        'screen_fill_help' => 'The assistant can write values into the form that is open. It never saves: the user reviews and presses Save.',
         'actions_enabled' => 'Allow tools that change data',
         'actions_enabled_help' => 'Every change shows the user a confirmation card first and runs only when they confirm. Off: the assistant can only read.',
         'permissions_enabled' => 'Each tool requires a permission',
@@ -448,5 +452,8 @@ return [
         'skipped_badge' => 'Left out',
         'partial_badge' => 'Partly done',
         'already' => 'This action was already answered.',
+    ],
+    'screen' => [
+        'filled' => 'Filled in on the form — review and press Save',
     ],
 ];

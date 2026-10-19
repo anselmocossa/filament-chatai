@@ -256,3 +256,21 @@
         </div>
     </div>
 </template>
+
+{{-- filled: what the assistant wrote into the form on screen; the user saves --}}
+<template x-if="component.type === 'filled'">
+    <div class="fi-chatai-confirm fi-chatai-filled-card">
+        <div class="fi-chatai-confirm-head">
+            <span class="fi-chatai-confirm-icon"><x-filament::icon icon="heroicon-o-pencil" class="fi-chatai-file-svg" /></span>
+            <span class="fi-chatai-confirm-title">{{ __('chatai::chatai.screen.filled') }}</span>
+        </div>
+        <dl class="fi-chatai-confirm-fields">
+            <template x-for="field in component.fields" :key="field.path">
+                <div class="fi-chatai-confirm-field">
+                    <dt x-text="field.label"></dt>
+                    <dd x-text="field.value"></dd>
+                </div>
+            </template>
+        </dl>
+    </div>
+</template>

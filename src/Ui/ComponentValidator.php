@@ -24,6 +24,16 @@ class ComponentValidator
             return $this->confirm($component);
         }
 
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::FILLED) {
+            $fields = array_values(array_filter(array_map(fn ($f) => is_array($f) && $this->scalar($f['path'] ?? null) ? [
+                'path' => $this->str((string) $f['path'], 120),
+                'label' => $this->str((string) ($f['label'] ?? $f['path']), 80),
+                'value' => is_bool($f['value'] ?? null) ? ($f['value'] ? '✓' : '—') : $this->str((string) ($f['value'] ?? ''), 300),
+            ] : null, array_slice((array) ($component['fields'] ?? []), 0, 60))));
+
+            return $fields === [] ? null : ['type' => Catalog::FILLED, 'fields' => $fields];
+        }
+
         if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::CONFIRM_BATCH) {
             return $this->confirmBatch($component);
         }

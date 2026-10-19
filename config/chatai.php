@@ -59,6 +59,14 @@ return [
     | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
     | "Custom permissions" tab — and the chat can require UseChatAi.
     */
+    // The screen: what the user is looking at (page heading, form fields and their values,
+    // visible table rows) is sent with each question, and the assistant may fill in the
+    // form on screen — the user reviews it and saves it themselves.
+    'screen' => [
+        'read' => true,
+        'fill' => true,
+    ],
+
     // Tools that change data: the assistant proposes, the user confirms on a card, then it runs.
     // Off = read-only tools only.
     'actions' => [

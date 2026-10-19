@@ -69,6 +69,10 @@ return [
         'assistant_avatar_help' => 'Substitui o ícone no chat (ex.: logótipo da empresa). Quadrada, até 1 MB.',
         'permissions' => 'Permissões',
         'permissions_help' => 'Integração com o Filament Shield: as permissões do ChatAI aparecem no editor de funções do Shield, separador «Permissões personalizadas». O super administrador passa sempre.',
+        'screen_read' => 'Ler o ecrã',
+        'screen_read_help' => 'Com cada pergunta, envia o que o utilizador está a ver: o título da página, os campos do formulário e os seus valores, e as linhas visíveis das tabelas. «Isto» passa a ser o que está no ecrã.',
+        'screen_fill' => 'Preencher formulários no ecrã',
+        'screen_fill_help' => 'O assistente pode escrever valores no formulário aberto. Nunca grava: o utilizador revê e carrega em Guardar.',
         'actions_enabled' => 'Permitir tools que alteram dados',
         'actions_enabled_help' => 'Cada alteração mostra primeiro um cartão de confirmação e só corre quando o utilizador confirma. Desligado: o assistente só consulta.',
         'permissions_enabled' => 'Cada tool exige permissão',
@@ -448,5 +452,8 @@ return [
         'skipped_badge' => 'Excluído',
         'partial_badge' => 'Feito em parte',
         'already' => 'Esta acção já foi respondida.',
+    ],
+    'screen' => [
+        'filled' => 'Preenchido no formulário — reveja e carregue em Guardar',
     ],
 ];

@@ -19,6 +19,9 @@ final readonly class AgentEvent
     /** A new round after tool calls: the answer text starts over (the earlier lines were only narration). */
     public const STEP = 'step';
 
+    /** Values for the form on screen; the browser writes them into its fields. */
+    public const FILL = 'fill';
+
     public const DONE = 'done';
 
     public const ERROR = 'error';

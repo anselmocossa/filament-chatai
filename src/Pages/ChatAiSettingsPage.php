@@ -100,6 +100,9 @@ class ChatAiSettingsPage extends Page
                         FileUpload::make('assistant.avatar')->label($t('assistant_avatar'))->helperText($t('assistant_avatar_help'))
                             ->image()->avatar()->disk(fn (): string => (string) config('chatai.assistant.disk', 'public'))->directory('chatai')->maxSize(1024),
                         Textarea::make('instructions')->label($t('instructions'))->rows(8)->helperText($t('instructions_help')),
+                        Toggle::make('screen.read')->label($t('screen_read'))->helperText($t('screen_read_help'))->live(),
+                        Toggle::make('screen.fill')->label($t('screen_fill'))->helperText($t('screen_fill_help'))
+                            ->visible(fn (Get $get): bool => (bool) $get('screen.read')),
                         TagsInput::make('http_tools.allowed_hosts')->label($t('allowed_hosts'))->helperText($t('allowed_hosts_help'))->placeholder('api.minhaloja.co.mz'),
                     ]),
 

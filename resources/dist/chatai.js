@@ -150,7 +150,105 @@ document.addEventListener('alpine:init', () => {
 
     const isNarrow = () => window.matchMedia('(max-width: 767px)').matches
 
-    const readContext = () => {
+    // ---- the screen: what the user is looking at, and filling in its form ----
+
+    const CHAT = '.fi-chatai-panel, .fi-chatai-page, .fi-chatai-floating'
+    const text = (el) => (el?.innerText || '').replace(/\s+/g, ' ').trim()
+
+    // The Livewire state path of a Filament field: wire:model="data.qty" or $entangle('data.qty').
+    const statePath = (field) => {
+        for (const el of [field, ...field.querySelectorAll('*')]) {
+            for (const attr of el.attributes || []) {
+                if (attr.name.startsWith('wire:model')) return { el, path: attr.value }
+                const entangled = attr.value?.match?.(/\$entangle\(['"]([^'"]+)['"]/)
+                if (entangled) return { el, path: entangled[1] }
+            }
+        }
+
+        return null
+    }
+
+    const fieldsOnScreen = () => {
+        const fields = []
+
+        for (const wrapper of document.querySelectorAll('.fi-main .fi-fo-field')) {
+            if (wrapper.closest(CHAT) || wrapper.closest('.fi-modal') && !wrapper.closest('.fi-modal-open')) continue
+
+            const found = statePath(wrapper)
+            if (!found || fields.some((f) => f.path === found.path)) continue
+
+            const wire = window.Livewire?.find(found.el.closest('[wire\\:id]')?.getAttribute('wire:id'))
+            let value = wire ? wire.get(found.path) : (found.el.value ?? '')
+            if (Array.isArray(value)) value = value.join(', ')
+            if (value && typeof value === 'object') value = JSON.stringify(value).slice(0, 300)
+
+            const input = wrapper.querySelector('input, textarea, select')
+            const options = [...wrapper.querySelectorAll('select option, [role=option]')].map((o) => o.value || text(o)).filter(Boolean).slice(0, 30)
+
+            // What the user reads for a choice (a name, not its id).
+            const shown = text(wrapper.querySelector('.fi-select-input-value-ctn, .fi-select-input-value-label'))
+
+            fields.push({
+                path: found.path,
+                display: shown && shown !== String(value) ? shown.slice(0, 300) : undefined,
+                label: text(wrapper.querySelector('.fi-fo-field-label-content, label')).replace(/\*$/, ''),
+                type: input?.type || (wrapper.querySelector('[role=switch], .fi-toggle') ? 'toggle' : wrapper.querySelector('.fi-select-input, select') ? 'select' : 'text'),
+                value: value ?? '',
+                options: options.length ? options : undefined,
+            })
+        }
+
+        return fields.slice(0, 60)
+    }
+
+    const tablesOnScreen = () => [...document.querySelectorAll('.fi-main .fi-ta-table')]
+        .filter((t) => !t.closest(CHAT))
+        .slice(0, 2)
+        .map((table) => ({
+            headers: [...table.querySelectorAll('thead th')].map(text).filter(Boolean).slice(0, 12),
+            rows: [...table.querySelectorAll('tbody tr')].slice(0, 15).map((tr) => [...tr.querySelectorAll('td')].map(text).filter(Boolean).slice(0, 12)),
+        }))
+
+    const readScreen = (config) => {
+        if (!config.screen?.read || document.querySelector('.fi-chatai-page')) return undefined
+
+        try {
+            return {
+                heading: text(document.querySelector('.fi-main .fi-header-heading')),
+                breadcrumbs: text(document.querySelector('.fi-main .fi-breadcrumbs')),
+                fields: fieldsOnScreen(),
+                tables: tablesOnScreen(),
+            }
+        } catch {
+            return undefined
+        }
+    }
+
+    // Writes the assistant's values into the open form and marks the fields; the user saves.
+    const fillScreen = (fields) => {
+        let filled = 0
+
+        for (const { path, value } of fields) {
+            for (const wrapper of document.querySelectorAll('.fi-main .fi-fo-field')) {
+                const found = !wrapper.closest(CHAT) && statePath(wrapper)
+                if (!found || found.path !== path) continue
+
+                const wire = window.Livewire?.find(found.el.closest('[wire\\:id]')?.getAttribute('wire:id'))
+                if (!wire) continue
+
+                wire.set(path, value, false)
+                wrapper.classList.add('fi-chatai-filled')
+                setTimeout(() => wrapper.classList.remove('fi-chatai-filled'), 6000)
+                if (!filled) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                filled++
+                break
+            }
+        }
+
+        return filled
+    }
+
+    const readContext = (config = {}) => {
         let server = {}
         try {
             server = JSON.parse(document.getElementById('chatai-context')?.textContent || '{}')
@@ -162,6 +260,7 @@ document.addEventListener('alpine:init', () => {
             ...server,
             url: window.location.pathname + window.location.search,
             page_title: document.title,
+            screen: readScreen(config),
         }
     }
 
@@ -607,7 +706,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: this.headers(false),
                     credentials: 'same-origin',
-                    body: JSON.stringify({ message: question, context: readContext(), attachments: files.map((f) => f.id), ...this.picks(question), ...this.playgroundDraft() }),
+                    body: JSON.stringify({ message: question, context: readContext(config), attachments: files.map((f) => f.id), ...this.picks(question), ...this.playgroundDraft() }),
                 })
 
                 if (!response.ok || !response.body) {
@@ -666,6 +765,9 @@ document.addEventListener('alpine:init', () => {
 
         apply(type, data, target) {
             switch (type) {
+                case 'fill':
+                    if (config.screen?.fill) fillScreen(data.fields || [])
+                    break
                 case 'step':
                     // After tools the model writes the real answer; what it said before was narration.
                     target.restart = true

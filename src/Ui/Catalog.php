@@ -19,6 +19,9 @@ final class Catalog
     /** Several changes of the same tool, approved at once from one paginated list. */
     public const CONFIRM_BATCH = 'confirm_batch';
 
+    /** What the assistant wrote into the form on screen (still to be saved by the user). */
+    public const FILLED = 'filled';
+
     public const MAX_BATCH = 500;
 
     public const MAX_KPIS = 4;

@@ -384,6 +384,10 @@
 .fi-chatai-batch-pager .fi-chatai-confirm-btn { padding: 0.2rem 0.6rem; }
 .fi-chatai-confirm-hint { margin-right: auto; font-size: 0.75rem; color: var(--chatai-muted); }
 
+/* A field the assistant just filled in on the page. */
+.fi-fo-field.fi-chatai-filled { outline: 2px solid var(--primary-500, #3b82f6); outline-offset: 4px; border-radius: 0.5rem; transition: outline-color 0.3s; }
+.fi-chatai-filled-card .fi-chatai-confirm-icon { background: color-mix(in oklab, var(--primary-500, #3b82f6) 14%, transparent); color: var(--primary-600, #2563eb); }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

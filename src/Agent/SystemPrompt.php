@@ -13,6 +13,12 @@ class SystemPrompt
         $show = ShowUiTool::NAME;
         $today = now()->toDateString();
 
+        // What the user is looking at right now (only when reading the screen is switched on).
+        $screen = $context->screen !== []
+            ? "\nOn screen now (the user sees this; \"this\" or \"here\" means it): ".json_encode($context->screen, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                .($context->screenFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved." : '')
+            : '';
+
         $prompt = <<<PROMPT
         You are {$assistantName}, the assistant built into this business application. You help the user find information by calling the tools you are given.
 
@@ -25,7 +31,7 @@ class SystemPrompt
         - If the user says "this", "here" or similar, they mean the record on their screen (see context below). Earlier questions start with [asked on screen: ...]; there, "this" means that record.
 
         Today is {$today}.
-        Screen context: {$where}
+        Screen context: {$where}{$screen}
         PROMPT;
 
         return $custom ? $prompt."\n\nAdditional instructions from the application:\n".$custom : $prompt;
