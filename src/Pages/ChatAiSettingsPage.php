@@ -127,6 +127,7 @@ class ChatAiSettingsPage extends Page
 
                     Tab::make($t('permissions'))->icon('heroicon-m-lock-closed')->schema([
                         Text::make($t('permissions_help'))->color('gray'),
+                        Toggle::make('actions.enabled')->label($t('actions_enabled'))->helperText($t('actions_enabled_help')),
                         Toggle::make('permissions.enabled')->label($t('permissions_enabled'))->live()->helperText($t('permissions_enabled_help')),
                         Toggle::make('permissions.require_chat')->label($t('permissions_require_chat'))
                             ->helperText(fn (): string => __('chatai::chatai.settings.permissions_require_chat_help', ['permission' => ChatAiPermissions::forChat()]))

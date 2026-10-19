@@ -11,15 +11,18 @@ use Filament\ChatAi\Llm\StreamChunk;
 use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\Message;
+use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
+use Filament\ChatAi\Ui\Catalog;
 use Filament\ChatAi\Ui\ComponentValidator;
 use Generator;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -129,6 +132,17 @@ class Orchestrator
                         }
 
                         $result = ToolResult::text('Shown to the user.');
+                    } elseif (($tool = $available[$call->toolName] ?? null) !== null && ! $tool->readOnly) {
+                        // A change: nothing runs until the user confirms on the card.
+                        $component = $this->validator->validate($this->propose($conversation, $user, $context, $tool, (array) $call->arguments), fromServer: true);
+                        $components[] = $component;
+                        $toolsUsed[] = $call->toolName;
+                        yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
+
+                        $result = ToolResult::data([
+                            'status' => 'awaiting_confirmation',
+                            'note' => 'Nothing has changed yet. The user sees a confirmation card with these values and Confirm / Cancel buttons. In one sentence, say what will change and ask them to confirm on the card.',
+                        ]);
                     } else {
                         $tool = $available[$call->toolName] ?? null;
 
@@ -250,5 +264,35 @@ class Orchestrator
         }
 
         return false;
+    }
+
+    /**
+     * Keeps the proposed change and returns the confirmation card for it.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    protected function propose(Conversation $conversation, Authenticatable $user, ChatAiContext $context, ChatAiTool $tool, array $arguments): array
+    {
+        /** @var Model $user */
+        $action = ToolAction::query()->create([
+            'conversation_id' => $conversation->id,
+            'user_type' => $user->getMorphClass(),
+            'user_id' => $user->getKey(),
+            'tool' => $tool->name,
+            'title' => $tool->label(),
+            'arguments' => $arguments,
+            'context' => $context->toArray(),
+        ]);
+
+        $properties = (array) ($tool->inputSchema['properties'] ?? []);
+        $fields = [];
+
+        foreach ($arguments as $key => $value) {
+            $label = (string) ($properties[$key]['title'] ?? str((string) $key)->replace(['_', '-'], ' ')->ucfirst());
+            $fields[] = ['label' => $label, 'value' => is_scalar($value) ? (is_bool($value) ? ($value ? 'yes' : 'no') : (string) $value) : (string) json_encode($value, JSON_UNESCAPED_UNICODE)];
+        }
+
+        return ['type' => Catalog::CONFIRM, 'action_id' => $action->id, 'title' => $tool->label(), 'fields' => $fields, 'status' => ToolAction::PENDING];
     }
 }

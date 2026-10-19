@@ -120,3 +120,41 @@
         <span class="fi-chatai-file-action">{{ __('chatai::chatai.download') }}</span>
     </a>
 </template>
+
+{{-- confirm: a change the assistant proposed; it runs only after Confirm --}}
+<template x-if="component.type === 'confirm'">
+    <div class="fi-chatai-confirm" :class="'fi-chatai-confirm-' + component.status">
+        <div class="fi-chatai-confirm-head">
+            <span class="fi-chatai-confirm-icon"><x-filament::icon icon="heroicon-o-pencil-square" class="fi-chatai-file-svg" /></span>
+            <span class="fi-chatai-confirm-title" x-text="component.title"></span>
+            <span class="fi-chatai-confirm-badge" x-show="component.status !== 'pending'"
+                  x-text="{ done: @js(__('chatai::chatai.actions.done_badge')), cancelled: @js(__('chatai::chatai.actions.cancelled_badge')), failed: @js(__('chatai::chatai.actions.failed_badge')) }[component.status] || ''"></span>
+        </div>
+        <dl class="fi-chatai-confirm-fields">
+            <template x-for="(field, i) in component.fields" :key="i">
+                <div class="fi-chatai-confirm-field">
+                    <dt x-text="field.label"></dt>
+                    <dd x-text="field.value"></dd>
+                </div>
+            </template>
+        </dl>
+        <template x-if="component.result?.length">
+            <dl class="fi-chatai-confirm-fields fi-chatai-confirm-result">
+                <template x-for="(field, i) in component.result" :key="i">
+                    <div class="fi-chatai-confirm-field">
+                        <dt x-text="field.label"></dt>
+                        <dd x-text="field.value"></dd>
+                    </div>
+                </template>
+            </dl>
+        </template>
+        <div class="fi-chatai-confirm-actions" x-show="component.status === 'pending'">
+            <span class="fi-chatai-confirm-hint">{{ __('chatai::chatai.actions.waiting') }}</span>
+            <button type="button" class="fi-chatai-confirm-btn" x-on:click="answerAction(component, false)" :disabled="!! component.busy">{{ __('chatai::chatai.actions.cancel') }}</button>
+            <button type="button" class="fi-chatai-confirm-btn fi-primary" x-on:click="answerAction(component, true)" :disabled="!! component.busy">
+                <x-filament::icon icon="heroicon-m-check" class="fi-chatai-chip-icon" />
+                {{ __('chatai::chatai.actions.confirm') }}
+            </button>
+        </div>
+    </div>
+</template>

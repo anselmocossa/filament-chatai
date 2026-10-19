@@ -23,7 +23,7 @@ class LaravelMcpToolProvider implements ToolProvider
      */
     public function __construct(
         protected array $tools,
-        protected bool $readOnlyOnly = true,
+        protected bool $readOnlyOnly = false,
     ) {}
 
     public function tools(Authenticatable $user, ChatAiContext $context): array
@@ -36,7 +36,7 @@ class LaravelMcpToolProvider implements ToolProvider
             $readOnly = (bool) (((array) ($definition['annotations'] ?? []))['readOnlyHint'] ?? false);
 
             if ($this->readOnlyOnly && ! $readOnly) {
-                Log::warning("[chatai] tool {$definition['name']} ignored: only read-only tools are allowed");
+                Log::info("[chatai] tool {$definition['name']} left out: this provider only takes read-only tools");
 
                 continue;
             }

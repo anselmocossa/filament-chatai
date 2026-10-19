@@ -36,11 +36,16 @@ class ToolRegistry implements ToolProvider
         $overrides = self::table('chatai_tool_overrides') ? ToolOverride::query()->get()->keyBy('tool_name') : collect();
         $roles = $this->roles($user);
         $guarded = ChatAiPermissions::enabled();
+        $actions = (bool) config('chatai.actions.enabled', true);
         $tools = [];
 
         foreach ([...$this->catalog($user, $context), ...$this->customTools()] as $tool) {
             /** @var ToolOverride|null $override */
             $override = $overrides->get($tool->name);
+
+            if (! $tool->readOnly && ! $actions) {
+                continue;
+            }
 
             if ($override && (! $override->enabled || ($override->roles && ! array_intersect($override->roles, $roles)))) {
                 continue;

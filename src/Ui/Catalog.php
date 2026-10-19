@@ -13,6 +13,9 @@ final class Catalog
     /** Only built by server tools (never by show_ui): a document to download. */
     public const FILE = 'file';
 
+    /** Only built by the orchestrator: a change waiting for the user's OK. */
+    public const CONFIRM = 'confirm';
+
     public const MAX_KPIS = 4;
 
     public const MAX_ROWS = 50;

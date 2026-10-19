@@ -59,6 +59,12 @@ return [
     | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
     | "Custom permissions" tab — and the chat can require UseChatAi.
     */
+    // Tools that change data: the assistant proposes, the user confirms on a card, then it runs.
+    // Off = read-only tools only.
+    'actions' => [
+        'enabled' => true,
+    ],
+
     'permissions' => [
         'enabled' => false,
         'require_chat' => false,

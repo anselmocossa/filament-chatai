@@ -18,6 +18,6 @@ class ArrayToolProvider implements ToolProvider
 
     public function tools(Authenticatable $user, ChatAiContext $context): array
     {
-        return array_values(array_filter($this->tools, fn (ChatAiTool $tool): bool => $tool->readOnly));
+        return array_values($this->tools);
     }
 }

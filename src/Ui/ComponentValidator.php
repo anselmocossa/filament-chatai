@@ -20,6 +20,10 @@ class ComponentValidator
             return $this->file($component);
         }
 
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::CONFIRM) {
+            return $this->confirm($component);
+        }
+
         if (! is_array($component) || ! in_array($component['type'] ?? null, Catalog::TYPES, true)) {
             return null;
         }
@@ -205,6 +209,29 @@ class ComponentValidator
             'format' => $this->str((string) ($c['format'] ?? ''), 10),
             'size' => (int) ($c['size'] ?? 0),
             'url' => $url,
+        ];
+    }
+
+    protected function confirm(array $c): ?array
+    {
+        if (! $this->scalar($c['action_id'] ?? null)) {
+            return null;
+        }
+
+        $fields = [];
+
+        foreach (array_slice((array) ($c['fields'] ?? []), 0, 12) as $field) {
+            if (is_array($field) && $this->scalar($field['label'] ?? null)) {
+                $fields[] = ['label' => $this->str((string) $field['label'], 60), 'value' => $this->str((string) ($field['value'] ?? ''), 300)];
+            }
+        }
+
+        return [
+            'type' => Catalog::CONFIRM,
+            'action_id' => (string) $c['action_id'],
+            'title' => $this->title($c),
+            'fields' => $fields,
+            'status' => in_array($c['status'] ?? null, ['pending', 'done', 'cancelled', 'failed'], true) ? $c['status'] : 'pending',
         ];
     }
 

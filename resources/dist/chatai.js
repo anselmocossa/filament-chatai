@@ -331,6 +331,31 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // ---- changes that wait for confirmation ----------------------------
+
+        async answerAction(component, confirmed) {
+            if (component.busy || component.status !== 'pending') return
+
+            component.busy = true
+            const url = config.actionUrl.replace('__action__', encodeURIComponent(component.action_id)).replace(/confirm$/, confirmed ? 'confirm' : 'cancel')
+
+            try {
+                const response = await fetch(url, { method: 'POST', headers: this.headers(), credentials: 'same-origin' })
+                const data = await response.json().catch(() => ({}))
+
+                if (!response.ok) throw new Error(data.message || config.i18n.unavailable)
+
+                component.status = data.status
+                component.result = data.result ?? []
+                if (data.message) this.messages.push(data.message)
+                this.$nextTick(() => this.scrollToEnd?.())
+            } catch (error) {
+                this.notice = error.message
+            } finally {
+                component.busy = false
+            }
+        },
+
         // ---- attachments ---------------------------------------------------
 
         // Files upload as soon as they are picked (button, drop or paste) and ride with the next message.

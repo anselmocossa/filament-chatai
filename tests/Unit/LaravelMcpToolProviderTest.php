@@ -25,15 +25,19 @@ it('exposes a read-only MCP tool with its name, description and input schema', f
         ->and($tool->inputSchema['required'])->toBe(['period']);
 });
 
-it('refuses tools that are not read-only and logs a warning', function () {
-    Log::spy();
-
+it('exposes tools that change data as not read-only, so they go through confirmation', function () {
     $tools = mcpTools([SalesStatsTool::class, CreateInvoiceTool::class]);
 
-    expect($tools)->toHaveCount(1)
-        ->and($tools[0]->name)->toBe('sales-stats');
+    expect(collect($tools)->pluck('readOnly', 'name')->all())->toBe(['sales-stats' => true, 'create-invoice' => false]);
+});
 
-    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'create-invoice'))->once();
+it('can still be limited to read-only tools', function () {
+    Log::spy();
+
+    $tools = (new LaravelMcpToolProvider([SalesStatsTool::class, CreateInvoiceTool::class], readOnlyOnly: true))->tools(new User, new ChatAiContext(panelId: 'admin'));
+
+    expect($tools)->toHaveCount(1)->and($tools[0]->name)->toBe('sales-stats');
+    Log::shouldHaveReceived('info')->withArgs(fn (string $message) => str_contains($message, 'create-invoice'))->once();
 });
 
 it('returns the structured content of the tool', function () {

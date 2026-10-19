@@ -6,6 +6,7 @@ use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\ConversationGroup;
 use Filament\ChatAi\Models\Message;
+use Filament\ChatAi\Models\ToolAction;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -98,6 +99,12 @@ class ConversationController
         $files = ConversationFile::query()->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
             ->whereNotNull('message_id')->orderBy('id')->get()->groupBy('message_id');
         $panel = Filament::getCurrentPanel();
+        $actions = ToolAction::query()->where('conversation_id', $conversation->id)->get()->keyBy('id');
+        $withStatus = fn (array $components): array => array_map(function (array $c) use ($actions): array {
+            $action = ($c['type'] ?? null) === 'confirm' ? $actions->get($c['action_id'] ?? '') : null;
+
+            return $action ? [...$c, 'status' => $action->status, 'result' => $action->status === ToolAction::DONE ? $action->resultFields() : []] : $c;
+        }, $components);
 
         // What the user saw: questions and answers. Tool plumbing stays server-side.
         $messages = $conversation->messages()
@@ -110,7 +117,7 @@ class ConversationController
                 'id' => $m->id,
                 'role' => $m->role,
                 'content' => $m->content,
-                'components' => $m->components ?? [],
+                'components' => $withStatus($m->components ?? []),
                 'status' => $m->status,
                 'attachments' => ($files->get($m->id) ?? collect())->map(fn (ConversationFile $f): array => [
                     ...$f->summary(),

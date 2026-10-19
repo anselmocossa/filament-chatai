@@ -341,6 +341,28 @@
 .fi-chatai-file-meta { font-size: 0.75rem; color: var(--chatai-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fi-chatai-file-action { font-size: 0.8rem; font-weight: 600; color: var(--chatai-accent); flex-shrink: 0; }
 
+.fi-chatai-confirm { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.9rem; }
+.fi-chatai-confirm-head { display: flex; align-items: center; gap: 0.6rem; }
+.fi-chatai-confirm-icon { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 0.6rem; background: color-mix(in oklab, var(--warning-500, #f59e0b) 14%, transparent); color: var(--warning-600, #d97706); flex-shrink: 0; }
+.fi-chatai-confirm-title { font-weight: 600; font-size: 0.9rem; flex: 1; }
+.fi-chatai-confirm-badge { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--chatai-surface); color: var(--chatai-muted); }
+.fi-chatai-confirm-done .fi-chatai-confirm-badge { background: color-mix(in oklab, var(--success-500, #22c55e) 14%, transparent); color: var(--success-700, #15803d); }
+.fi-chatai-confirm-failed .fi-chatai-confirm-badge { background: color-mix(in oklab, var(--danger-500, #ef4444) 14%, transparent); color: var(--danger-700, #b91c1c); }
+.fi-chatai-confirm-done .fi-chatai-confirm-icon { background: color-mix(in oklab, var(--success-500, #22c55e) 14%, transparent); color: var(--success-600, #16a34a); }
+.fi-chatai-confirm-cancelled, .fi-chatai-confirm-failed { opacity: 0.8; }
+.fi-chatai-confirm-fields { display: grid; gap: 0.35rem; margin: 0; padding: 0.6rem 0.75rem; border-radius: 0.6rem; background: var(--chatai-surface); }
+.fi-chatai-confirm-result { background: color-mix(in oklab, var(--success-500, #22c55e) 8%, transparent); }
+.fi-chatai-confirm-field { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.85rem; }
+.fi-chatai-confirm-field dt { color: var(--chatai-muted); }
+.fi-chatai-confirm-field dd { margin: 0; font-weight: 500; text-align: right; }
+.fi-chatai-confirm-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+.fi-chatai-confirm-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.8rem; border: 1px solid var(--chatai-border); border-radius: 0.55rem; background: var(--chatai-bg); font-size: 0.82rem; font-weight: 600; color: var(--chatai-text); }
+.fi-chatai-confirm-btn:hover { background: var(--chatai-surface); }
+.fi-chatai-confirm-btn.fi-primary { border-color: transparent; background: var(--primary-600, #2563eb); color: #fff; }
+.fi-chatai-confirm-btn.fi-primary:hover { background: var(--primary-500, #3b82f6); }
+.fi-chatai-confirm-btn:disabled { opacity: 0.6; cursor: wait; }
+.fi-chatai-confirm-hint { margin-right: auto; font-size: 0.75rem; color: var(--chatai-muted); }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 
