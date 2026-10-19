@@ -1,13 +1,67 @@
-# Filament ChatAI
+<p align="center">
+    <img src="art/banner.png" alt="Filament ChatAI" width="100%" class="filament-hidden">
+</p>
 
-An AI assistant for Filament v5 panels:
+<h1 align="center">Filament ChatAI</h1>
+
+<p align="center">
+    An AI assistant inside your Filament panel — it answers with KPIs, tables and charts from your own data.
+</p>
+
+<p align="center">
+    <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
+    <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
+    <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
+    <img src="https://img.shields.io/badge/tests-141%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
+</p>
+
+---
 
 - **Floating chat** in the corner of every page, aware of the record on screen.
 - **Full-page chat** (`/{panel}/chatai`) with conversation history — the same conversation as the floating one.
 - **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts and follow-up suggestions, not just text.
-- **Your tools**: plug in existing `laravel/mcp` tools as they are. Read-only tools only, for now.
-- **Voice and export**: dictate with the microphone, hear any answer read aloud (the browser's own speech engine, no extra service) and export a conversation to Markdown, tables included.
+- **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form. Read-only, for now.
+- **Files**: attach documents, paste links to records of the panel, and get CSV, Excel or PDF files back.
+- **Voice and export**: dictate, hear answers read aloud, export a conversation to Markdown.
+- **Control**: models with fallbacks, several provider keys with spending limits, usage and cost per user and model, a log of every question, and Filament Shield permissions per tool.
 - **Providers**: any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama) or Claude natively through `anthropic-ai/sdk`.
+
+## Screenshots
+
+#### Full-page chat — history, KPIs and charts from the shop data
+
+<img src="art/screenshots/full-page.png" alt="Full-page chat with KPIs and a chart" width="100%">
+
+#### Floating chat — knows the record on screen
+
+<img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
+
+<table>
+<tr>
+<td width="50%"><img src="art/screenshots/files.png" alt="Attached CSV and generated Excel file"><br><em>Attach a file, get an Excel back</em></td>
+<td width="50%"><img src="art/screenshots/mentions.png" alt="@ to pick a tool"><br><em><code>@</code> picks a tool, <code>/</code> applies a skill</em></td>
+</tr>
+</table>
+
+#### Tool editor — build a tool on screen and test it by chatting
+
+<img src="art/screenshots/tool-editor.png" alt="Tool editor with a test chat" width="100%">
+
+#### Usage — cost, tokens and cache, per user and per model
+
+<img src="art/screenshots/usage.png" alt="Usage page" width="100%">
+
+<table>
+<tr>
+<td width="50%"><img src="art/screenshots/models.png" alt="Models in fallback order"><br><em>Models — the first enabled answers, the next take over</em></td>
+<td width="50%"><img src="art/screenshots/logs.png" alt="Logs of every question"><br><em>Logs — question, tools, model, tokens and time</em></td>
+</tr>
+<tr>
+<td width="50%"><img src="art/screenshots/settings.png" alt="Settings tabs"><br><em>Settings — assistant, voice, permissions, files, limits, prices</em></td>
+<td width="50%"></td>
+</tr>
+</table>
 
 ## Install
 
