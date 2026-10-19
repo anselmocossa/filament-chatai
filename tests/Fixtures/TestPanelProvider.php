@@ -28,7 +28,7 @@ class TestPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->plugins([static::$plugin ?? ChatAiPlugin::make()])
-            ->resources([UserResource::class])
+            ->resources([UserResource::class, Shop\ProductResource::class, Shop\OrderResource::class])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

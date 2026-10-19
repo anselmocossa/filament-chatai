@@ -27,7 +27,8 @@ final class ToolCode
             $blocks[] = ['id' => 'curl', 'label' => 'cURL', 'code' => self::curl($tool, (array) ($data['config'] ?? []))];
         }
 
-        if ($mode !== ToolDraft::MODE_CODE) {
+        // The PHP export covers the list and API types; the others are JSON only.
+        if ($mode !== ToolDraft::MODE_CODE && in_array($data['type'] ?? null, [CustomTool::TYPE_RESOURCE, CustomTool::TYPE_HTTP], true)) {
             $blocks[] = ['id' => 'php', 'label' => 'PHP (laravel/mcp)', 'code' => self::php($tool, $data)];
         }
 

@@ -16,6 +16,7 @@ use Filament\ChatAi\Tools\ToolDraft;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -65,6 +66,9 @@ class PlaygroundController
             return response()->json(['message' => __('chatai::chatai.editor.incomplete')], 422);
         }
 
+        // A change proposed here is confirmed against this same unsaved tool.
+        Cache::put(self::draftKey($conversation->id), $validated['draft'], now()->addHour());
+
         // The skills chosen in the editor, saved or not, so a whole task can be tried.
         $skills = Skill::query()->whereIn('id', (array) ($validated['draft']['data']['skills'] ?? []))->orderBy('title')->get();
         $tools = $skills->isEmpty() ? [$tool] : [$tool, SkillTool::make($skills)];
@@ -113,5 +117,10 @@ class PlaygroundController
         abort_unless($plugin->canManage(), 403);
 
         return $plugin;
+    }
+
+    public static function draftKey(string $conversation): string
+    {
+        return 'chatai:playground-draft:'.$conversation;
     }
 }

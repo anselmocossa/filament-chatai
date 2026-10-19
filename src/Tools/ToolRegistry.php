@@ -96,6 +96,8 @@ class ToolRegistry implements ToolProvider
             ->map(fn (CustomTool $tool): ?ChatAiTool => match ($tool->type) {
                 CustomTool::TYPE_RESOURCE => ResourceQueryTool::make($tool),
                 CustomTool::TYPE_HTTP => HttpApiTool::make($tool),
+                CustomTool::TYPE_METRICS => MetricsTool::make($tool),
+                CustomTool::TYPE_CREATE, CustomTool::TYPE_UPDATE => RecordTool::make($tool),
                 default => null,
             })
             ->filter()

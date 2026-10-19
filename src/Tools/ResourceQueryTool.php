@@ -3,9 +3,13 @@
 namespace Filament\ChatAi\Tools;
 
 use Filament\ChatAi\Models\CustomTool;
+use Filament\ChatAi\Tools\NoCode\Conditions;
+use Filament\ChatAi\Tools\NoCode\ResourceInspector;
 use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 
@@ -48,26 +52,41 @@ final class ResourceQueryTool
 
     public static function make(CustomTool $tool): ?ChatAiTool
     {
-        /** @var class-string<resource>|null $resource */
-        $resource = $tool->config['resource'] ?? null;
+        $resource = ResourceInspector::resource($tool->config['resource'] ?? null);
+        $instance = ResourceInspector::model($resource);
 
-        if (! is_string($resource) || ! in_array($resource, Filament::getCurrentPanel()?->getResources() ?? [], true)) {
+        if (! $resource || ! $instance) {
             return null; // only resources of this panel
         }
 
-        $model = $resource::getModel();
-        $instance = new $model;
-        $columns = Schema::getColumnListing($instance->getTable());
-        $visible = array_values(array_diff($columns, $instance->getHidden()));
+        $config = (array) $tool->config;
+        $visible = ResourceInspector::columns($instance);
+        $belongsTo = ResourceInspector::relations($instance, [BelongsTo::class]);
+        $hasMany = ResourceInspector::relations($instance, [HasMany::class]);
 
-        // Admin choices are checked against real, non-hidden columns.
-        $fields = array_values(array_intersect((array) ($tool->config['fields'] ?? []), $visible)) ?: array_slice($visible, 0, 8);
-        $filters = array_values(array_intersect((array) ($tool->config['filters'] ?? []), $visible));
-        $dateField = in_array($tool->config['date_field'] ?? null, $visible, true) ? $tool->config['date_field'] : null;
-        $sort = in_array($tool->config['sort'] ?? null, $visible, true) ? $tool->config['sort'] : $instance->getKeyName();
-        $limit = max(1, min((int) ($tool->config['limit'] ?? 20), self::MAX_ROWS));
+        // Admin choices are checked against real, non-hidden columns and real relations.
+        $relatedFields = array_values(array_filter((array) ($config['fields'] ?? []), fn ($f): bool => is_string($f) && str_contains($f, '.') && isset($belongsTo[strtok($f, '.')]) && in_array(substr($f, strpos($f, '.') + 1), ResourceInspector::columns($belongsTo[strtok($f, '.')]->getRelated()), true)));
+        $fields = array_values(array_intersect((array) ($config['fields'] ?? []), $visible)) ?: ($relatedFields ? [] : array_slice($visible, 0, 8));
+        $filters = array_values(array_intersect((array) ($config['filters'] ?? []), $visible));
+        $search = array_values(array_intersect((array) ($config['search'] ?? []), $visible));
+        $conditions = array_values(array_filter((array) ($config['conditions'] ?? []), 'is_array'));
+        $dateField = in_array($config['date_field'] ?? null, $visible, true) ? $config['date_field'] : null;
+        $sort = in_array($config['sort'] ?? null, $visible, true) ? $config['sort'] : $instance->getKeyName();
+        $direction = ($config['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $limit = max(1, min((int) ($config['limit'] ?? 20), self::MAX_ROWS));
+        $countBy = in_array($config['count_by'] ?? null, $visible, true) ? $config['count_by'] : null;
+        $totals = array_values(array_filter((array) ($config['totals'] ?? []), fn ($t): bool => is_array($t) && isset($hasMany[$t['relation'] ?? ''])));
+        $related = array_values(array_filter((array) ($config['related'] ?? []), fn ($r): bool => is_array($r) && isset($hasMany[$r['relation'] ?? ''])));
 
-        $properties = collect($filters)->mapWithKeys(fn (string $f): array => [$f => ['type' => 'string', 'description' => "Filter by {$f} (partial match)."]])->all();
+        $properties = [];
+
+        if ($search) {
+            $properties['search'] = ['type' => 'string', 'description' => 'Text to look for in '.implode(', ', $search).'.'];
+        }
+
+        foreach ($filters as $f) {
+            $properties[$f] = ['type' => 'string', 'description' => "Filter by {$f}."] + (($enum = ResourceInspector::enumValues($instance, $f)) ? ['enum' => $enum] : []);
+        }
 
         if ($dateField) {
             $properties['date_from'] = ['type' => 'string', 'description' => "Earliest {$dateField} (YYYY-MM-DD)."];
@@ -76,41 +95,96 @@ final class ResourceQueryTool
 
         $properties['limit'] = ['type' => 'integer', 'description' => "Rows to return (max {$limit})."];
 
+        $description = $tool->description.(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '');
+
         return new ChatAiTool(
             name: $tool->name,
-            description: $tool->description,
+            description: $description,
             inputSchema: ['type' => 'object', 'properties' => $properties],
-            handler: function (array $args) use ($resource, $fields, $filters, $dateField, $sort, $limit): ToolResult {
+            handler: function (array $args) use ($resource, $instance, $visible, $fields, $relatedFields, $filters, $search, $conditions, $dateField, $sort, $direction, $limit, $countBy, $totals, $related, $hasMany): ToolResult {
                 if (! $resource::canViewAny()) {
                     return ToolResult::error('The user does not have permission to see these records.');
                 }
 
                 // The resource's own query: its scopes and tenancy apply.
                 $query = $resource::getEloquentQuery();
+                $term = is_scalar($args['search'] ?? null) ? trim((string) $args['search']) : '';
+
+                if ($term !== '' && $search) {
+                    $query->where(function (Builder $q) use ($search, $term): void {
+                        foreach ($search as $column) {
+                            $q->orWhere($column, 'like', '%'.addcslashes($term, '%_').'%');
+                        }
+                    });
+                }
 
                 foreach ($filters as $filter) {
                     $value = $args[$filter] ?? null;
 
                     if (is_scalar($value) && (string) $value !== '') {
-                        is_numeric($value)
+                        is_numeric($value) || ResourceInspector::enumValues($instance, $filter)
                             ? $query->where($filter, $value)
                             : $query->where($filter, 'like', '%'.addcslashes((string) $value, '%_').'%');
                     }
                 }
+
+                $searching = $term !== '' || collect($filters)->contains(fn ($f) => filled($args[$f] ?? null));
+                Conditions::apply($query, $conditions, $visible, $searching);
 
                 if ($dateField) {
                     $query->when($args['date_from'] ?? null, fn (Builder $q, $from) => $q->whereDate($dateField, '>=', $from))
                         ->when($args['date_to'] ?? null, fn (Builder $q, $to) => $q->whereDate($dateField, '<=', $to));
                 }
 
-                $total = (clone $query)->count();
-                $rows = $query->orderByDesc($sort)
-                    ->limit(max(1, min((int) ($args['limit'] ?? $limit), $limit)))
-                    ->get()
-                    ->map(fn ($record): array => Arr::only($record->attributesToArray(), $fields))
-                    ->all();
+                $counts = $countBy ? (clone $query)->reorder()->toBase()->selectRaw("{$countBy} as value, count(*) as total")->groupBy($countBy)->pluck('total', 'value')->all() : null;
 
-                return ToolResult::data(['resource' => $resource::getPluralModelLabel(), 'total' => $total, 'rows' => $rows]);
+                foreach ($relatedFields as $field) {
+                    $query->with(strtok($field, '.'));
+                }
+
+                foreach ($totals as $i => $total) {
+                    $relatedModel = $hasMany[$total['relation']]->getRelated();
+                    $column = in_array($total['column'] ?? null, ResourceInspector::columns($relatedModel), true) ? $total['column'] : null;
+                    $function = in_array($total['function'] ?? 'count', ['count', 'sum', 'avg', 'min', 'max'], true) ? $total['function'] : 'count';
+                    $alias = 'total_'.$i;
+                    $where = filled($total['where_column'] ?? null) ? [['column' => $total['where_column'], 'operator' => $total['where_operator'] ?? '=', 'value' => $total['where_value'] ?? null]] : [];
+                    $constraint = fn (Builder $q) => Conditions::apply($q, $where, ResourceInspector::columns($relatedModel));
+
+                    $function === 'count' || ! $column
+                        ? $query->withCount([$total['relation'].' as '.$alias => $constraint])
+                        : $query->withAggregate([$total['relation'].' as '.$alias => $constraint], $column, $function);
+                }
+
+                $total = (clone $query)->count();
+                $records = $query->orderBy($sort, $direction)->limit(max(1, min((int) ($args['limit'] ?? $limit), $limit)))->get();
+
+                $rows = $records->map(function ($record) use ($fields, $relatedFields, $totals, $related): array {
+                    $row = Arr::only($record->attributesToArray(), $fields);
+
+                    foreach ($relatedFields as $field) {
+                        [$relation, $column] = explode('.', $field, 2);
+                        $row[$field] = $record->{$relation}?->{$column};
+                    }
+
+                    foreach ($totals as $i => $t) {
+                        $row[$t['label'] ?? ('total_'.$i)] = round((float) $record->{'total_'.$i}, 2); // no related records = 0
+                    }
+
+                    foreach ($related as $r) {
+                        $model = $record->{$r['relation']}()->getRelated();
+                        $columns = array_values(array_intersect((array) ($r['fields'] ?? []), ResourceInspector::columns($model))) ?: [$model->getKeyName()];
+                        $row['latest_'.$r['relation']] = $record->{$r['relation']}()->latest($model->getKeyName())->limit(max(1, min((int) ($r['limit'] ?? 5), 20)))->get($columns)->map->attributesToArray()->all();
+                    }
+
+                    return $row;
+                })->all();
+
+                return ToolResult::data(array_filter([
+                    'resource' => $resource::getPluralModelLabel(),
+                    'total' => $total,
+                    'counts_by_'.$countBy => $counts,
+                    'rows' => $rows,
+                ], fn ($v): bool => $v !== null));
             },
             readOnly: true,
             title: $tool->title,

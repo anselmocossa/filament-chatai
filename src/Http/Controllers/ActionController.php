@@ -7,10 +7,12 @@ use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Tools\ToolDraft;
 use Filament\ChatAi\Ui\ComponentValidator;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,6 +30,11 @@ class ActionController
 
         // Resolved again for this user now: permissions are checked at the moment it runs.
         $tool = collect($plugin->resolveTools()->tools($request->user(), $context))->firstWhere('name', $action->tool);
+
+        // From the tool editor's test chat: the unsaved tool it was tried with.
+        if (! $tool && ($draft = Cache::get(PlaygroundController::draftKey($action->conversation_id)))) {
+            $tool = ToolDraft::build($draft['mode'], $draft['tool'] ?? null, $draft['data'] ?? [], $plugin->resolveTools(), $request->user(), $context);
+        }
 
         // The form on the card: what the user filled in or corrected.
         if ($tool && $request->has('values')) {

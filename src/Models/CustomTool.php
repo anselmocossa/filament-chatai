@@ -18,6 +18,12 @@ class CustomTool extends Model
 
     public const TYPE_HTTP = 'http';
 
+    public const TYPE_METRICS = 'metrics';
+
+    public const TYPE_CREATE = 'create';
+
+    public const TYPE_UPDATE = 'update';
+
     protected $table = 'chatai_custom_tools';
 
     protected $guarded = [];
