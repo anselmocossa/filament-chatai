@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-151%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-154%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -42,7 +42,11 @@
 
 <img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
 
-#### Changes — the assistant proposes, the user confirms
+#### Forms in the chat — the assistant fills in what it understood, the user completes it
+
+<img src="art/screenshots/form.png" alt="A form in the chat to register a customer" width="100%">
+
+#### Changes — after Confirm, the card shows what changed
 
 <img src="art/screenshots/actions.png" alt="Confirmation card for a change" width="100%">
 
@@ -123,8 +127,8 @@ cache-read price on every tool round and follow-up question.
 
 A `laravel/mcp` tool **without** `#[IsReadOnly]` changes data. The assistant never runs it straight away:
 
-1. It calls the tool with the values it understood; the app keeps the call and shows a **confirmation card** (the tool's title and each argument, using the schema `title` as label).
-2. **Confirm** runs it — with the user's permissions checked again at that moment — and the card shows what the tool returned. **Cancel** changes nothing.
+1. It calls the tool with the values it understood — even with some missing — and the app shows a **form** on the card, built from the tool's schema: one field per property (`title` as label, `required`, `enum` → select, `integer`/`number` → number, `boolean` → checkbox, `format: email|date` → email/date input), filled with what the model gave. The user completes or corrects it.
+2. **Confirm** checks the values against the schema (missing or wrong ones are marked on the form), then runs it — with the user's permissions checked again at that moment — and the card shows what the tool returned. **Cancel** changes nothing.
 3. Either way, the outcome goes into the conversation, so the model knows it in the next question.
 
 ```php
