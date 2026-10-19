@@ -117,6 +117,9 @@
                 </span>
                 <h1 class="fi-chatai-main-title" x-text="title || @js($label)"></h1>
                 <div class="fi-chatai-header-actions">
+                    <button type="button" class="fi-chatai-header-btn" x-show="config.memory" x-cloak x-on:click="openMemory()" aria-label="{{ __('chatai::chatai.memory.title') }}" title="{{ __('chatai::chatai.memory.title') }}">
+                        <x-filament::icon icon="heroicon-m-light-bulb" class="fi-chatai-header-btn-icon" />
+                    </button>
                     <button type="button" class="fi-chatai-header-btn" x-show="config.voiceChoice" x-cloak x-on:click="openVoices()" aria-label="{{ __('chatai::chatai.voice_menu') }}" title="{{ __('chatai::chatai.voice_menu') }}">
                         <x-filament::icon icon="heroicon-m-speaker-wave" class="fi-chatai-header-btn-icon" />
                     </button>

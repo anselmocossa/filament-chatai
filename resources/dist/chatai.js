@@ -322,6 +322,8 @@ document.addEventListener('alpine:init', () => {
         conversations: [],
         pendingNavigation: null,
         abort: null,
+        memoryPanel: false,
+        memories: [],
         replaceLast: false,
         groups: [],
         collapsedGroups: readCollapsed(),
@@ -715,6 +717,25 @@ document.addEventListener('alpine:init', () => {
         ask(prompt) {
             this.input = prompt
             this.send()
+        },
+
+        // ---- memory ------------------------------------------------------
+
+        async openMemory() {
+            this.memoryPanel = true
+            const response = await fetch(config.memoriesUrl, { headers: this.headers(), credentials: 'same-origin' }).catch(() => null)
+            this.memories = response?.ok ? (await response.json()).data : []
+        },
+
+        async forget(id) {
+            const response = await fetch(`${config.memoriesUrl}/${id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => null)
+            if (response?.ok) this.memories = this.memories.filter((m) => m.id !== id)
+        },
+
+        async forgetAll() {
+            if (!window.confirm(config.i18n.confirmClearMemory)) return
+            const response = await fetch(config.memoriesUrl, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => null)
+            if (response?.ok) this.memories = []
         },
 
         // ---- starters: questions for an empty chat -------------------------

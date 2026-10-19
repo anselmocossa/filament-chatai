@@ -286,3 +286,12 @@
         <span class="fi-chatai-file-action">›</span>
     </a>
 </template>
+
+{{-- memory: something was saved to the user's memory --}}
+<template x-if="component.type === 'memory'">
+    <button type="button" class="fi-chatai-memory-note" x-on:click="openMemory()">
+        <x-filament::icon icon="heroicon-m-light-bulb" class="fi-chatai-chip-icon" />
+        <span class="fi-chatai-memory-note-title">{{ __('chatai::chatai.memory.saved') }}</span>
+        <span class="fi-chatai-memory-note-text" x-text="component.text"></span>
+    </button>
+</template>

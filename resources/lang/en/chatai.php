@@ -85,6 +85,8 @@ return [
         'starters_from_screen' => 'Suggest questions for the page on screen',
         'shortcut' => 'Keyboard shortcut',
         'shortcut_help' => 'Opens and closes the chat. Empty = no shortcut.',
+        'memory_enabled' => 'Memory',
+        'memory_enabled_help' => 'The assistant keeps what each user asks it to remember ("amounts in MZN") and uses it in their next conversations. Each user sees and deletes their own in the chat menu → Memory.',
         'screen_read' => 'Read the screen',
         'screen_read_help' => 'With each question, send what the user is looking at: the page heading, the form fields and their values, and the visible table rows. "This" then means what is on screen.',
         'screen_fill' => 'Fill in forms on screen',
@@ -489,5 +491,14 @@ return [
         'edit_check' => 'Is anything odd or missing here?',
         'create_help' => 'Help me fill in this form',
         'list_summary' => 'Summarise this list',
+    ],
+    'memory' => [
+        'title' => 'Memory',
+        'saved' => 'Memory updated',
+        'empty' => 'Nothing yet. Say "remember that…" and it will be kept here.',
+        'help' => 'Used in your next conversations. Only you see it.',
+        'delete' => 'Forget',
+        'clear' => 'Forget everything',
+        'confirm_clear' => 'Forget everything the assistant remembers about you?',
     ],
 ];

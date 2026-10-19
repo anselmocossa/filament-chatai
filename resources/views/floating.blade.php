@@ -111,6 +111,9 @@
                     </x-slot>
 
                     <x-filament::dropdown.list>
+                        <x-filament::dropdown.list.item icon="heroicon-m-light-bulb" x-show="config.memory" x-on:click="openMemory(); close()">
+                            {{ __('chatai::chatai.memory.title') }}
+                        </x-filament::dropdown.list.item>
                         <x-filament::dropdown.list.item icon="heroicon-m-speaker-wave" x-show="config.voiceChoice" x-on:click="openVoices(); close()">
                             {{ __('chatai::chatai.voice_menu') }}
                         </x-filament::dropdown.list.item>

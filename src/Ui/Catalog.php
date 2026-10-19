@@ -25,6 +25,9 @@ final class Catalog
     /** A place of the panel the browser opens when the answer ends. */
     public const NAVIGATE = 'navigate';
 
+    /** A note that something was saved to the user's memory. */
+    public const MEMORY = 'memory';
+
     public const MAX_BATCH = 500;
 
     public const MAX_KPIS = 4;

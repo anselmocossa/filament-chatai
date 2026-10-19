@@ -10,6 +10,7 @@ use Filament\ChatAi\Llm\LlmException;
 use Filament\ChatAi\Llm\StreamChunk;
 use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
+use Filament\ChatAi\Models\Memory;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ActionForm;
@@ -18,6 +19,7 @@ use Filament\ChatAi\Support\FileParts;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
 use Filament\ChatAi\Tools\FillFormTool;
+use Filament\ChatAi\Tools\MemoryTool;
 use Filament\ChatAi\Tools\NavigateTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
@@ -68,13 +70,14 @@ class Orchestrator
             ShowUiTool::make(),
             DocumentTool::make($conversation, $user),
             ...(FillFormTool::available($context) ? [FillFormTool::make($context)] : []),
+            ...(MemoryTool::available() && ! str_ends_with($conversation->panel_id, ':playground') ? [MemoryTool::make($user, $context)] : []),
             // Not in the tool editor's test chat, which tries one tool on its own.
             ...(NavigateTool::available() && ! str_ends_with($conversation->panel_id, ':playground') ? [NavigateTool::make()] : []),
         ])->keyBy('name')->all();
         $definitions = array_values(array_map(fn (ChatAiTool $t) => $t->toFunctionDefinition(), $available));
 
         $messages = [
-            ['role' => 'system', 'content' => SystemPrompt::build($assistantName, $context, $systemPrompt)],
+            ['role' => 'system', 'content' => SystemPrompt::build($assistantName, $context, $systemPrompt).$this->memories($user, $context, $conversation)],
             ...$this->history($conversation, $userMessage),
         ];
 
@@ -393,5 +396,19 @@ class Orchestrator
         }
 
         return $cards;
+    }
+
+    /**
+     * What this user asked to be remembered, for the system prompt.
+     */
+    protected function memories(Authenticatable $user, ChatAiContext $context, Conversation $conversation): string
+    {
+        if (! MemoryTool::available() || str_ends_with($conversation->panel_id, ':playground')) {
+            return '';
+        }
+
+        $items = Memory::of($user, $context->tenantId, $context->panelId)->pluck('content');
+
+        return $items->isEmpty() ? '' : "\n\nWhat this user asked you to remember (follow it):\n- ".$items->implode("\n- ");
     }
 }

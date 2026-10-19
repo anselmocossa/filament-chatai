@@ -129,6 +129,31 @@
         </template>
     </div>
 
+    {{-- The user's memory: what the assistant keeps across conversations --}}
+    <template x-if="memoryPanel">
+        <div class="fi-chatai-voices fi-chatai-memory" role="dialog" aria-label="{{ __('chatai::chatai.memory.title') }}" x-on:keydown.escape.window="memoryPanel = false">
+            <div class="fi-chatai-voices-header">
+                <span>{{ __('chatai::chatai.memory.title') }}</span>
+                <button type="button" class="fi-chatai-header-btn" x-on:click="memoryPanel = false" aria-label="{{ __('chatai::chatai.close') }}">
+                    <x-filament::icon icon="heroicon-m-x-mark" class="fi-chatai-header-btn-icon" />
+                </button>
+            </div>
+            <p class="fi-chatai-voices-hint">{{ __('chatai::chatai.memory.help') }}</p>
+            <p class="fi-chatai-voices-hint" x-show="! memories.length">{{ __('chatai::chatai.memory.empty') }}</p>
+            <ul class="fi-chatai-memory-list">
+                <template x-for="item in memories" :key="item.id">
+                    <li class="fi-chatai-memory-item">
+                        <span x-text="item.content"></span>
+                        <button type="button" class="fi-chatai-action" x-on:click="forget(item.id)" title="{{ __('chatai::chatai.memory.delete') }}" aria-label="{{ __('chatai::chatai.memory.delete') }}">
+                            <x-filament::icon icon="heroicon-m-trash" class="fi-chatai-action-icon" />
+                        </button>
+                    </li>
+                </template>
+            </ul>
+            <button type="button" class="fi-chatai-confirm-btn fi-chatai-memory-clear" x-show="memories.length > 1" x-on:click="forgetAll()">{{ __('chatai::chatai.memory.clear') }}</button>
+        </div>
+    </template>
+
     <template x-if="voicePanel">
         <div class="fi-chatai-voices" role="dialog" aria-label="{{ __('chatai::chatai.voice_menu') }}" x-on:keydown.escape.window="voicePanel = false">
             <div class="fi-chatai-voices-header">

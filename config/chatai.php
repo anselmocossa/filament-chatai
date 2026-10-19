@@ -65,6 +65,11 @@ return [
     'starters_from_screen' => true,
     'shortcut' => 'j',
 
+    // Memory: the assistant keeps what each user asks it to remember, across conversations.
+    'memory' => [
+        'enabled' => true,
+    ],
+
     // Longest a single answer may take (several tools plus a long text), in seconds.
     'max_turn_seconds' => 300,
 

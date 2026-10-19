@@ -31,7 +31,7 @@ class ChatAiServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasTranslations()
             ->hasViews(static::$viewNamespace)
-            ->hasMigrations(['create_chatai_tables', 'create_chatai_settings_tables', 'create_chatai_tools_tables', 'create_chatai_models_table', 'create_chatai_provider_connections_table', 'update_chatai_budgets_table', 'update_chatai_models_effort_table', 'update_chatai_tool_permissions_table', 'update_chatai_files_table', 'update_chatai_history_table', 'update_chatai_actions_table', 'update_chatai_feedback_table']);
+            ->hasMigrations(['create_chatai_tables', 'create_chatai_settings_tables', 'create_chatai_tools_tables', 'create_chatai_models_table', 'create_chatai_provider_connections_table', 'update_chatai_budgets_table', 'update_chatai_models_effort_table', 'update_chatai_tool_permissions_table', 'update_chatai_files_table', 'update_chatai_history_table', 'update_chatai_actions_table', 'update_chatai_feedback_table', 'update_chatai_memories_table']);
     }
 
     public function packageRegistered(): void

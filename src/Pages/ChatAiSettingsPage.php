@@ -105,6 +105,7 @@ class ChatAiSettingsPage extends Page
                             Toggle::make('starters_from_screen')->label($t('starters_from_screen'))->inline(false),
                             TextInput::make('shortcut')->label($t('shortcut'))->helperText($t('shortcut_help'))->maxLength(1)->prefix('⌘ / Ctrl +'),
                         ]),
+                        Toggle::make('memory.enabled')->label($t('memory_enabled'))->helperText($t('memory_enabled_help')),
                         Toggle::make('screen.read')->label($t('screen_read'))->helperText($t('screen_read_help'))->live(),
                         Toggle::make('screen.fill')->label($t('screen_fill'))->helperText($t('screen_fill_help'))
                             ->visible(fn (Get $get): bool => (bool) $get('screen.read')),

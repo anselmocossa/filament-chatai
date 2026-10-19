@@ -24,6 +24,10 @@ class ComponentValidator
             return $this->confirm($component);
         }
 
+        if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::MEMORY) {
+            return $this->scalar($component['text'] ?? null) ? ['type' => Catalog::MEMORY, 'text' => $this->str((string) $component['text'], 500)] : null;
+        }
+
         if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::NAVIGATE) {
             $url = (string) ($component['url'] ?? '');
 

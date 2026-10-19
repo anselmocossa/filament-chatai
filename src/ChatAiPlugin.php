@@ -9,6 +9,7 @@ use Filament\ChatAi\Http\Controllers\ConversationController;
 use Filament\ChatAi\Http\Controllers\ConversationGroupController;
 use Filament\ChatAi\Http\Controllers\FeedbackController;
 use Filament\ChatAi\Http\Controllers\FileController;
+use Filament\ChatAi\Http\Controllers\MemoryController;
 use Filament\ChatAi\Http\Controllers\MessageStreamController;
 use Filament\ChatAi\Http\Controllers\PlaygroundController;
 use Filament\ChatAi\Http\Controllers\PreferenceController;
@@ -119,6 +120,9 @@ class ChatAiPlugin implements Plugin
                     Route::delete('conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
                     Route::post('groups', [ConversationGroupController::class, 'store'])->name('groups.store');
                     Route::post('conversations/{conversation}/stop', [MessageStreamController::class, 'stop'])->name('messages.stop');
+                    Route::get('memories', [MemoryController::class, 'index'])->name('memories.index');
+                    Route::delete('memories', [MemoryController::class, 'destroy'])->name('memories.clear');
+                    Route::delete('memories/{memory}', [MemoryController::class, 'destroy'])->whereNumber('memory')->name('memories.destroy');
                     Route::post('messages/{message}/feedback', FeedbackController::class)->name('messages.feedback');
                     Route::post('actions/batch', [ActionController::class, 'batch'])->name('actions.batch');
                     Route::post('actions/{action}/confirm', [ActionController::class, 'confirm'])->name('actions.confirm');
@@ -204,6 +208,8 @@ class ChatAiPlugin implements Plugin
             'starters' => array_slice($this->resolveStarters(), 0, 4),
             'startersFromScreen' => (bool) config('chatai.starters_from_screen', true),
             'shortcut' => filled($key = config('chatai.shortcut')) ? strtolower(substr((string) $key, 0, 1)) : null,
+            'memory' => (bool) config('chatai.memory.enabled', true),
+            'memoriesUrl' => $panel->route('chatai.memories.index'),
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
@@ -224,6 +230,7 @@ class ChatAiPlugin implements Plugin
                 'fileTooBig' => __('chatai::chatai.file_too_big'),
                 'tooManyFiles' => __('chatai::chatai.too_many_files'),
                 'filled' => __('chatai::chatai.screen.filled'),
+                'confirmClearMemory' => __('chatai::chatai.memory.confirm_clear'),
                 'starterEdit' => [__('chatai::chatai.starters.edit_summary'), __('chatai::chatai.starters.edit_check')],
                 'starterCreate' => [__('chatai::chatai.starters.create_help')],
                 'starterList' => [__('chatai::chatai.starters.list_summary')],

@@ -85,6 +85,8 @@ return [
         'starters_from_screen' => 'Sugerir perguntas para a página aberta',
         'shortcut' => 'Atalho de teclado',
         'shortcut_help' => 'Abre e fecha o chat. Vazio = sem atalho.',
+        'memory_enabled' => 'Memória',
+        'memory_enabled_help' => 'O assistente guarda o que cada utilizador lhe pede para lembrar («valores em MZN») e usa nas conversas seguintes. Cada utilizador vê e apaga a sua no menu do chat → Memória.',
         'screen_read' => 'Ler o ecrã',
         'screen_read_help' => 'Com cada pergunta, envia o que o utilizador está a ver: o título da página, os campos do formulário e os seus valores, e as linhas visíveis das tabelas. «Isto» passa a ser o que está no ecrã.',
         'screen_fill' => 'Preencher formulários no ecrã',
@@ -489,5 +491,14 @@ return [
         'edit_check' => 'Há algo estranho ou em falta aqui?',
         'create_help' => 'Ajuda-me a preencher este formulário',
         'list_summary' => 'Resume esta lista',
+    ],
+    'memory' => [
+        'title' => 'Memória',
+        'saved' => 'Memória actualizada',
+        'empty' => 'Ainda nada. Diga «lembra-te que…» e fica guardado aqui.',
+        'help' => 'Usada nas suas próximas conversas. Só você a vê.',
+        'delete' => 'Esquecer',
+        'clear' => 'Esquecer tudo',
+        'confirm_clear' => 'Esquecer tudo o que o assistente se lembra de si?',
     ],
 ];
