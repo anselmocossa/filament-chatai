@@ -13,7 +13,26 @@
             <div class="fi-chatai-message" :class="'fi-chatai-message-' + message.role">
                 <template x-if="message.role === 'user'">
                     <div class="fi-chatai-user-turn">
-                        <div class="fi-chatai-bubble fi-chatai-bubble-user" x-html="highlightPicks(message.content)"></div>
+                        <template x-if="! message.editing">
+                            <div class="fi-chatai-user-row">
+                                {{-- Only the last question can be edited: the answer after it is redone. --}}
+                                <button type="button" class="fi-chatai-edit-btn" x-show="message === lastUser() && ! busy" x-on:click="startEdit(message)"
+                                        title="{{ __('chatai::chatai.edit_question') }}" aria-label="{{ __('chatai::chatai.edit_question') }}">
+                                    <x-filament::icon icon="heroicon-m-pencil" class="fi-chatai-action-icon" />
+                                </button>
+                                <div class="fi-chatai-bubble fi-chatai-bubble-user" x-html="highlightPicks(message.content)"></div>
+                            </div>
+                        </template>
+                        <template x-if="message.editing">
+                            <div class="fi-chatai-edit">
+                                <textarea class="fi-chatai-edit-input" rows="2" x-model="message.draft"
+                                          x-on:keydown.enter.prevent="if (! $event.shiftKey) saveEdit(message)" x-on:keydown.escape="message.editing = false"></textarea>
+                                <div class="fi-chatai-edit-actions">
+                                    <button type="button" class="fi-chatai-confirm-btn" x-on:click="message.editing = false">{{ __('chatai::chatai.actions.cancel') }}</button>
+                                    <button type="button" class="fi-chatai-confirm-btn fi-primary" x-on:click="saveEdit(message)">{{ __('chatai::chatai.send') }}</button>
+                                </div>
+                            </div>
+                        </template>
                         <template x-if="message.attachments?.length">
                             <div class="fi-chatai-chips fi-chatai-chips-sent">
                                 <template x-for="file in message.attachments" :key="file.id">
@@ -50,18 +69,49 @@
                             </div>
                         </template>
 
-                        <template x-if="canSpeak && message.content && message.status !== 'streaming'">
+                        <template x-if="message.status !== 'streaming' && (message.content || message.components?.length)">
                             <div class="fi-chatai-actions">
-                                <button type="button" class="fi-chatai-action" x-on:click="speak(message)"
-                                        :class="{ 'fi-active': speakingId === message.id }"
-                                        :aria-pressed="speakingId === message.id"
-                                        :title="speakingId === message.id ? @js(__('chatai::chatai.stop_listening')) : @js(__('chatai::chatai.listen'))">
-                                    <x-filament::icon icon="heroicon-m-speaker-wave" class="fi-chatai-action-icon" x-show="speakingId !== message.id" />
-                                    <x-filament::icon icon="heroicon-m-stop" class="fi-chatai-action-icon" x-show="speakingId === message.id" x-cloak />
-                                    <span x-text="speakingId === message.id ? @js(__('chatai::chatai.stop_listening')) : @js(__('chatai::chatai.listen'))"></span>
+                                <button type="button" class="fi-chatai-action" x-show="message.content" x-on:click="copy(message)" :title="message.copied ? @js(__('chatai::chatai.copied')) : @js(__('chatai::chatai.copy_answer'))">
+                                    <x-filament::icon icon="heroicon-m-clipboard-document" class="fi-chatai-action-icon" x-show="! message.copied" />
+                                    <x-filament::icon icon="heroicon-m-check" class="fi-chatai-action-icon" x-show="message.copied" x-cloak />
                                 </button>
+                                <button type="button" class="fi-chatai-action" x-show="message === lastAssistant() && ! busy" x-on:click="regenerate()" title="{{ __('chatai::chatai.regenerate') }}" aria-label="{{ __('chatai::chatai.regenerate') }}">
+                                    <x-filament::icon icon="heroicon-m-arrow-path" class="fi-chatai-action-icon" />
+                                </button>
+                                <template x-if="message.id && ! String(message.id).startsWith('answer-')">
+                                    <span class="fi-chatai-rate">
+                                        <button type="button" class="fi-chatai-action" :class="{ 'fi-active': message.feedback === 'up' }" x-on:click="rate(message, 'up')" title="{{ __('chatai::chatai.helpful') }}" aria-label="{{ __('chatai::chatai.helpful') }}">
+                                            <x-filament::icon icon="heroicon-m-hand-thumb-up" class="fi-chatai-action-icon" />
+                                        </button>
+                                        <button type="button" class="fi-chatai-action" :class="{ 'fi-active fi-down': message.feedback === 'down' }" x-on:click="rate(message, 'down')" title="{{ __('chatai::chatai.not_helpful') }}" aria-label="{{ __('chatai::chatai.not_helpful') }}">
+                                            <x-filament::icon icon="heroicon-m-hand-thumb-down" class="fi-chatai-action-icon" />
+                                        </button>
+                                    </span>
+                                </template>
+                                <template x-if="canSpeak && message.content">
+                                    <button type="button" class="fi-chatai-action" x-on:click="speak(message)"
+                                            :class="{ 'fi-active': speakingId === message.id }"
+                                            :aria-pressed="speakingId === message.id"
+                                            :title="speakingId === message.id ? @js(__('chatai::chatai.stop_listening')) : @js(__('chatai::chatai.listen'))">
+                                        <x-filament::icon icon="heroicon-m-speaker-wave" class="fi-chatai-action-icon" x-show="speakingId !== message.id" />
+                                        <x-filament::icon icon="heroicon-m-stop" class="fi-chatai-action-icon" x-show="speakingId === message.id" x-cloak />
+                                    </button>
+                                </template>
+                                <span class="fi-chatai-stopped" x-show="message.status === 'stopped'">{{ __('chatai::chatai.stopped_answer') }}</span>
                             </div>
                         </template>
+
+                        {{-- Why it was not helpful (optional) --}}
+                        <template x-if="message.askWhy">
+                            <form class="fi-chatai-why" x-on:submit.prevent="rate(message, 'down', message.why || ''); message.askWhy = false">
+                                <input type="text" class="fi-chatai-edit-input" x-model="message.why" maxlength="1000" placeholder="{{ __('chatai::chatai.why_not_helpful') }}">
+                                <button type="submit" class="fi-chatai-confirm-btn fi-primary">{{ __('chatai::chatai.send') }}</button>
+                                <button type="button" class="fi-chatai-action" x-on:click="message.askWhy = false" aria-label="{{ __('chatai::chatai.close') }}">
+                                    <x-filament::icon icon="heroicon-m-x-mark" class="fi-chatai-action-icon" />
+                                </button>
+                            </form>
+                        </template>
+                        <p class="fi-chatai-thanks" x-show="message.thanked" x-cloak>{{ __('chatai::chatai.thanks_feedback') }}</p>
 
                         <template x-if="message.status === 'interrupted'">
                             <button type="button" class="fi-chatai-retry" x-on:click="retry()">
@@ -193,9 +243,11 @@
                         <x-filament::loading-indicator class="fi-chatai-send-icon" x-show="transcribing" x-cloak />
                     </button>
 
-                    <button type="submit" class="fi-chatai-send" :disabled="busy || ! input.trim() || attachments.some((a) => a.uploading)" aria-label="{{ __('chatai::chatai.send') }}">
-                        <x-filament::icon icon="heroicon-m-arrow-up" class="fi-chatai-send-icon" x-show="! busy" />
-                        <x-filament::loading-indicator class="fi-chatai-send-icon" x-show="busy" x-cloak />
+                    <button type="button" class="fi-chatai-send fi-chatai-stop" x-show="busy" x-cloak x-on:click="stop()" aria-label="{{ __('chatai::chatai.stop_answer') }}" title="{{ __('chatai::chatai.stop_answer') }}">
+                        <x-filament::icon icon="heroicon-s-stop" class="fi-chatai-send-icon" />
+                    </button>
+                    <button type="submit" class="fi-chatai-send" x-show="! busy" :disabled="! input.trim() || attachments.some((a) => a.uploading)" aria-label="{{ __('chatai::chatai.send') }}">
+                        <x-filament::icon icon="heroicon-m-arrow-up" class="fi-chatai-send-icon" />
                     </button>
                 </div>
             </div>

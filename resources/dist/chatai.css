@@ -415,6 +415,22 @@
 .fi-fo-field.fi-chatai-filled { outline: 2px solid var(--primary-500, #3b82f6); outline-offset: 4px; border-radius: 0.5rem; transition: outline-color 0.3s; }
 .fi-chatai-filled-card .fi-chatai-confirm-icon { background: color-mix(in oklab, var(--primary-500, #3b82f6) 14%, transparent); color: var(--primary-600, #2563eb); }
 
+/* Answer controls */
+.fi-chatai-actions { display: flex; align-items: center; gap: 0.1rem; flex-wrap: wrap; }
+.fi-chatai-action.fi-active { color: var(--chatai-accent); }
+.fi-chatai-action.fi-down { color: #dc2626; }
+.fi-chatai-rate { display: inline-flex; gap: 0.1rem; }
+.fi-chatai-stopped { margin-left: 0.4rem; font-size: 0.75rem; color: var(--chatai-muted); }
+.fi-chatai-why { display: flex; align-items: center; gap: 0.4rem; max-width: 30rem; }
+.fi-chatai-thanks { font-size: 0.75rem; color: var(--chatai-muted); }
+.fi-chatai-user-row { display: flex; align-items: flex-start; gap: 0.35rem; justify-content: flex-end; max-width: 100%; }
+.fi-chatai-edit-btn { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-top: 0.3rem; border-radius: 9999px; color: var(--chatai-muted); opacity: 0; transition: opacity 0.15s; }
+.fi-chatai-user-turn:hover .fi-chatai-edit-btn, .fi-chatai-edit-btn:focus-visible { opacity: 1; }
+.fi-chatai-edit { display: flex; flex-direction: column; gap: 0.4rem; width: min(100%, 32rem); }
+.fi-chatai-edit-input { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--chatai-accent); border-radius: 0.75rem; background: var(--chatai-bg); font-size: 0.9rem; color: var(--chatai-text); outline: none; resize: vertical; }
+.fi-chatai-edit-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
+.fi-chatai-stop { background: var(--chatai-text) !important; color: var(--chatai-bg) !important; }
+
 .fi-chatai-composer-hint { font-size: 0.7rem; color: var(--chatai-muted); text-align: center; }
 .fi-chatai-floating .fi-chatai-composer-hint { display: none; }
 

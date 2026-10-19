@@ -147,6 +147,9 @@ class ConversationController
                 'content' => $m->content,
                 'components' => $withStatus($m->components ?? []),
                 'status' => $m->status,
+                'feedback' => match ($m->feedback) {
+                    1 => 'up', -1 => 'down', default => null
+                },
                 'attachments' => ($files->get($m->id) ?? collect())->map(fn (ConversationFile $f): array => [
                     ...$f->summary(),
                     'url' => $panel->route('chatai.files.download', ['file' => $f->id]),

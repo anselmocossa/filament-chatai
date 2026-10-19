@@ -6,7 +6,9 @@ use Filament\ChatAi\Agent\AgentEvent;
 use Filament\ChatAi\Agent\Orchestrator;
 use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Llm\LlmClient;
+use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\ConversationFile;
+use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\Budget;
 use Filament\ChatAi\Support\ChatAiContext;
@@ -14,6 +16,8 @@ use Filament\ChatAi\Support\UrlContext;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -31,6 +35,7 @@ class MessageStreamController
             'skill' => ['nullable', 'string', 'max:64'],
             'attachments' => ['nullable', 'array', 'max:'.(int) config('chatai.files.max_per_message', 5)],
             'attachments.*' => ['string', 'max:26'],
+            'replace_last' => ['nullable', 'boolean'],
         ]);
 
         if ($limited = static::rateLimit($request)) {
@@ -39,6 +44,15 @@ class MessageStreamController
 
         if ($paused = static::budgetPaused()) {
             return $paused;
+        }
+
+        // Stop button: the browser sets this flag and the turn ends at the next safe point.
+        $stopKey = static::stopKey($conversation->id);
+        Cache::forget($stopKey);
+
+        // "Regenerate" or "edit the question": the last exchange is replaced, not added to.
+        if ($validated['replace_last'] ?? false) {
+            static::dropLastExchange($conversation);
         }
 
         /** @var ChatAiPlugin $plugin */
@@ -54,6 +68,7 @@ class MessageStreamController
             user: $user,
             config: $plugin->resolveLlmConfig(),
             assistantName: $plugin->getLabel(),
+            shouldStop: fn (): bool => Cache::has($stopKey),
             attachments: ConversationFile::query()
                 ->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
                 ->whereNull('message_id')->whereIn('id', $validated['attachments'] ?? [])->get(),
@@ -77,6 +92,11 @@ class MessageStreamController
         return response()->stream(function () use ($events): void {
             // Finish and save the answer even if the browser goes away mid-stream.
             ignore_user_abort(true);
+
+            // A turn with several tools and a long answer outlasts PHP's usual 30 s.
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(max(30, (int) config('chatai.max_turn_seconds', 300)));
+            }
 
             if (! app()->runningUnitTests()) {
                 while (ob_get_level() > 0) {
@@ -127,5 +147,37 @@ class MessageStreamController
         }
 
         return null;
+    }
+
+    /**
+     * Removes the last question and everything after it (answer, tool calls),
+     * keeping attachments of that question for the new turn.
+     */
+    public static function dropLastExchange(Conversation $conversation): void
+    {
+        $last = $conversation->messages()->where('role', Message::ROLE_USER)->reorder()->latest('id')->first();
+
+        if (! $last) {
+            return;
+        }
+
+        ConversationFile::query()->where('message_id', $last->id)->update(['message_id' => null]);
+        $conversation->messages()->reorder()->where('id', '>=', $last->id)->delete();
+    }
+
+    public static function stopKey(string $conversation): string
+    {
+        return 'chatai:stop:'.$conversation;
+    }
+
+    /**
+     * The Stop button: the running turn ends at its next safe point and keeps what it wrote.
+     */
+    public function stop(string $conversation): Response
+    {
+        $conversation = ConversationController::authorized($conversation, 'update');
+        Cache::put(static::stopKey($conversation->id), true, now()->addMinutes(2));
+
+        return response()->noContent();
     }
 }

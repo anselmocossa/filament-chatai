@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-172%20passing-brightgreen?style=flat-square" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-176%20passing-brightgreen?style=flat-square" alt="Tests">
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
 </p>
 
@@ -218,6 +218,12 @@ editor, **Custom permissions** tab (enable `shield_resource.tabs.custom_permissi
 who may use what. A user without a tool's permission does not get that tool, so the assistant tells them it
 has no access to that data. A tool can require an existing permission instead (e.g. `ViewAny:Order`).
 Resource tools also follow the resource's policies, and Shield's super admin always passes.
+
+## Answer controls
+
+Every answer can be **copied**, **answered again**, and rated **👍 / 👎** (a 👎 can say what went wrong); the last question can be **edited** — the last exchange is replaced, not added to. **Stop** ends an answer mid-way: the server stops at its next safe point and keeps what was written. Ratings and comments show in **Logs**, with a filter, so whoever looks after the assistant sees what went wrong.
+
+> Stop and long answers need the server to take more than one request at a time (php-fpm, Octane…). With `php artisan serve` use `PHP_CLI_SERVER_WORKERS=4 php artisan serve --no-reload`. A turn may take up to `chatai.max_turn_seconds` (300 s).
 
 ## Files
 

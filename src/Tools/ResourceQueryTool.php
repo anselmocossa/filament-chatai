@@ -95,7 +95,9 @@ final class ResourceQueryTool
 
         $properties['limit'] = ['type' => 'integer', 'description' => "Rows to return (max {$limit})."];
 
-        $description = $tool->description.(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '');
+        $description = $tool->description
+            .' Returns the total number of matching '.$resource::getPluralModelLabel().' (with no filters: all of them, so it also answers "how many") and up to '.$limit.' rows.'
+            .(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '');
 
         return new ChatAiTool(
             name: $tool->name,

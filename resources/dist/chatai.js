@@ -317,6 +317,8 @@ document.addEventListener('alpine:init', () => {
         notice: null,
         conversations: [],
         pendingNavigation: null,
+        abort: null,
+        replaceLast: false,
         groups: [],
         collapsedGroups: readCollapsed(),
         editingId: null,
@@ -711,6 +713,73 @@ document.addEventListener('alpine:init', () => {
             this.send()
         },
 
+        // ---- answer controls: stop, copy, regenerate, edit, rate ----------
+
+        stop() {
+            // Tell the server first, so it stops working (and spending) too; then stop reading.
+            if (this.conversationId) {
+                fetch(this.url(this.conversationId, '/stop'), { method: 'POST', headers: this.headers(), credentials: 'same-origin', keepalive: true }).catch(() => {})
+            }
+
+            this.abort?.abort()
+        },
+
+        lastAssistant() {
+            return [...this.messages].reverse().find((m) => m.role === 'assistant')
+        },
+
+        lastUser() {
+            return [...this.messages].reverse().find((m) => m.role === 'user')
+        },
+
+        async copy(message) {
+            try {
+                await navigator.clipboard.writeText(message.content || '')
+                message.copied = true
+                setTimeout(() => { message.copied = false }, 1500)
+            } catch {}
+        },
+
+        // The last question again (or edited): the last exchange is replaced, not added to.
+        regenerate(text = null) {
+            const user = this.lastUser()
+            if (!user || this.busy) return
+
+            const question = (text ?? user.content).trim()
+            if (!question) return
+
+            this.messages.splice(this.messages.indexOf(user))
+            this.replaceLast = true
+            this.ask(question)
+        },
+
+        startEdit(message) {
+            message.draft = message.content
+            message.editing = true
+            this.$nextTick(() => this.$root.querySelector('.fi-chatai-edit-input')?.focus())
+        },
+
+        saveEdit(message) {
+            message.editing = false
+            if ((message.draft || '').trim() && message.draft.trim() !== message.content) this.regenerate(message.draft)
+        },
+
+        async rate(message, value, comment = null) {
+            if (!message.id || String(message.id).startsWith('answer-')) return
+
+            const next = message.feedback === value && comment === null ? null : value
+            message.feedback = next
+            message.askWhy = next === 'down' && comment === null
+            if (comment !== null) message.thanked = true
+
+            await fetch(config.feedbackUrl.replace('__message__', encodeURIComponent(message.id)), {
+                method: 'POST',
+                headers: this.headers(),
+                credentials: 'same-origin',
+                body: JSON.stringify({ value: next, comment }),
+            }).catch(() => {})
+        },
+
         // Tool editor test chat: send the form as it is now, saved or not, plus the test options.
         playgroundOptions: { model_id: '', effort: '', max_tokens: '', temperature: '' },
         playgroundSettings: false,
@@ -757,11 +826,16 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 const id = await this.ensureConversation()
+                const replaceLast = this.replaceLast
+                this.replaceLast = false
+                this.abort = new AbortController()
+
                 const response = await fetch(this.url(id, '/messages'), {
                     method: 'POST',
                     headers: this.headers(false),
                     credentials: 'same-origin',
-                    body: JSON.stringify({ message: question, context: readContext(config), attachments: files.map((f) => f.id), ...this.picks(question), ...this.playgroundDraft() }),
+                    signal: this.abort.signal,
+                    body: JSON.stringify({ message: question, context: readContext(config), attachments: files.map((f) => f.id), replace_last: replaceLast || undefined, ...this.picks(question), ...this.playgroundDraft() }),
                 })
 
                 if (!response.ok || !response.body) {
@@ -776,10 +850,17 @@ document.addEventListener('alpine:init', () => {
 
                 if (target.status === 'streaming') target.status = 'interrupted'
             } catch (error) {
-                target.status = 'error'
                 target.tool = null
-                this.notice = error?.message || config.i18n.unavailable
+
+                if (error?.name === 'AbortError') {
+                    // Stopped by the user: keep what was written so far.
+                    target.status = 'stopped'
+                } else {
+                    target.status = 'error'
+                    this.notice = error?.message || config.i18n.unavailable
+                }
             } finally {
+                this.abort = null
                 this.busy = false
                 this.status = null
                 if (target.status === 'error' && !target.content && target.components.length === 0) {

@@ -59,6 +59,9 @@ return [
     | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
     | "Custom permissions" tab — and the chat can require UseChatAi.
     */
+    // Longest a single answer may take (several tools plus a long text), in seconds.
+    'max_turn_seconds' => 300,
+
     // The screen: what the user is looking at (page heading, form fields and their values,
     // visible table rows) is sent with each question, and the assistant may fill in the
     // form on screen — the user reviews it and saves it themselves.

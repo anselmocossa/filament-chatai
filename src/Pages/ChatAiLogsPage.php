@@ -16,6 +16,7 @@ use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -76,9 +77,22 @@ class ChatAiLogsPage extends Page implements HasTable
                 TextColumn::make('tokens')->label($t('tokens'))->state($tokens)->numeric()->alignEnd(),
                 TextColumn::make('latency_ms')->label($t('latency'))->formatStateUsing(fn (?int $state): string => $state ? number_format($state / 1000, 1).' s' : '—')->alignEnd()->sortable(),
                 TextColumn::make('cost')->label($t('cost'))->formatStateUsing(fn ($state): string => $state === null ? '—' : number_format((float) $state, 4).' '.$currency)->alignEnd()->sortable(),
+                IconColumn::make('feedback')->label($t('feedback'))
+                    ->state(fn (Usage $record): ?string => match ($record->message?->feedback) {
+                        1 => 'up', -1 => 'down', default => null
+                    })
+                    ->icon(fn (?string $state): ?string => match ($state) {
+                        'up' => 'heroicon-m-hand-thumb-up', 'down' => 'heroicon-m-hand-thumb-down', default => null
+                    })
+                    ->color(fn (?string $state): string => $state === 'down' ? 'danger' : 'success')
+                    ->tooltip(fn (Usage $record): ?string => $record->message?->feedback_comment),
             ])
             ->filters([
                 SelectFilter::make('model')->label($t('model'))->options(fn (): array => Usage::query()->where('kind', Usage::KIND_CHAT)->distinct()->pluck('model', 'model')->filter()->all()),
+                SelectFilter::make('feedback')->label($t('feedback'))
+                    ->options(['up' => $t('feedback_up'), 'down' => $t('feedback_down')])
+                    ->query(fn (Builder $query, array $data): Builder => blank($data['value'] ?? null) ? $query
+                        : $query->whereHas('message', fn (Builder $q) => $q->where('feedback', $data['value'] === 'up' ? 1 : -1))),
             ])
             ->recordActions([
                 Action::make('details')
@@ -90,6 +104,9 @@ class ChatAiLogsPage extends Page implements HasTable
                     ->schema(fn (Usage $record): array => [
                         Section::make($t('question'))->schema([TextEntry::make('q')->hiddenLabel()->state(self::question($record) ?? '—')]),
                         Section::make($t('answer'))->schema([TextEntry::make('a')->hiddenLabel()->state($record->message?->content ?? '—')->markdown()]),
+                        ...($record->message?->feedback ? [Section::make($t('feedback'))->schema([
+                            TextEntry::make('f')->hiddenLabel()->state(($record->message->feedback > 0 ? '👍 ' : '👎 ').($record->message->feedback_comment ?? '')),
+                        ])] : []),
                         Grid::make(3)->schema([
                             TextEntry::make('model')->label($t('model'))->state($record->model),
                             TextEntry::make('latency')->label($t('latency'))->state($record->latency_ms ? number_format($record->latency_ms / 1000, 2).' s' : '—'),

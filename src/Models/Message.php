@@ -45,6 +45,7 @@ class Message extends Model
             'tool_calls' => 'array',
             'context' => 'array',
             'tokens_in' => 'integer',
+            'feedback' => 'integer',
             'tokens_out' => 'integer',
             'latency_ms' => 'integer',
         ];

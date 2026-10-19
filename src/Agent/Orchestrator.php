@@ -53,6 +53,7 @@ class Orchestrator
         string $assistantName = 'ChatAI',
         ?string $systemPrompt = null,
         iterable $attachments = [],
+        ?\Closure $shouldStop = null,
     ): Generator {
         $startedAt = hrtime(true);
         $userMessage = $conversation->addMessage(Message::ROLE_USER, $question, ['context' => $context->toArray()]);
@@ -84,19 +85,45 @@ class Orchestrator
         $components = [];
         $proposals = [];
         $toolsUsed = [];
+        $stopped = false;
+        $checkedAt = 0.0;
+
+        // The user pressed Stop: checked at safe points (between rounds, while writing), at most every 0.3 s.
+        $stopRequested = function () use ($shouldStop, &$checkedAt): bool {
+            if (! $shouldStop || microtime(true) - $checkedAt < 0.3) {
+                return false;
+            }
+
+            $checkedAt = microtime(true);
+
+            return (bool) $shouldStop();
+        };
 
         try {
             for ($iteration = 0; ; $iteration++) {
                 // Out of tool rounds: ask once more without tools so it must answer.
                 $offer = $iteration < $maxIterations ? $definitions : [];
                 $text = '';
+                $checkedAt = 0.0;
+
+                if ($iteration > 0 && $stopRequested()) {
+                    $stopped = true;
+                    $offer = [];
+                }
 
                 if ($iteration > 0) {
                     yield new AgentEvent(AgentEvent::STEP, ['iteration' => $iteration]);
                 }
                 $calls = [];
 
-                foreach ($this->llm->stream($config, $messages, $offer) as $chunk) {
+                foreach ($stopped ? [] : $this->llm->stream($config, $messages, $offer) as $chunk) {
+                    if ($stopRequested()) {
+                        $stopped = true;
+                        $calls = [];
+
+                        break;
+                    }
+
                     match ($chunk->type) {
                         StreamChunk::TEXT => $text .= $chunk->text,
                         StreamChunk::TOOL_CALL => $calls[] = $chunk,
@@ -114,7 +141,7 @@ class Orchestrator
                     }
                 }
 
-                if ($calls === [] || $offer === []) {
+                if ($calls === [] || $offer === [] || $stopped) {
                     // Proposed changes go last: one form, or one list to approve when there are several.
                     foreach ($this->groupProposals($proposals) as $card) {
                         if (($card = $this->validator->validate($card, fromServer: true)) !== null) {
@@ -125,6 +152,7 @@ class Orchestrator
 
                     $answer = $conversation->addMessage(Message::ROLE_ASSISTANT, $text, [
                         'components' => $components ?: null,
+                        ...($stopped ? ['status' => 'stopped'] : []),
                         'model' => $model,
                         'tokens_in' => $tokensIn,
                         'tokens_out' => $tokensOut,

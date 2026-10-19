@@ -151,3 +151,36 @@ it('tells the model which screen earlier questions were asked on', function () {
     expect($users[0])->toContain('customer #445')->toContain('Fala-me deste cliente.')
         ->and($users[1])->toBe('E o pedido mais caro dela?');
 });
+
+it('stops between rounds when the user presses Stop, keeping the conversation valid', function () {
+    $user = User::create(['name' => 'Ana', 'email' => 'ana@stop.test', 'password' => 'x']);
+    $conversation = Conversation::start($user, 'admin');
+    $llm = FakeLlmClient::script([
+        [FakeLlmClient::call('sales-stats')],
+        ['Nunca chega aqui.'],
+    ]);
+    $stop = false;
+
+    $events = iterator_to_array((new Orchestrator($llm))->run(
+        conversation: $conversation,
+        question: 'Vendas?',
+        context: new ChatAiContext(panelId: 'admin'),
+        tools: new ArrayToolProvider([new ChatAiTool('sales-stats', 'Sales', ['type' => 'object', 'properties' => []], function () use (&$stop) {
+            $stop = true; // the user presses Stop while the tool runs
+
+            return ToolResult::data(['total' => 1]);
+        }, readOnly: true)]),
+        user: $user,
+        config: new LlmConfig('https://llm.test', 'k', 'test-model'),
+        shouldStop: function () use (&$stop): bool {
+            return $stop;
+        },
+    ), false);
+
+    $roles = $conversation->fresh()->messages->pluck('role')->all();
+
+    expect($llm->requests)->toHaveCount(1)
+        ->and(collect($events)->last()->type)->toBe('done')
+        ->and($roles)->toBe(['user', 'assistant', 'tool', 'assistant'])
+        ->and($conversation->fresh()->messages->last()->status)->toBe('stopped');
+});

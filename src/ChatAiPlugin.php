@@ -7,6 +7,7 @@ use Filament\ChatAi\Contracts\ToolProvider;
 use Filament\ChatAi\Http\Controllers\ActionController;
 use Filament\ChatAi\Http\Controllers\ConversationController;
 use Filament\ChatAi\Http\Controllers\ConversationGroupController;
+use Filament\ChatAi\Http\Controllers\FeedbackController;
 use Filament\ChatAi\Http\Controllers\FileController;
 use Filament\ChatAi\Http\Controllers\MessageStreamController;
 use Filament\ChatAi\Http\Controllers\PlaygroundController;
@@ -114,6 +115,8 @@ class ChatAiPlugin implements Plugin
                     Route::patch('conversations/{conversation}', [ConversationController::class, 'update'])->name('conversations.update');
                     Route::delete('conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
                     Route::post('groups', [ConversationGroupController::class, 'store'])->name('groups.store');
+                    Route::post('conversations/{conversation}/stop', [MessageStreamController::class, 'stop'])->name('messages.stop');
+                    Route::post('messages/{message}/feedback', FeedbackController::class)->name('messages.feedback');
                     Route::post('actions/batch', [ActionController::class, 'batch'])->name('actions.batch');
                     Route::post('actions/{action}/confirm', [ActionController::class, 'confirm'])->name('actions.confirm');
                     Route::post('actions/{action}/cancel', [ActionController::class, 'cancel'])->name('actions.cancel');
@@ -194,6 +197,7 @@ class ChatAiPlugin implements Plugin
                 'fill' => (bool) config('chatai.screen.read', true) && (bool) config('chatai.screen.fill', true),
                 'navigate' => (bool) config('chatai.screen.navigate', true),
             ],
+            'feedbackUrl' => $panel->route('chatai.messages.feedback', ['message' => '__message__']),
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
