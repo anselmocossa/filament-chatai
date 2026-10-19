@@ -33,9 +33,9 @@
     >
         <div class="fi-chatai-panel-inner" x-data="chataiChat(@js($config))">
             <header class="fi-chatai-header">
-                <span class="fi-chatai-header-dot" aria-hidden="true"></span>
                 <span class="fi-chatai-header-avatar" aria-hidden="true">
                     <x-filament::icon icon="heroicon-m-sparkles" class="fi-chatai-header-avatar-icon" />
+                    <span class="fi-chatai-header-dot"></span>
                 </span>
                 <span class="fi-chatai-header-title" x-text="title || @js($label)"></span>
 

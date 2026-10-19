@@ -98,16 +98,20 @@
     background: var(--chatai-bg);
 }
 
+/* "Online" badge on the avatar's corner. */
 .fi-chatai-header-dot {
-    width: 0.55rem;
-    height: 0.55rem;
+    position: absolute;
+    right: -0.15rem;
+    bottom: -0.15rem;
+    width: 0.6rem;
+    height: 0.6rem;
     border-radius: 9999px;
     background: var(--success-500, #22c55e);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--success-500, #22c55e) 25%, transparent);
-    flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--chatai-bg);
 }
 
 .fi-chatai-header-avatar {
+    position: relative;
     display: grid;
     place-items: center;
     width: 2rem;
