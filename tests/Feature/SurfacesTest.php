@@ -63,3 +63,11 @@ it('resolves the record on screen from a resource route', function () {
 
     expect($context)->toBe(['resource' => 'Widget', 'record_id' => '42']);
 });
+
+it('keeps the floating panel state apart from the chat methods it wraps', function () {
+    // Alpine merges nested scopes: an outer "open" would collide with chataiChat().open().
+    $html = $this->actingAs(surfaceUser())->get('/admin/chatai')->getContent();
+
+    expect($html)->toContain('panelOpen')->toContain('togglePanel(false)')
+        ->not->toContain('this.open = value');
+});

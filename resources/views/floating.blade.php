@@ -1,20 +1,21 @@
 <div
     class="fi-chatai-floating"
+    {{-- Not "open"/"toggle": the chat inside has an open() method and Alpine merges both scopes. --}}
     x-data="{
-        open: (() => { try { return sessionStorage.getItem('chatai-open') === '1' } catch { return false } })(),
-        toggle(value) {
-            this.open = value
+        panelOpen: (() => { try { return sessionStorage.getItem('chatai-open') === '1' } catch { return false } })(),
+        togglePanel(value) {
+            this.panelOpen = value
             try { sessionStorage.setItem('chatai-open', value ? '1' : '0') } catch {}
             if (value) this.$nextTick(() => this.$root.querySelector('.fi-chatai-input')?.focus())
         },
     }"
-    x-on:keydown.escape.window="open && toggle(false)"
+    x-on:keydown.escape.window="panelOpen && togglePanel(false)"
 >
     <button
         type="button"
         class="fi-chatai-launcher"
-        x-show="! open"
-        x-on:click="toggle(true)"
+        x-show="! panelOpen"
+        x-on:click="togglePanel(true)"
         aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
     >
         <x-filament::icon icon="heroicon-o-chat-bubble-left-right" class="fi-chatai-launcher-icon" />
@@ -22,7 +23,7 @@
 
     <section
         class="fi-chatai-panel"
-        x-show="open"
+        x-show="panelOpen"
         x-cloak
         x-transition:enter="fi-chatai-enter"
         x-transition:enter-start="fi-chatai-enter-start"
@@ -64,7 +65,7 @@
                 <a class="fi-chatai-header-btn" :href="expandUrl()" aria-label="{{ __('chatai::chatai.open_full_page') }}">
                     <x-filament::icon icon="heroicon-m-arrows-pointing-out" class="fi-chatai-header-btn-icon" />
                 </a>
-                <button type="button" class="fi-chatai-header-btn" x-on:click="toggle(false)" aria-label="{{ __('chatai::chatai.close') }}">
+                <button type="button" class="fi-chatai-header-btn" x-on:click="togglePanel(false)" aria-label="{{ __('chatai::chatai.close') }}">
                     <x-filament::icon icon="heroicon-m-x-mark" class="fi-chatai-header-btn-icon" />
                 </button>
             </header>
