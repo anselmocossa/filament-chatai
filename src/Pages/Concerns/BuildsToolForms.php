@@ -5,6 +5,7 @@ namespace Filament\ChatAi\Pages\Concerns;
 use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Settings\ChatAiSettings;
+use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\ChatAi\Tools\HttpApiTool;
 use Filament\ChatAi\Tools\ResourceQueryTool;
 use Filament\Forms\Components\CheckboxList;
@@ -35,7 +36,25 @@ trait BuildsToolForms
             'title' => $override?->title,
             'description' => $override?->description,
             'roles' => $override?->roles ?? [],
+            'permission' => $override?->permission,
         ];
+    }
+
+    /**
+     * The Shield permission needed for the tool: its own UseChatAiTool:X by default,
+     * or any existing permission (e.g. ViewAny:Order).
+     */
+    protected function permissionField(?string $tool): Select
+    {
+        $model = config('permission.models.permission');
+
+        return Select::make('permission')
+            ->label(__('chatai::chatai.tools.permission'))
+            ->native(false)
+            ->searchable()
+            ->placeholder($tool ? __('chatai::chatai.tools.permission_default', ['permission' => ChatAiPermissions::forTool($tool)]) : __('chatai::chatai.tools.permission_auto'))
+            ->options(fn (): array => $model && class_exists($model) ? $model::query()->orderBy('name')->pluck('name', 'name')->all() : [])
+            ->helperText(ChatAiPermissions::enabled() ? __('chatai::chatai.tools.permission_help') : __('chatai::chatai.tools.permission_off'));
     }
 
     /**
@@ -52,6 +71,7 @@ trait BuildsToolForms
             Textarea::make('description')->label($t('description_for_model'))->rows(5)
                 ->placeholder($record['original_description'])->helperText($t('description_help')),
             TagsInput::make('roles')->label($t('roles'))->helperText($t('roles_help')),
+            $this->permissionField((string) ($record['name'] ?? null) ?: null),
         ];
     }
 
@@ -130,6 +150,7 @@ trait BuildsToolForms
                     ->helperText($editing ? __('chatai::chatai.settings.key_stored') : null),
             ]),
 
+            $this->permissionField($editing),
             Toggle::make('enabled')->label($t('enabled_help')),
         ];
     }
@@ -153,6 +174,11 @@ trait BuildsToolForms
             'config' => $config,
         ])->save();
 
+        // The permission lives with the other per-tool adjustments.
+        if (array_key_exists('permission', $data)) {
+            ToolOverride::query()->updateOrCreate(['tool_name' => $tool->name], ['permission' => $data['permission'] ?: null]);
+        }
+
         return $tool;
     }
 
@@ -166,6 +192,7 @@ trait BuildsToolForms
             'title' => ($data['title'] ?? null) ?: null,
             'description' => ($data['description'] ?? null) ?: null,
             'roles' => array_values($data['roles'] ?? []) ?: null,
+            'permission' => ($data['permission'] ?? null) ?: null,
         ]);
     }
 }

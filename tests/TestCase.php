@@ -19,6 +19,7 @@ use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\Permission\PermissionServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -40,6 +41,7 @@ class TestCase extends Orchestra
             WidgetsServiceProvider::class,
             FilamentServiceProvider::class,
             ChatAiServiceProvider::class,
+            PermissionServiceProvider::class,
             TestPanelProvider::class,
         ];
     }

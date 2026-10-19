@@ -11,6 +11,7 @@ use Filament\ChatAi\Llm\StreamChunk;
 use Filament\ChatAi\Pages\Concerns\ChecksChatAiManager;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\VoiceCatalog;
+use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -122,6 +123,17 @@ class ChatAiSettingsPage extends Page
                             ->options(fn (Get $get): array => VoiceCatalog::all($get('speech.provider')))
                             ->visible(fn (Get $get): bool => filled($get('speech.provider')))
                             ->columns(2)->columnSpanFull()->searchable()->bulkToggleable(),
+                    ]),
+
+                    Tab::make($t('permissions'))->icon('heroicon-m-lock-closed')->schema([
+                        Text::make($t('permissions_help'))->color('gray'),
+                        Toggle::make('permissions.enabled')->label($t('permissions_enabled'))->live()->helperText($t('permissions_enabled_help')),
+                        Toggle::make('permissions.require_chat')->label($t('permissions_require_chat'))
+                            ->helperText(fn (): string => __('chatai::chatai.settings.permissions_require_chat_help', ['permission' => ChatAiPermissions::forChat()]))
+                            ->visible(fn (Get $get): bool => (bool) $get('permissions.enabled')),
+                        Text::make(fn (): string => __('chatai::chatai.settings.permissions_example', ['permission' => ChatAiPermissions::forTool('sales-stats')]))
+                            ->color('gray')
+                            ->visible(fn (Get $get): bool => (bool) $get('permissions.enabled')),
                     ]),
 
                     Tab::make($t('limits'))->icon('heroicon-m-shield-check')->columns(2)->schema([

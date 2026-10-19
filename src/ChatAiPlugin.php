@@ -26,6 +26,7 @@ use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\SpeechManager;
 use Filament\ChatAi\Speech\SpeechProvider;
 use Filament\ChatAi\Speech\VoiceCatalog;
+use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\ChatAi\Support\ContextResolver;
 use Filament\ChatAi\Tools\ArrayToolProvider;
 use Filament\ChatAi\Tools\SkillTool;
@@ -197,7 +198,8 @@ class ChatAiPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        //
+        // Lists the chat/tool permissions in Shield's roles editor (and creates them) when enabled.
+        ChatAiPermissions::register($this);
     }
 
     public function label(string|Closure|null $label): static
@@ -275,11 +277,16 @@ class ChatAiPlugin implements Plugin
 
     public function isAccessible(): bool
     {
-        if ($this->canAccess === null) {
-            return auth()->check();
+        if (! auth()->check()) {
+            return false;
         }
 
-        return auth()->check() && (bool) app()->call($this->canAccess, ['user' => auth()->user()]);
+        // Shield: UseChatAi, when the settings page requires it.
+        if (ChatAiPermissions::chatRequired() && ! ChatAiPermissions::allows(auth()->user(), ChatAiPermissions::forChat())) {
+            return false;
+        }
+
+        return $this->canAccess === null || (bool) app()->call($this->canAccess, ['user' => auth()->user()]);
     }
 
     /**

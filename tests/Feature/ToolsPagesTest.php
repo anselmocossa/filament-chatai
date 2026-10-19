@@ -24,6 +24,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 
 function pagesPlugin(): ChatAiPlugin
 {
@@ -266,4 +267,16 @@ it('ignores an effort the chosen model does not accept', function () {
     $send($plain, 'high');      // a model without effort
 
     expect($llm->configs[0]->effort)->toBe('low')->and($llm->configs[1]->effort)->toBeNull();
+});
+
+it('chooses the Shield permission of a tool in its editor', function () {
+    Permission::findOrCreate('ViewAny:Order', 'web');
+
+    Livewire::withQueryParams(['tool' => 'sales-stats', 'mode' => 'code'])
+        ->test(ChatAiToolEditorPage::class)
+        ->fillForm(['permission' => 'ViewAny:Order'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(ToolOverride::query()->where('tool_name', 'sales-stats')->value('permission'))->toBe('ViewAny:Order');
 });

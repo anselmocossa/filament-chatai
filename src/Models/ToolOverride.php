@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property ?string $title
  * @property ?string $description
  * @property ?array<int, string> $roles
+ * @property ?string $permission
  */
 class ToolOverride extends Model
 {

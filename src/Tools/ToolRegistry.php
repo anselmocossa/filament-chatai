@@ -9,6 +9,7 @@ use Filament\ChatAi\Models\Skill;
 use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Support\ChatAiPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -34,6 +35,7 @@ class ToolRegistry implements ToolProvider
 
         $overrides = self::table('chatai_tool_overrides') ? ToolOverride::query()->get()->keyBy('tool_name') : collect();
         $roles = $this->roles($user);
+        $guarded = ChatAiPermissions::enabled();
         $tools = [];
 
         foreach ([...$this->catalog($user, $context), ...$this->customTools()] as $tool) {
@@ -41,6 +43,11 @@ class ToolRegistry implements ToolProvider
             $override = $overrides->get($tool->name);
 
             if ($override && (! $override->enabled || ($override->roles && ! array_intersect($override->roles, $roles)))) {
+                continue;
+            }
+
+            // Shield: the tool's own permission, or the one chosen for it.
+            if ($guarded && ! ChatAiPermissions::allows($user, $override?->permission ?: ChatAiPermissions::forTool($tool->name))) {
                 continue;
             }
 
@@ -63,7 +70,12 @@ class ToolRegistry implements ToolProvider
      */
     public function catalog(Authenticatable $user, ChatAiContext $context): array
     {
-        return $this->base->tools($user, $context);
+        $tools = $this->base->tools($user, $context);
+
+        // So Shield can list their permissions even for providers that filter per user.
+        ChatAiPermissions::remember(array_map(fn (ChatAiTool $tool): string => $tool->name, $tools));
+
+        return $tools;
     }
 
     /**

@@ -91,6 +91,7 @@ class ChatAiToolEditorPage extends Page
         if ($this->mode === self::MODE_CODE) {
             $tool = $this->codeTool();
             $components = $this->overrideForm([
+                'name' => $this->tool,
                 'title' => $tool?->label() ?? $this->tool,
                 'original_description' => $tool?->description,
             ]);

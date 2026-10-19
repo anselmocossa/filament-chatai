@@ -9,6 +9,7 @@ use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Pages\Concerns\ChecksChatAiManager;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -69,6 +70,8 @@ class ChatAiToolsPage extends Page implements HasTable
                     ->formatStateUsing(fn (string $state): string => $t('sources.'.$state))
                     ->color(fn (string $state): string => $state === 'code' ? 'gray' : 'primary'),
                 TextColumn::make('roles')->label($t('roles'))->badge()->placeholder($t('everyone')),
+                TextColumn::make('permission')->label($t('permission'))->badge()->color('gray')
+                    ->visible(fn (): bool => ChatAiPermissions::enabled()),
                 IconColumn::make('enabled')->label($t('enabled'))->boolean(),
                 IconColumn::make('adjusted')->label($t('adjusted'))->boolean()->trueIcon('heroicon-m-pencil')->falseIcon('heroicon-m-minus')->falseColor('gray'),
             ])
@@ -145,6 +148,7 @@ class ChatAiToolsPage extends Page implements HasTable
                 'description' => $override?->description ?: $row['description'],
                 'enabled' => $row['enabled'] && ($override?->enabled ?? true),
                 'roles' => $override?->roles ?? [],
+                'permission' => $override?->permission ?: ChatAiPermissions::forTool($name),
                 'adjusted' => $override !== null,
                 'original_description' => $row['description'],
             ];

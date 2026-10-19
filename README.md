@@ -54,6 +54,15 @@ ChatAiPlugin::make()->canManageSettings(fn ($user) => $user->is_admin)
 Claude requests use prompt caching automatically: system prompt, tools and history are billed at the
 cache-read price on every tool round and follow-up question.
 
+## Filament Shield
+
+Turn on **Settings → Permissions** and each tool needs its own permission, named like Shield's own
+(`UseChatAiTool:SalesStats`); using the chat can also require `UseChatAi`. They show up in Shield's roles
+editor, **Custom permissions** tab (enable `shield_resource.tabs.custom_permissions`), so you tick per role
+who may use what. A user without a tool's permission does not get that tool, so the assistant tells them it
+has no access to that data. A tool can require an existing permission instead (e.g. `ViewAny:Order`).
+Resource tools also follow the resource's policies, and Shield's super admin always passes.
+
 ## Optional: `.env` defaults
 
 Handy on servers or CI. A provider saved on screen without a key uses these; values saved on screen win.
