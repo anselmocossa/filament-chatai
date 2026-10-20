@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'builder_continue' => 'Use the new tool to answer my question.',
+    'table_page' => 'Page :page of :pages · :total rows',
+    'table_prev' => 'Previous page',
+    'table_next' => 'Next page',
     'table_truncated' => 'Showing :shown of :total rows.',
     'unavailable' => 'The assistant is unavailable right now. Please try again shortly.',
     'budget_reached' => 'The assistant spending limit has been reached. It will answer again next period, or ask an administrator to raise it.',
@@ -106,6 +110,10 @@ return [
         'access_users_help' => 'E-mails or role names. Empty = every user of the panel. Managers always may.',
         'access_users_placeholder' => 'sales',
         'access_lockout' => 'Add yourself (your e-mail or one of your roles) to the managers, or nobody could open these pages again.',
+        'query_data_enabled' => 'The assistant can read any resource the user may see',
+        'query_data_enabled_help' => 'When no tool answers, it filters and adds up the records of a resource itself (e.g. one employee\'s timesheet hours), with the same permissions as the resource\'s pages.',
+        'builder_enabled' => 'The assistant can build new tools for itself',
+        'builder_enabled_help' => 'Managers can ask it for something it cannot answer yet: it looks at the panel\'s data and proposes a new list or totals tool, or a skill. Each one is shown for confirmation and tested before it is saved; never code.',
         'permissions_enabled' => 'Each tool requires a permission',
         'permissions_enabled_help' => 'Users without a tool\'s permission do not get it: the assistant says it has no access to that data.',
         'permissions_require_chat' => 'Using the assistant requires a permission',
@@ -497,6 +505,8 @@ return [
     ],
     'screen' => [
         'filling' => 'Filling in the form',
+        'filter_applied' => 'Filter applied to the list',
+        'filter_review' => 'the list on screen is filtered',
         'filled_short' => 'Form filled in',
         'stopped' => 'Stopped',
         'review' => ':count fields — review and save',

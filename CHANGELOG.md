@@ -4,6 +4,20 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.1.0] - 2026-10-20
+
+### Fixed
+- A totals tool filtered by a name that matches several related records (three employees called «Murazik») added them all up as one; it now lists the candidates so the assistant asks which one. An exact name wins over names that merely contain it.
+- A choice field (such as a list filter) given a list of values by the model received the first one instead of failing with «Array to string conversion».
+
+### Added
+- **The assistant improves itself**: managers can ask it for something no tool answers yet. It reads the panel's data (`describe_data`) and proposes a new list or totals tool (`create_tool`) or a skill (`create_skill`). Each proposal is a confirmation card; a tool must answer a test call before it is saved, and it works from the next question. Never code. Switch: **Settings → Permissions** / `chatai.builder.enabled`.
+  When a manager asks something no tool answers, the assistant now proposes the tool right away instead of saying it cannot, and once it is confirmed the chat asks the question again so the answer comes straight away.
+- **Reads any resource the user may see** (`query_data`): when no tool answers, the assistant filters and adds up a resource's records itself — e.g. one employee's billable timesheet hours — with the resource's own query, scopes and permissions; a related record is picked by name. Switch: **Settings → Permissions** / `chatai.query_data.enabled` (and the `UseChatAiTool:QueryData` permission when Shield permissions are on).
+- **List filters and search on screen are applied**: asked to search or filter the list on screen («pesquisa por Camilla Schimmel»), the assistant types into the list's search box or sets Filament's filters and applies them (the list, its totals and the URL update); the card says «Filter applied to the list» instead of asking to press Save.
+- **Tables page through every row**: a list with more rows than fit (e.g. 98 employees) gets ‹ › page buttons and «Page 1 of 2 · 98 rows». Each page is fetched from the list tool again, with the user's permissions; the model no longer copies rows. List tools take a `page` argument.
+- **Totals for one person or value**: tools made on screen of the «Totals for a period» kind take `filters`: a column, or `rel:<relation>` to filter by a related record's name (e.g. the total timesheet of one employee).
+
 ## [1.0.0] - 2026-10-20
 
 First stable release.
@@ -29,4 +43,5 @@ First stable release.
 - **Providers**: any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama) or Claude natively through `anthropic-ai/sdk`, with prompt caching.
 - English and Portuguese (pt_PT) translations.
 
+[1.1.0]: https://github.com/anselmocossa/filament-chatai/releases/tag/v1.1.0
 [1.0.0]: https://github.com/anselmocossa/filament-chatai/releases/tag/v1.0.0

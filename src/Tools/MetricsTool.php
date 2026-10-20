@@ -59,7 +59,25 @@ final class MetricsTool
             $metrics = [['function' => 'count', 'label' => 'count']];
         }
 
+        // Values the user gives (a person, a status): a column of the records added up, or a
+        // belongs-to relation matched by its name ("rel:employee" → employee: "Camilla").
+        $filters = [];
+
+        foreach (array_filter((array) ($config['filters'] ?? []), 'is_string') as $filter) {
+            if (in_array($filter, $targetColumns, true)) {
+                $filters[$filter] = ['column' => $filter];
+            } elseif (str_starts_with($filter, 'rel:') && ($rel = $belongsTo[substr($filter, 4)] ?? null) instanceof BelongsTo) {
+                $filters[substr($filter, 4)] = ['relation' => $rel, 'title' => ResourceInspector::titleColumn($rel->getRelated())];
+            }
+        }
+
         $properties = [];
+
+        foreach ($filters as $param => $filter) {
+            $properties[$param] = ['type' => 'string', 'description' => isset($filter['column'])
+                ? "Only records whose {$param} equals this."
+                : "Only the {$param} whose {$filter['title']} contains this (e.g. a name)."];
+        }
 
         if ($dateField) {
             $properties['period'] = ['type' => 'string', 'enum' => self::PERIODS, 'description' => "Period by {$dateField}. Default: {$defaultPeriod}."];
@@ -73,24 +91,49 @@ final class MetricsTool
             name: $tool->name,
             description: $description,
             inputSchema: ['type' => 'object', 'properties' => $properties],
-            handler: function (array $args) use ($resource, $relation, $target, $targetColumns, $parentColumns, $dateField, $conditions, $compare, $defaultPeriod, $groupBy, $groupLimit, $belongsTo, $hasOne, $metrics): ToolResult {
+            handler: function (array $args) use ($resource, $relation, $target, $targetColumns, $parentColumns, $dateField, $conditions, $compare, $defaultPeriod, $groupBy, $groupLimit, $belongsTo, $hasOne, $metrics, $filters): ToolResult {
                 if (! $resource::canViewAny()) {
                     return ToolResult::error('The user does not have permission to see these records.');
+                }
+
+                // A name that matches several related records (three "Murazik"): ask, never add them up together.
+                foreach ($filters as $param => $filter) {
+                    if (isset($filter['relation']) && filled($args[$param] ?? null)) {
+                        $owner = $filter['relation']->getRelated();
+                        $matches = $owner->newQuery()->where($filter['title'], 'like', '%'.addcslashes((string) $args[$param], '%_').'%')->limit(10)->pluck($filter['title']);
+
+                        if ($matches->count() > 1 && ! $matches->contains(fn ($name): bool => strcasecmp((string) $name, (string) $args[$param]) === 0)) {
+                            return ToolResult::data(['ambiguous' => $param, 'candidates' => $matches->values()->all(), 'note' => 'Several match: ask the user which one, or use the full name. Nothing was added up.']);
+                        }
+                    }
                 }
 
                 [$from, $to, $period] = $dateField ? self::range($args, $defaultPeriod) : [null, null, 'all'];
 
                 // The records to add up: the resource's own query (its scopes and tenancy), or a relation of it.
-                $base = function (?Carbon $from, ?Carbon $to) use ($resource, $relation, $target, $parentColumns, $dateField, $conditions): Builder {
+                $base = function (?Carbon $from, ?Carbon $to) use ($resource, $relation, $target, $parentColumns, $dateField, $conditions, $filters, $args): Builder {
                     $parents = Conditions::apply($resource::getEloquentQuery(), $conditions, $parentColumns);
 
                     if ($dateField && $from && $to) {
                         $parents->whereBetween($parents->getModel()->getTable().'.'.$dateField, [$from, $to]);
                     }
 
-                    return $relation
+                    $query = $relation
                         ? $target->newQuery()->whereIn($target->getTable().'.'.$relation->getForeignKeyName(), $parents->select($parents->getModel()->getTable().'.'.$relation->getLocalKeyName()))
                         : $parents;
+
+                    foreach ($filters as $param => $filter) {
+                        if (! filled($args[$param] ?? null)) {
+                            continue;
+                        }
+
+                        isset($filter['column'])
+                            ? $query->where($target->getTable().'.'.$filter['column'], (string) $args[$param])
+                            : $query->whereHas($param, fn (Builder $q) => $q->where($filter['title'], 'like', '%'.addcslashes((string) $args[$param], '%_').'%')
+                                ->when($q->getModel()->newQuery()->where($filter['title'], (string) $args[$param])->exists(), fn (Builder $exact) => $exact->where($filter['title'], (string) $args[$param])));
+                    }
+
+                    return $query;
                 };
 
                 $select = fn (Builder $q): Builder => $q->reorder()->selectRaw(collect($metrics)->map(fn (array $m, int $i): string => self::sql($m, $target).' as m'.$i)->implode(', '));

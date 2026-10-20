@@ -16,15 +16,18 @@ use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\FileParts;
+use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
 use Filament\ChatAi\Tools\FillFormTool;
 use Filament\ChatAi\Tools\MemoryTool;
 use Filament\ChatAi\Tools\NavigateTool;
+use Filament\ChatAi\Tools\QueryDataTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\ChatAi\Ui\Catalog;
 use Filament\ChatAi\Ui\ComponentValidator;
+use Filament\ChatAi\Ui\TablePager;
 use Generator;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -77,7 +80,7 @@ class Orchestrator
         $definitions = array_values(array_map(fn (ChatAiTool $t) => $t->toFunctionDefinition(), $available));
 
         $messages = [
-            ['role' => 'system', 'content' => SystemPrompt::build($assistantName, $context, $systemPrompt).$this->memories($user, $context, $conversation)],
+            ['role' => 'system', 'content' => SystemPrompt::build($assistantName, $context, $systemPrompt).$this->builderHint($available).$this->memories($user, $context, $conversation)],
             ...$this->history($conversation, $userMessage),
         ];
 
@@ -176,7 +179,7 @@ class Orchestrator
 
                 foreach ($calls as $call) {
                     if ($call->toolName === ShowUiTool::NAME) {
-                        $asked = array_values(array_filter((array) ($call->arguments['components'] ?? []), 'is_array'));
+                        $asked = array_map(fn (array $c): array => TablePager::prepare($c, $available), array_values(array_filter((array) ($call->arguments['components'] ?? []), 'is_array')));
                         $valid = $this->validator->validateMany($asked);
 
                         foreach ($valid as $component) {
@@ -199,9 +202,12 @@ class Orchestrator
                         $filled = FillFormTool::fields($context, (array) $call->arguments);
                         $toolsUsed[] = $call->toolName;
 
+                        // List filters are applied on screen, not saved.
+                        $onlyFilters = $filled !== [] && collect($filled)->every(fn (array $f): bool => str_starts_with((string) $f['path'], 'tableDeferredFilters.') || $f['path'] === 'tableSearch');
+
                         if ($filled !== []) {
                             yield new AgentEvent(AgentEvent::FILL, ['fields' => $filled]);
-                            $card = $this->validator->validate(['type' => Catalog::FILLED, 'fields' => $filled], fromServer: true);
+                            $card = $this->validator->validate(['type' => Catalog::FILLED, 'fields' => $filled, 'filter' => $onlyFilters], fromServer: true);
 
                             if ($card !== null) {
                                 $components[] = $card;
@@ -211,7 +217,9 @@ class Orchestrator
 
                         $result = $filled === []
                             ? ToolResult::error('None of those fields is on screen. Use the paths listed under "On screen now".')
-                            : ToolResult::data(['filled' => array_column($filled, 'path'), 'note' => 'The values are in the form on screen. Nothing is saved: tell the user to review them and press Save.']);
+                            : ToolResult::data(['filled' => array_column($filled, 'path'), 'note' => $onlyFilters
+                                ? 'Applied as filters of the list on screen: the user now sees the filtered list. Nothing is saved. To give figures from it, use '.QueryDataTool::NAME.' or another tool; do not ask the user to press Save.'
+                                : 'The values are in the form on screen. Nothing is saved: tell the user to review them and press Save.']);
                     } elseif (($tool = $available[$call->toolName] ?? null) !== null && ! $tool->readOnly) {
                         // A change: nothing runs until the user confirms; shown when the answer ends.
                         $proposals[] = ['tool' => $tool->name, 'card' => $this->propose($conversation, $user, $context, $tool, (array) $call->arguments)];
@@ -342,6 +350,29 @@ class Orchestrator
         }
 
         return false;
+    }
+
+    /**
+     * For managers: build what is missing instead of saying it cannot be done.
+     *
+     * @param  array<string, ChatAiTool>  $available
+     */
+    protected function builderHint(array $available): string
+    {
+        $hint = '';
+
+        if (isset($available[QueryDataTool::NAME])) {
+            $hint .= "\n\nWhen no other tool answers a question about the application's data (a total, a count, a list for one person or status), answer it yourself with "
+                .QueryDataTool::NAME.' (call '.BuilderTools::DESCRIBE.' first for the resource and its columns). Do not say you cannot, and do not send the user to filter a page to find it.';
+        }
+
+        if (isset($available[BuilderTools::CREATE_TOOL])) {
+            $hint .= "\nThis user manages the assistant, so you can also give yourself new abilities: when they ask for a tool, or after answering a question that is likely to come back, "
+                .'offer to save it as a tool with '.BuilderTools::CREATE_TOOL.' ("metrics" for sums, counts and averages, "resource" for lists; give it filters for what the user will name). '
+                .'Without '.QueryDataTool::NAME.', build it in the same answer and say the answer comes as soon as they confirm.';
+        }
+
+        return $hint;
     }
 
     /**

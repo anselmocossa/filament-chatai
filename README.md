@@ -250,6 +250,16 @@ ChatAiPlugin::make()
 
 The server applies the same switches: with reading off, a snapshot sent by the browser is ignored; only fields that are on screen can be filled.
 
+## Answers without a tool of its own
+
+When no tool answers, the assistant reads the resource itself (`query_data`): it filters and adds up the records of any resource the user may see — *"how many billable hours does Camilla Schimmel have?"* — with the resource's own query, scopes and permissions, picking a related record by name. Asked to *"filter this list"*, it applies the list's own filters on screen, so the user sees the same records it counted. Switch it off in **Settings → Permissions** (`chatai.query_data.enabled`).
+
+## The assistant improves itself
+
+A manager can ask for something no tool answers yet — *"I want the employees sorted by date of birth, you have no tool for that: build it"*. The assistant looks at the panel's data (`describe_data`), then proposes a new **list** or **totals** tool built only from real columns and relations, or a **skill**. The proposal is a confirmation card the manager can edit; on **Confirm** the tool must answer a test call before it is saved, and it answers from the next question. It shows up in **Tools**, where it can be adjusted or switched off like any tool made on screen.
+
+Only managers get this, and only while tools that change data are allowed. It never writes code. Switch it off in **Settings → Permissions** (`chatai.builder.enabled`).
+
 ## Several changes at once
 
 When one answer proposes several changes with the same tool — e.g. *"create these customers"* with a CSV attached — they come as **one list** to approve: paginated (10 per page), each row can be left out, one **Confirm all (n)** button. Rows are checked and run one by one, so a bad row is marked without stopping the others.

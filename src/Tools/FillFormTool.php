@@ -67,6 +67,14 @@ final class FillFormTool
 
             if (is_array($value)) {
                 $value = array_values(array_map('strval', array_filter($value, 'is_scalar')));
+
+                // A list only where the field takes several values; a single choice (e.g. a
+                // list filter) gets the first one, a text field the values joined.
+                $type = $onScreen[$path]['type'] ?? null;
+
+                if (isset($onScreen[$path]) && ! in_array($type, ['checkbox_list', 'multi_select'], true) && ! is_array($onScreen[$path]['value'] ?? null)) {
+                    $value = filled($onScreen[$path]['options'] ?? null) || in_array($type, ['select', 'radio'], true) ? ($value[0] ?? '') : implode(', ', $value);
+                }
             }
 
             // On/off fields get a real true/false (models sometimes send 1 or "yes").

@@ -250,6 +250,12 @@ document.addEventListener('alpine:init', () => {
             })
         }
 
+        // The list's own search box: typing in it filters the list live.
+        const search = [...document.querySelectorAll('.fi-main .fi-ta-search-field input')].find((el) => !el.closest(CHAT))
+        if (search && !fields.some((f) => f.path === 'tableSearch')) {
+            fields.push({ path: 'tableSearch', label: 'Search the list', type: 'search', value: search.value || '' })
+        }
+
         return fields.slice(0, 60)
     }
 
@@ -291,8 +297,25 @@ document.addEventListener('alpine:init', () => {
         agentEvent({ state: 'start', total: fields.length })
         await pause(reduced ? 0 : 350)
 
+        const filterTables = new Set() // list filters only take effect once applied
+
         for (const { path, value } of fields) {
             if (stopped) break
+
+            // The list's search box is not a form field: set it on the table, which searches live.
+            if (path === 'tableSearch') {
+                const search = [...document.querySelectorAll('.fi-main .fi-ta-search-field input')].find((el) => !el.closest(CHAT))
+                const wire = search && window.Livewire?.find(search.closest('[wire\\:id]')?.getAttribute('wire:id'))
+                if (wire) {
+                    search.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+                    wire.set('tableSearch', String(value ?? ''))
+                    search.closest('.fi-ta-search-field')?.classList.add('fi-chatai-filled')
+                    setTimeout(() => search.closest('.fi-ta-search-field')?.classList.remove('fi-chatai-filled'), 8000)
+                    filled++
+                }
+                agentEvent({ state: 'progress', done: filled, label: labels[path] || '' })
+                continue
+            }
 
             for (const wrapper of document.querySelectorAll('.fi-main .fi-fo-field')) {
                 const found = !wrapper.closest(CHAT) && statePath(wrapper)
@@ -303,6 +326,7 @@ document.addEventListener('alpine:init', () => {
 
                 if (wrapper.offsetParent) wrapper.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
                 wire.set(path, value, false)
+                if (path.startsWith('tableDeferredFilters.')) filterTables.add(wire)
                 wrapper.classList.add('fi-chatai-filled')
                 setTimeout(() => wrapper.classList.remove('fi-chatai-filled'), 8000)
                 filled++
@@ -313,8 +337,10 @@ document.addEventListener('alpine:init', () => {
             await pause(reduced ? 0 : 220)
         }
 
+        for (const wire of filterTables) wire.call('applyTableFilters')
+
         window.removeEventListener('chatai-agent-stop', stop)
-        agentEvent({ state: 'done', done: filled, stopped })
+        agentEvent({ state: 'done', done: filled, stopped, filter: filled > 0 && fields.every((f) => f.path.startsWith('tableDeferredFilters.') || f.path === 'tableSearch') })
 
         return filled
     }
@@ -540,6 +566,8 @@ document.addEventListener('alpine:init', () => {
                 component.result = data.result ?? []
                 if (data.message) this.messages.push(data.message)
                 this.$nextTick(() => this.scrollToEnd?.())
+                // A tool the assistant just built for itself: it answers the question now.
+                if (data.continue) this.$nextTick(() => this.ask(data.continue))
             } catch (error) {
                 this.notice = error.message
             } finally {
@@ -1572,6 +1600,28 @@ document.addEventListener('alpine:init', () => {
                 plugins: { legend: { display: circular || component.series.length > 1 } },
                 ...(circular ? { scales: { x: { display: false }, y: { display: false } } } : {}),
                 ...drill,
+            }
+        },
+
+        // A table from a list tool with several pages: each page comes from the server.
+        async tablePage(component, page) {
+            if (!component.source || component.loading || page < 1 || page > component.pages) return
+            component.loading = true
+            try {
+                const response = await fetch(config.tableUrl, {
+                    method: 'POST',
+                    headers: this.headers(),
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ tool: component.source.tool, args: component.source.args || {}, page, columns: component.columns }),
+                })
+                if (response.ok) {
+                    const data = await response.json()
+                    Object.assign(component, { rows: data.rows, page: data.page, pages: data.pages, total: data.total })
+                }
+            } catch (e) {
+                // Offline or expired session: the page shown stays.
+            } finally {
+                component.loading = false
             }
         },
 

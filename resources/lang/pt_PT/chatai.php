@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'builder_continue' => 'Usa a ferramenta nova para responder à minha pergunta.',
+    'table_page' => 'Página :page de :pages · :total linhas',
+    'table_prev' => 'Página anterior',
+    'table_next' => 'Página seguinte',
     'table_truncated' => 'A mostrar :shown de :total linhas.',
     'unavailable' => 'O assistente está indisponível de momento. Tente de novo dentro de instantes.',
     'budget_reached' => 'O limite de gasto do assistente foi atingido. Volta a responder no próximo período, ou peça ao administrador para o aumentar.',
@@ -106,6 +110,10 @@ return [
         'access_users_help' => 'E-mails ou nomes de papéis. Vazio = todos os utilizadores do painel. Os gestores podem sempre.',
         'access_users_placeholder' => 'vendas',
         'access_lockout' => 'Inclua-se nos gestores (o seu e-mail ou um dos seus papéis), senão ninguém voltaria a abrir estas páginas.',
+        'query_data_enabled' => 'O assistente pode ler qualquer recurso que o utilizador possa ver',
+        'query_data_enabled_help' => 'Quando nenhuma ferramenta responde, filtra e soma ele próprio os registos de um recurso (por exemplo, as horas de timesheet de um funcionário), com as mesmas permissões das páginas desse recurso.',
+        'builder_enabled' => 'O assistente pode criar ferramentas novas para si próprio',
+        'builder_enabled_help' => 'Os gestores podem pedir-lhe algo a que ainda não sabe responder: ele vê os dados do painel e propõe uma ferramenta nova de lista ou de totais, ou uma skill. Cada uma é mostrada para confirmação e testada antes de ser gravada; nunca é código.',
         'permissions_enabled' => 'Cada tool exige permissão',
         'permissions_enabled_help' => 'Quem não tem a permissão da tool não a vê: o assistente responde que não tem acesso a esses dados.',
         'permissions_require_chat' => 'Usar o assistente exige permissão',
@@ -497,6 +505,8 @@ return [
     ],
     'screen' => [
         'filling' => 'A preencher o formulário',
+        'filter_applied' => 'Filtro aplicado à lista',
+        'filter_review' => 'a lista no ecrã está filtrada',
         'filled_short' => 'Formulário preenchido',
         'stopped' => 'Parado',
         'review' => ':count campos — reveja e guarde',

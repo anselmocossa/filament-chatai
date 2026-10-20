@@ -144,6 +144,8 @@ class ChatAiSettingsPage extends Page
                             ->placeholder($t('access_users_placeholder')),
                         Text::make($t('permissions_help'))->color('gray'),
                         Toggle::make('actions.enabled')->label($t('actions_enabled'))->helperText($t('actions_enabled_help')),
+                        Toggle::make('query_data.enabled')->label($t('query_data_enabled'))->helperText($t('query_data_enabled_help')),
+                        Toggle::make('builder.enabled')->label($t('builder_enabled'))->helperText($t('builder_enabled_help')),
                         Toggle::make('permissions.enabled')->label($t('permissions_enabled'))->live()->helperText($t('permissions_enabled_help')),
                         Toggle::make('permissions.require_chat')->label($t('permissions_require_chat'))
                             ->helperText(fn (): string => __('chatai::chatai.settings.permissions_require_chat_help', ['permission' => ChatAiPermissions::forChat()]))

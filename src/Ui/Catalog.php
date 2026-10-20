@@ -80,6 +80,7 @@ final class Catalog
                                 'description' => 'table: objects keyed by column key (max 50). Copy a row\'s "_url" from the tool result when it has one, so the row opens that record.',
                                 'items' => ['type' => 'object'],
                             ],
+                            'source' => ['type' => 'object', 'description' => 'table: copy "source" from a list tool result that has several pages; the table then pages through all of them by itself.'],
                             'chart_type' => ['type' => 'string', 'enum' => self::CHART_TYPES],
                             'drill' => ['type' => 'string', 'description' => 'chart: optional question asked when the user clicks a bar/slice, with {label} for the clicked label, e.g. "Mostra as encomendas de {label}".'],
                             'markers' => [

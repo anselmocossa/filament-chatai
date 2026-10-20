@@ -152,3 +152,31 @@ it('gives each listed row the address of its record, for clickable rows', functi
 
     expect($rows[0]['_url'])->toEndWith('/products/'.Product::query()->orderBy('id')->value('id').'/edit');
 });
+
+it('filters totals by a value the user names, also by a related record name', function () {
+    $tool = noCode(CustomTool::TYPE_METRICS, [
+        'resource' => OrderResource::class,
+        'relation' => 'items',
+        'period' => 'all',
+        'metrics' => [['function' => 'sum', 'column' => 'qty', 'label' => 'units']],
+        'filters' => ['rel:product', 'unit_price', 'not_a_column'],
+    ], 'units');
+
+    expect($tool->inputSchema['properties'])->toHaveKeys(['product', 'unit_price'])->not->toHaveKey('not_a_column')
+        ->and($tool->call(['product' => 'Oak'])->data['totals']['units'])->toBe(5.0)
+        ->and($tool->call(['unit_price' => '25'])->data['totals']['units'])->toBe(2.0)
+        ->and($tool->call([])->data['totals']['units'])->toBe(7.0);
+});
+
+it('asks which one when a name matches several related records, instead of adding them up', function () {
+    Product::create(['name' => 'Oak Mug Large', 'sku' => 'M-2']);
+
+    $tool = noCode(CustomTool::TYPE_METRICS, [
+        'resource' => OrderResource::class, 'relation' => 'items', 'period' => 'all',
+        'metrics' => [['function' => 'sum', 'column' => 'qty', 'label' => 'units']],
+        'filters' => ['rel:product'],
+    ], 'units-by-product');
+
+    expect($tool->call(['product' => 'Oak'])->data['candidates'])->toBe(['Oak Mug', 'Oak Mug Large'])
+        ->and($tool->call(['product' => 'Oak Mug'])->data['totals']['units'])->toBe(5.0);
+});

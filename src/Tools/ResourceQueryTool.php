@@ -96,9 +96,10 @@ final class ResourceQueryTool
         }
 
         $properties['limit'] = ['type' => 'integer', 'description' => "Rows to return (max {$limit})."];
+        $properties['page'] = ['type' => 'integer', 'description' => 'Page of rows, 1 = first. Only when the user asks for the next ones.'];
 
         $description = $tool->description
-            .' Returns the total number of matching '.$resource::getPluralModelLabel().' (with no filters: all of them, so it also answers "how many") and up to '.$limit.' rows.'
+            .' Returns the total number of matching '.$resource::getPluralModelLabel().' (with no filters: all of them, so it also answers "how many") and up to '.$limit.' rows per page.'
             .(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '')
             .($image ? ' Rows carry "_image", the record\'s picture: show them as cards (or a table column with format image) when the user wants to see them.' : '');
 
@@ -106,7 +107,7 @@ final class ResourceQueryTool
             name: $tool->name,
             description: $description,
             inputSchema: ['type' => 'object', 'properties' => $properties],
-            handler: function (array $args) use ($resource, $instance, $visible, $fields, $relatedFields, $filters, $search, $conditions, $dateField, $sort, $direction, $limit, $countBy, $totals, $related, $hasMany, $image): ToolResult {
+            handler: function (array $args) use ($tool, $resource, $instance, $visible, $fields, $relatedFields, $filters, $search, $conditions, $dateField, $sort, $direction, $limit, $countBy, $totals, $related, $hasMany, $image): ToolResult {
                 if (! $resource::canViewAny()) {
                     return ToolResult::error('The user does not have permission to see these records.');
                 }
@@ -165,7 +166,10 @@ final class ResourceQueryTool
                 }
 
                 $total = (clone $query)->count();
-                $records = $query->orderBy($sort, $direction)->limit(max(1, min((int) ($args['limit'] ?? $limit), $limit)))->get();
+                $perPage = max(1, min((int) ($args['limit'] ?? $limit), $limit));
+                $pages = max(1, (int) ceil($total / $perPage));
+                $page = max(1, min((int) ($args['page'] ?? 1), $pages));
+                $records = $query->orderBy($sort, $direction)->offset(($page - 1) * $perPage)->limit($perPage)->get();
 
                 $rows = $records->map(function ($record) use ($resource, $fields, $relatedFields, $totals, $related, $image): array {
                     $row = Arr::only($record->attributesToArray(), $fields);
@@ -200,11 +204,20 @@ final class ResourceQueryTool
                     return $row;
                 })->all();
 
+                // More than one page: the table can page through all of them by itself.
+                $paging = $pages > 1 ? [
+                    'page' => $page,
+                    'pages' => $pages,
+                    'source' => ['tool' => $tool->name, 'args' => Arr::except($args, ['page', 'limit'])],
+                    'note' => "Page {$page} of {$pages}. To let the user see all {$total} in a table, put this \"source\" and \"total\" in the show_ui table: it pages by itself, so do not call this tool page by page.",
+                ] : [];
+
                 return ToolResult::data(array_filter([
                     'resource' => $resource::getPluralModelLabel(),
                     'total' => $total,
                     'counts_by_'.$countBy => $counts,
                     'rows' => $rows,
+                    ...$paging,
                 ], fn ($v): bool => $v !== null));
             },
             readOnly: true,

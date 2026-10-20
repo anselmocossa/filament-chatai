@@ -7,6 +7,7 @@ use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\ToolDraft;
 use Filament\ChatAi\Tools\ToolResult;
@@ -51,7 +52,13 @@ class ActionController
 
         $message = $this->answer($action, $content, $component);
 
-        return response()->json(['status' => $action->status, 'result' => $ok ? $action->resultFields() : [], 'message' => $message]);
+        return response()->json(array_filter([
+            'status' => $action->status,
+            'result' => $ok ? $action->resultFields() : [],
+            'message' => $message,
+            // A new tool the assistant built for itself: ask the question again so it answers now.
+            'continue' => $ok && $action->tool === BuilderTools::CREATE_TOOL ? __('chatai::chatai.builder_continue') : null,
+        ], fn ($v): bool => $v !== null));
     }
 
     /**

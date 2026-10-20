@@ -3,6 +3,7 @@
 namespace Filament\ChatAi\Tools;
 
 use Closure;
+use Filament\ChatAi\ChatAiPlugin;
 use Filament\ChatAi\Contracts\ToolProvider;
 use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\Skill;
@@ -65,6 +66,19 @@ class ToolRegistry implements ToolProvider
             $tools[SkillTool::NAME] = SkillTool::make($skills);
         }
 
+        // Any resource the user may see can be read, when no tool of its own answers.
+        if (config('chatai.query_data.enabled', true) && (! $guarded || ChatAiPermissions::allows($user, ChatAiPermissions::forTool(QueryDataTool::NAME)))) {
+            $tools[QueryDataTool::NAME] ??= QueryDataTool::make();
+            $tools[BuilderTools::DESCRIBE] ??= BuilderTools::describe();
+        }
+
+        // Managers can have the assistant build new tools and skills for itself (each one confirmed).
+        if ($actions && config('chatai.builder.enabled', true) && self::table('chatai_custom_tools') && self::manages()) {
+            foreach (BuilderTools::make() as $tool) {
+                $tools[$tool->name] ??= $tool;
+            }
+        }
+
         return array_values($tools);
     }
 
@@ -124,6 +138,15 @@ class ToolRegistry implements ToolProvider
 
         // spatie/laravel-permission, when present.
         return method_exists($user, 'getRoleNames') ? $user->getRoleNames()->all() : [];
+    }
+
+    protected static function manages(): bool
+    {
+        try {
+            return ChatAiPlugin::get()->canManage();
+        } catch (Throwable) {
+            return false; // no panel with the plugin (console, playground of another app)
+        }
     }
 
     protected static function table(string $table): bool

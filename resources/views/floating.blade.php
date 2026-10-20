@@ -19,7 +19,7 @@
             } else if (this.agent && detail.state === 'progress') {
                 Object.assign(this.agent, { done: detail.done, detail: detail.label })
             } else if (this.agent && detail.state === 'done') {
-                Object.assign(this.agent, { state: detail.stopped ? 'stopped' : 'done', done: detail.done, detail: '' })
+                Object.assign(this.agent, { state: detail.stopped ? 'stopped' : 'done', done: detail.done, detail: '', filter: !! detail.filter })
             }
         },
         stopAgent() {
@@ -49,9 +49,9 @@
             </span>
             <span class="fi-chatai-agent-text">
                 <span class="fi-chatai-agent-title"
-                      x-text="agent?.state === 'working' ? @js(__('chatai::chatai.screen.filling')) : agent?.state === 'stopped' ? @js(__('chatai::chatai.screen.stopped')) : @js(__('chatai::chatai.screen.filled_short'))"></span>
+                      x-text="agent?.state === 'working' ? @js(__('chatai::chatai.screen.filling')) : agent?.state === 'stopped' ? @js(__('chatai::chatai.screen.stopped')) : agent?.filter ? @js(__('chatai::chatai.screen.filter_applied')) : @js(__('chatai::chatai.screen.filled_short'))"></span>
                 <span class="fi-chatai-agent-detail"
-                      x-text="agent?.state === 'working' ? (agent.detail ? agent.detail + ' · ' : '') + agent.done + '/' + agent.total : @js(__('chatai::chatai.screen.review')).replace(':count', agent?.done ?? 0)"></span>
+                      x-text="agent?.state === 'working' ? (agent.detail ? agent.detail + ' · ' : '') + agent.done + '/' + agent.total : agent?.filter ? @js(__('chatai::chatai.screen.filter_review')) : @js(__('chatai::chatai.screen.review')).replace(':count', agent?.done ?? 0)"></span>
             </span>
             <span class="fi-chatai-agent-progress" x-show="agent?.state === 'working'"><span :style="'width:' + (agent ? Math.round(agent.done / Math.max(1, agent.total) * 100) : 0) + '%'"></span></span>
         </button>

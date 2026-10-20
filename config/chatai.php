@@ -66,6 +66,18 @@ return [
         'enabled' => true,
     ],
 
+    // When no tool answers, the assistant reads any resource the user may see (filtered list or
+    // totals), with the resource's own query, scopes and permissions.
+    'query_data' => [
+        'enabled' => true,
+    ],
+
+    // Managers can ask the assistant to build new tools (lists, totals) and skills for itself,
+    // from the data of the panel; each one is shown for confirmation and tested before it is saved.
+    'builder' => [
+        'enabled' => true,
+    ],
+
     // Memory: the assistant keeps what each user asks it to remember, across conversations.
     'memory' => [
         'enabled' => true,

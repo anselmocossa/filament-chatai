@@ -125,3 +125,28 @@ it('reads rich text fields but never writes into them', function () {
         ->and(FillFormTool::make($context)->inputSchema['properties']['fields']['items']['properties']['path']['enum'])->toBe(['data.name'])
         ->and(FillFormTool::fields($context, ['fields' => [['path' => 'data.description', 'value' => 'x']]]))->toBe([]);
 });
+
+it('writes one value into a single choice, such as a list filter, even when the model sends a list', function () {
+    $context = ChatAiContext::fromArray('admin', ['screen' => ['fields' => [
+        ['path' => 'tableDeferredFilters.employee.value', 'label' => 'Employee', 'type' => 'text', 'options' => ['70 = Camilla Schimmel', '71 = Ana']],
+        ['path' => 'data.skills', 'label' => 'Skills', 'type' => 'checkbox_list', 'options' => ['php = PHP', 'js = JS']],
+    ]]]);
+
+    $fields = collect(FillFormTool::fields($context, ['fields' => [
+        ['path' => 'tableDeferredFilters.employee.value', 'value' => ['70']],
+        ['path' => 'data.skills', 'value' => ['php', 'js']],
+    ]]))->keyBy('path');
+
+    expect($fields['tableDeferredFilters.employee.value']['value'])->toBe('70')
+        ->and($fields['tableDeferredFilters.employee.value']['shown'])->toBe('Camilla Schimmel')
+        ->and($fields['data.skills']['value'])->toBe(['php', 'js']);
+});
+
+it('can type into the search box of the list on screen', function () {
+    $context = ChatAiContext::fromArray('admin', ['screen' => ['fields' => [
+        ['path' => 'tableSearch', 'label' => 'Search the list', 'type' => 'search', 'value' => ''],
+    ]]]);
+
+    expect(FillFormTool::fields($context, ['fields' => [['path' => 'tableSearch', 'value' => 'Camilla Schimmel']]])[0])
+        ->toMatchArray(['path' => 'tableSearch', 'value' => 'Camilla Schimmel']);
+});

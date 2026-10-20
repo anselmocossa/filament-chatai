@@ -14,6 +14,7 @@ use Filament\ChatAi\Http\Controllers\MessageStreamController;
 use Filament\ChatAi\Http\Controllers\PlaygroundController;
 use Filament\ChatAi\Http\Controllers\PreferenceController;
 use Filament\ChatAi\Http\Controllers\SpeechController;
+use Filament\ChatAi\Http\Controllers\TableController;
 use Filament\ChatAi\Http\Middleware\EnsureChatAiAccess;
 use Filament\ChatAi\Llm\LlmConfig;
 use Filament\ChatAi\Models\Preference;
@@ -126,6 +127,7 @@ class ChatAiPlugin implements Plugin
                     Route::delete('memories/{memory}', [MemoryController::class, 'destroy'])->whereNumber('memory')->name('memories.destroy');
                     Route::post('messages/{message}/feedback', FeedbackController::class)->name('messages.feedback');
                     Route::post('actions/batch', [ActionController::class, 'batch'])->name('actions.batch');
+                    Route::post('tables', TableController::class)->name('tables.page');
                     Route::post('actions/{action}/confirm', [ActionController::class, 'confirm'])->name('actions.confirm');
                     Route::post('actions/{action}/cancel', [ActionController::class, 'cancel'])->name('actions.cancel');
                     Route::patch('groups/{group}', [ConversationGroupController::class, 'update'])->whereNumber('group')->name('groups.update');
@@ -213,6 +215,7 @@ class ChatAiPlugin implements Plugin
             'maps' => config('chatai.maps.enabled', true) ? array_intersect_key((array) config('chatai.maps', []), array_flip(['script', 'script_integrity', 'style', 'style_integrity', 'tiles', 'attribution'])) : null,
             'memoriesUrl' => $panel->route('chatai.memories.index'),
             'batchUrl' => $panel->route('chatai.actions.batch'),
+            'tableUrl' => $panel->route('chatai.tables.page'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
             'groupsUrl' => $panel->route('chatai.groups.store'),
             'filesUrl' => $panel->route('chatai.files.store', ['conversation' => '__conversation__']),

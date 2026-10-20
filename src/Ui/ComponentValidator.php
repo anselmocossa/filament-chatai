@@ -51,7 +51,7 @@ class ComponentValidator
                 },
             ] : null, array_slice((array) ($component['fields'] ?? []), 0, 60))));
 
-            return $fields === [] ? null : ['type' => Catalog::FILLED, 'fields' => $fields];
+            return $fields === [] ? null : array_filter(['type' => Catalog::FILLED, 'fields' => $fields, 'filter' => ($component['filter'] ?? false) === true ?: null]);
         }
 
         if (is_array($component) && $fromServer && ($component['type'] ?? null) === Catalog::CONFIRM_BATCH) {
@@ -172,14 +172,21 @@ class ComponentValidator
             return $out;
         }, array_slice($rows, 0, Catalog::MAX_ROWS));
 
+        // Paged by the server (TablePager), never by what the model wrote.
+        $paged = is_array($c['source'] ?? null) && (int) ($c['pages'] ?? 0) > 1;
+
         return array_filter([
             'type' => 'table',
             'title' => $this->title($c),
             'columns' => $columns,
             'rows' => $clean,
-            'note' => $total > Catalog::MAX_ROWS ? __('chatai::chatai.table_truncated', ['shown' => Catalog::MAX_ROWS, 'total' => $total]) : null,
+            'note' => ! $paged && $total > Catalog::MAX_ROWS ? __('chatai::chatai.table_truncated', ['shown' => Catalog::MAX_ROWS, 'total' => $total]) : null,
             'link' => $this->link($c['link'] ?? null),
-        ]);
+            'source' => $paged ? ['tool' => $this->str((string) ($c['source']['tool'] ?? ''), 64), 'args' => TablePager::args($c['source']['args'] ?? [])] : null,
+            'total' => $paged ? (int) ($c['total'] ?? 0) : null,
+            'page' => $paged ? max(1, (int) ($c['page'] ?? 1)) : null,
+            'pages' => $paged ? (int) $c['pages'] : null,
+        ], fn ($v): bool => $v !== null && $v !== '');
     }
 
     /**

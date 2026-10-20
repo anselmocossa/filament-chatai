@@ -40,7 +40,7 @@
             {{-- Long lists get a quick filter --}}
             <input type="search" class="fi-chatai-table-filter" x-show="component.rows.length > 8" x-model="filter" placeholder="{{ __('chatai::chatai.filter') }}" aria-label="{{ __('chatai::chatai.filter') }}">
         </div>
-        <div class="fi-chatai-table-scroll">
+        <div class="fi-chatai-table-scroll" :class="{ 'fi-chatai-loading': component.loading }">
             <table class="fi-chatai-table">
                 <thead>
                     <tr>
@@ -79,6 +79,12 @@
         <div class="fi-chatai-table-footer" x-show="component.note || component.link">
             <span x-text="component.note"></span>
             <a x-show="component.link" :href="component.link" class="fi-chatai-link">{{ __('chatai::chatai.see_all') }} →</a>
+        </div>
+        {{-- Every row of the list, a page at a time, fetched from the tool --}}
+        <div class="fi-chatai-table-pager" x-show="component.pages > 1">
+            <button type="button" x-on:click="tablePage(component, component.page - 1)" :disabled="component.loading || component.page <= 1" aria-label="{{ __('chatai::chatai.table_prev') }}">‹</button>
+            <span x-text="@js(__('chatai::chatai.table_page')).replace(':page', component.page).replace(':pages', component.pages).replace(':total', component.total)"></span>
+            <button type="button" x-on:click="tablePage(component, component.page + 1)" :disabled="component.loading || component.page >= component.pages" aria-label="{{ __('chatai::chatai.table_next') }}">›</button>
         </div>
     </div>
 </template>
@@ -332,7 +338,7 @@
     <div class="fi-chatai-confirm fi-chatai-filled-card">
         <div class="fi-chatai-confirm-head">
             <span class="fi-chatai-confirm-icon"><x-filament::icon icon="heroicon-o-pencil" class="fi-chatai-file-svg" /></span>
-            <span class="fi-chatai-confirm-title">{{ __('chatai::chatai.screen.filled') }}</span>
+            <span class="fi-chatai-confirm-title" x-text="component.filter ? @js(__('chatai::chatai.screen.filter_applied')) : @js(__('chatai::chatai.screen.filled'))"></span>
         </div>
         <dl class="fi-chatai-confirm-fields">
             <template x-for="field in component.fields" :key="field.path">

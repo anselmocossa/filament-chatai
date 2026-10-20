@@ -55,7 +55,7 @@ it('names one Shield permission per tool, in the Shield format', function () {
 });
 
 it('changes nothing while permissions are off', function () {
-    expect(permTools(permUser('Ana')))->toBe(['sales-stats', 'hr-summary']);
+    expect(permTools(permUser('Ana')))->toBe(['sales-stats', 'hr-summary', 'query_data', 'describe_data']);
 });
 
 it('only gives each user the tools their role allows once permissions are on', function () {
@@ -82,7 +82,7 @@ it('lets the Shield super admin through', function () {
     $boss->assignRole(Role::findOrCreate('super_admin', 'web'));
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-    expect(permTools($boss->fresh()))->toBe(['sales-stats', 'hr-summary']);
+    expect(permTools($boss->fresh()))->toBe(['sales-stats', 'hr-summary', 'query_data', 'describe_data']);
 });
 
 it('closes the chat to users without the chat permission when required', function () {

@@ -16,7 +16,7 @@ class SystemPrompt
         // What the user is looking at right now (only when reading the screen is switched on).
         $screen = $context->screen !== []
             ? "\nOn screen now (the user sees this; \"this\" or \"here\" means it): ".json_encode($context->screen, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                .($context->fillableFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved." : '')
+                .($context->fillableFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved. When the screen shows a list and the user asks to search, find or filter in it (\"pesquisa por X\", \"procura X\", \"filtra por X\", \"mostra só X\"), do it on the list: call fill_form with \"tableSearch\" for a search, or the list's filter fields (tableDeferredFilters...) for a filter. They apply at once and the user sees the list change; then say in one short sentence what the list now shows (use a tool for figures if asked)." : '')
             : '';
 
         $prompt = <<<PROMPT

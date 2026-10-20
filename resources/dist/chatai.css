@@ -603,6 +603,11 @@
 .fi-chatai-table tbody tr:hover td { background: var(--chatai-surface); }
 .fi-chatai-num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fi-chatai-badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500; background: color-mix(in oklab, var(--chatai-accent) 12%, transparent); color: var(--chatai-accent); }
+.fi-chatai-table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.75rem; color: var(--chatai-muted); }
+.fi-chatai-table-pager button { min-width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; border: 1px solid var(--chatai-border); background: transparent; color: inherit; font-size: 0.95rem; line-height: 1; cursor: pointer; }
+.fi-chatai-table-pager button:hover:not(:disabled) { color: var(--chatai-text); border-color: var(--chatai-muted); }
+.fi-chatai-table-pager button:disabled { opacity: 0.35; cursor: default; }
+.fi-chatai-table-scroll.fi-chatai-loading { opacity: 0.5; transition: opacity 0.15s; }
 .fi-chatai-table-footer { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.75rem; color: var(--chatai-muted); }
 .fi-chatai-link { color: var(--chatai-accent); font-weight: 500; }
 
