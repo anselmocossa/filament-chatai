@@ -1,26 +1,28 @@
 <p align="center">
-    <img src="art/banner.png" alt="Filament ChatAI" width="100%" class="filament-hidden">
+    <img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/banner.png" alt="Filament ChatAI" width="100%" class="filament-hidden">
 </p>
 
 <h1 align="center">Filament ChatAI</h1>
 
 <p align="center">
-    An AI assistant inside your Filament panel — it answers with KPIs, tables and charts from your own data.
+    An AI assistant inside your Filament panel. It answers with KPIs, tables, charts, maps and pictures from your own data, fills in forms and opens records, and asks before it changes anything. Installed with one command and set up on screen.
 </p>
 
 <p align="center">
+    <a href="https://packagist.org/packages/anselmokossa/filament-chatai"><img src="https://img.shields.io/packagist/v/anselmokossa/filament-chatai.svg?style=flat-square" alt="Latest Version on Packagist"></a>
+    <a href="https://packagist.org/packages/anselmokossa/filament-chatai"><img src="https://img.shields.io/packagist/dt/anselmokossa/filament-chatai.svg?style=flat-square" alt="Total Downloads"></a>
+    <a href="https://github.com/anselmocossa/filament-chatai/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/anselmocossa/filament-chatai/tests.yml?branch=main&label=tests&style=flat-square" alt="Tests"></a>
     <img src="https://img.shields.io/badge/Filament-v5-FDAE4B?style=flat-square" alt="Filament v5">
     <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
     <img src="https://img.shields.io/badge/Laravel-11%20|%2012%20|%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, 13">
-    <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen?style=flat-square" alt="Tests">
-    <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License">
+    <a href="LICENSE.md"><img src="https://img.shields.io/packagist/l/anselmokossa/filament-chatai.svg?style=flat-square" alt="MIT License"></a>
 </p>
 
 ---
 
 - **Floating chat** in the corner of every page, aware of the record on screen.
 - **Full-page chat** (`/{panel}/chatai`) with a history you can organise: pinned conversations, groups, renaming — the same conversation as the floating one.
-- **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts and follow-up suggestions, not just text.
+- **Generative UI**: the model answers with KPIs, sortable tables, Filament-styled charts, maps, record cards with pictures and follow-up suggestions, not just text. Click a bar, a slice or a map point to ask more about it.
 - **Your tools**: plug in existing `laravel/mcp` tools, or build tools on screen (Resource queries, HTTP APIs) and test them in a chat next to the form.
 - **Changes with confirmation**: tools that change data never run straight away — the user gets a form prefilled by the model, or one paginated list for many changes, and approves once.
 - **Sees the screen and acts on it**: answers about the page the user is on, fills in the open form (every step of a wizard), and opens pages and records — while it works the chat shrinks to a bar on the chat button. It never saves on its own.
@@ -28,104 +30,160 @@
 - **Voice and export**: dictate, hear answers read aloud, export a conversation to Markdown.
 - **Control**: models with fallbacks, several provider keys with spending limits, usage and cost per user and model, a log of every question, and Filament Shield permissions per tool.
 - **Providers**: any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama) or Claude natively through `anthropic-ai/sdk`.
+- **Launchpad tiles**: with [Filament Launchpad](https://github.com/anselmocossa/filament-launchpad) installed, the assistant brings its own live tiles to the card library.
+- **No code needed**: `php artisan chatai:install` adds it to your panels; keys, models, tools, who may use and who manages it are all set on screen.
 
 ## Screenshots
 
 #### Full-page chat — KPIs and charts from your data
 
-<img src="art/screenshots/full-page.png" alt="Full-page chat with KPIs and a chart" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/full-page.png" alt="Full-page chat with KPIs and a chart" width="100%">
+
+#### Maps — orders per country, a click on a point asks about it
+
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/maps.png" alt="Map of orders per country" width="100%">
+
+#### Record cards with their pictures
+
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/image-cards.png" alt="Product cards with pictures" width="100%">
+
+#### Charts you can drill into — click a bar to see more
+
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/drill-down.png" alt="Bar chart with drill-down" width="100%">
+
+#### An image dropped in the chat goes onto the record, after confirmation
+
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/image-attach.png" alt="An attached image saved on a product" width="100%">
 
 #### History — pin conversations, group them in folders, rename in place
 
-<img src="art/screenshots/history.png" alt="History with pinned conversations and groups" width="280">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/history.png" alt="History with pinned conversations and groups" width="280">
 
 #### Floating chat — knows the record on screen
 
-<img src="art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/floating.png" alt="Floating chat over a product edit page" width="100%">
 
 #### Fills in the form on screen — the chat shrinks to a bar on the chat button while it works
 
-<img src="art/screenshots/agent.png" alt="The assistant filling a form, minimised to a bar" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/agent.png" alt="The assistant filling a form, minimised to a bar" width="100%">
 
 #### …every step of a wizard in one go; the user reviews and saves
 
-<img src="art/screenshots/wizard.png" alt="Wizard step filled in by the assistant" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/wizard.png" alt="Wizard step filled in by the assistant" width="100%">
 
-<img src="art/screenshots/screen-fill.png" alt="Fields filled in on the page and summary in the chat" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/screen-fill.png" alt="Fields filled in on the page and summary in the chat" width="100%">
 
 #### …ending with "review and save" — a click reopens the chat
 
-<img src="art/screenshots/agent-done.png" alt="Form filled in, minimised bar with review and save" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/agent-done.png" alt="Form filled in, minimised bar with review and save" width="100%">
 
 #### Suggestions for the page on screen
 
-<img src="art/screenshots/starters.png" alt="Starter questions on a product edit page" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/starters.png" alt="Starter questions on a product edit page" width="100%">
 
 #### Opens pages and records for the user
 
-<img src="art/screenshots/navigate.png" alt="The assistant opening a product for editing" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/navigate.png" alt="The assistant opening a product for editing" width="100%">
 
 #### Every answer: copy, answer again, 👍 / 👎 with a reason
 
-<img src="art/screenshots/answer-controls.png" alt="Answer controls and a not-helpful reason" width="60%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/answer-controls.png" alt="Answer controls and a not-helpful reason" width="60%">
 
 #### Memory — what each user asked it to remember
 
-<img src="art/screenshots/memory.png" alt="Memory panel" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/memory.png" alt="Memory panel" width="100%">
 
 #### Changes ask first — a form prefilled by the model
 
-<img src="art/screenshots/form.png" alt="A form in the chat to register a customer" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/form.png" alt="A form in the chat to register a customer" width="100%">
 
 #### …and many at once as one paginated list with a single approval
 
-<img src="art/screenshots/batch.png" alt="Fifteen customers from a CSV, approved at once" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/batch.png" alt="Fifteen customers from a CSV, approved at once" width="100%">
 
 #### After Confirm, the card shows what changed
 
-<img src="art/screenshots/actions.png" alt="Confirmation card with before and after" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/actions.png" alt="Confirmation card with before and after" width="100%">
 
 #### Attach a file, get an Excel back
 
-<img src="art/screenshots/files.png" alt="Attached CSV and generated Excel file" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/files.png" alt="Attached CSV and generated Excel file" width="100%">
 
 #### `@` picks a tool, `/` applies a skill
 
-<img src="art/screenshots/mentions.png" alt="@ to pick a tool" width="60%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/mentions.png" alt="@ to pick a tool" width="60%">
 
 #### Tools made on screen — no code
 
-<img src="art/screenshots/tools.png" alt="Tools page with no-code tools" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/tools.png" alt="Tools page with no-code tools" width="100%">
 
-<img src="art/screenshots/nocode-editor.png" alt="Editor of a Totals for a period tool" width="60%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/nocode-editor.png" alt="Editor of a Totals for a period tool" width="60%">
 
 #### Tool editor — test the tool by chatting before saving
 
-<img src="art/screenshots/tool-editor.png" alt="Tool editor with a test chat" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/tool-editor.png" alt="Tool editor with a test chat" width="100%">
 
 #### Usage — cost, tokens and cache, per user and per model
 
-<img src="art/screenshots/usage.png" alt="Usage page" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/usage.png" alt="Usage page" width="100%">
 
 #### Models — the first enabled answers, the next take over
 
-<img src="art/screenshots/models.png" alt="Models in fallback order" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/models.png" alt="Models in fallback order" width="100%">
 
 #### Logs — question, tools, model, tokens and time
 
-<img src="art/screenshots/logs.png" alt="Logs of every question" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/logs.png" alt="Logs of every question" width="100%">
 
 #### Settings — assistant, screen, voice, permissions, files, limits, prices
 
-<img src="art/screenshots/settings.png" alt="Settings tabs" width="100%">
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/settings.png" alt="Settings tabs" width="100%">
+
+#### Launchpad tiles — live figures and one tile per suggested question
+
+<img src="https://raw.githubusercontent.com/anselmocossa/filament-chatai/main/art/screenshots/launchpad.png" alt="ChatAI tiles on the launchpad" width="100%">
+
+## Requirements
+
+- PHP 8.2+, Laravel 11, 12 or 13, Filament 5
+- A key for an AI provider: Anthropic (Claude), OpenAI, OpenRouter, or a local Ollama
+- For Stop and long answers, a server that takes more than one request at a time (php-fpm, Octane…)
 
 ## Install
 
 ```bash
 composer require anselmokossa/filament-chatai
-php artisan vendor:publish --tag=chatai-migrations && php artisan migrate
-php artisan filament:assets
+php artisan chatai:install
 ```
+
+The installer publishes and runs the migrations, publishes the assets, adds the plugin to the panels you pick and asks who manages the assistant (e-mails or role names). Then open **ChatAI → Providers** in the panel, paste a key, and the chat is ready. No other code is needed.
+
+Without questions, e.g. in a deploy script:
+
+```bash
+php artisan chatai:install --panel=admin --manager=you@example.com --migrate --no-interaction
+```
+
+If you'd rather register it by hand, add the plugin to your panel provider and run `php artisan vendor:publish --tag=chatai-migrations && php artisan migrate && php artisan filament:assets`:
+
+```php
+$panel->plugin(\Filament\ChatAi\ChatAiPlugin::make());
+```
+
+### Who may use it and who manages it
+
+Set in **Settings → Permissions**, or in `.env` before anyone has signed in. Each entry is an e-mail, a user id or a role name (spatie/laravel-permission):
+
+```dotenv
+CHATAI_MANAGERS=you@example.com,super_admin   # providers, keys, models, tools, usage, logs
+CHATAI_USERS=sales,support                      # empty = every user of the panel
+```
+
+Managers always may chat, and Filament Shield's super admin always manages. Nobody else sees the admin pages until named here, because they hold API keys. A manager cannot remove themselves.
+
+### Optional code
+
+Everything below is optional, for apps that want it in code. Code wins over what is set on screen.
 
 ```php
 use Filament\ChatAi\ChatAiPlugin;
@@ -134,28 +192,24 @@ use Filament\ChatAi\Tools\LaravelMcpToolProvider;
 $panel->plugins([
     ChatAiPlugin::make()
         ->label('Assistant')
-        ->tools(fn () => new LaravelMcpToolProvider([
+        ->systemPrompt('This is the Maputo store. Prices are in MZN.')
+        ->tools(fn () => new LaravelMcpToolProvider([      // your laravel/mcp tools
             \App\Mcp\Tools\SalesStatsTool::class,
-            \App\Mcp\Tools\LowStockTool::class,
         ]))
-        ->canAccess(fn ($user) => $user->can('use-assistant')),
+        ->canAccess(fn ($user) => $user->can('use-assistant'))
+        ->canManageSettings(fn ($user) => $user->is_admin),
 ]);
 ```
 
 ## Set it up on screen
 
 Everything is configured in the panel, under the **ChatAI** menu. No `.env` editing is needed.
-The admin pages are closed until you say who may open them (they hold API keys):
-
-```php
-ChatAiPlugin::make()->canManageSettings(fn ($user) => $user->is_admin)
-```
 
 | Page | What you set |
 |---|---|
 | **Providers** | Each account/endpoint with its own key (encrypted): Anthropic, OpenRouter, OpenAI, a local Ollama… Monthly and daily **spending limits** per provider. |
 | **Models** | The models in order: the first enabled one answers, the next ones take over if it fails (any number of providers). Effort and price per model. "Test" per model. |
-| **Settings** | Assistant instructions and allowed API hosts · Voice (browser, Azure or Google, keys, voices users may pick) · Limits (messages per user, tool steps, timeout) · Currency and voice prices. |
+| **Settings** | Assistant name, icon, instructions and starter questions · Who may use and who manages it · Voice (browser, Azure or Google, keys, voices users may pick) · Limits (messages per user, tool steps, timeout) · Currency and voice prices. |
 | **Usage** | Estimated cost, questions, tokens (with the share served from prompt cache), voice, per day, user and model. |
 | **Tools** | Adjust code tools (on/off, wording, profiles) and build new ones without code: query a panel resource, or call an allowed GET API. Full-page editor with a live test chat and the tool as JSON / cURL / laravel/mcp code. |
 | **Skills** | Saved instructions for a kind of task, linked to the tools to use. |
@@ -261,6 +315,25 @@ Every answer can be **copied**, **answered again**, and rated **👍 / 👎** (a
 - **Documents**: the `create_document` tool makes CSV, Excel, Markdown, HTML, text or PDF (PDF needs `dompdf/dompdf`). The user gets a download card; only the conversation owner can download.
 - Where files are kept (`local`, `s3`, any disk in `config/filesystems.php`), the size limit and files per message are set in **Settings → Files**, or with `->filesDisk('s3')` on the plugin.
 
+## Pictures, maps and charts you can click
+
+- **Pictures** — a list tool can name the column (or Spatie Media Library collection) that holds a record's picture: tables get a thumbnail and the assistant can answer with **record cards**, each with up to three buttons that ask about that record. An image the user drops in the chat can be saved onto a record (a column or a media collection), through the usual confirmation. Outside hosts pictures may come from are listed in `chatai.images.hosts`.
+- **Maps** — figures per country (ISO codes, placed by the plugin) or per place (latitude/longitude) are drawn on a Leaflet map, loaded only when a map is shown. Point `chatai.maps.*` at your own copies or tile server if the panel must not call outside hosts, or turn maps off.
+- **Drill-down** — a click on a bar, a slice or a map point's «Ask» asks the assistant about it ("Show the orders of Germany").
+
+## Filament Launchpad
+
+With [anselmocossa/filament-launchpad](https://github.com/anselmocossa/filament-launchpad) (1.16+) installed, the assistant adds its own tiles to the launchpad's card library, ready to drag onto a page:
+
+| Tile | Shows | Opens |
+|---|---|---|
+| **Assistant** | the user's questions in the last 30 days, a bar per day | the chat |
+| **Changes to confirm** | changes the assistant proposed that wait for the user, with a badge | the chat |
+| **Assistant cost** | this month's cost, an area per day — only for managers | the Usage page |
+| **One tile per starter question** | the questions set in Settings → Assistant | the chat, asking it straight away |
+
+Tiles appear only on panels that use the assistant and only to users who may use it. Nothing happens without the launchpad; switch it off with `chatai.launchpad.enabled`.
+
 ## Optional: `.env` defaults
 
 Handy on servers or CI. A provider saved on screen without a key uses these; values saved on screen win.
@@ -296,3 +369,19 @@ composer test
 ```
 
 Use `Filament\ChatAi\Testing\FakeLlmClient::script([...])` to script the model in your own tests.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Security
+
+If you find a security issue, please e-mail anselmo.cossa@enh.co.mz instead of opening an issue.
+
+## Credits
+
+- [Anselmo Cossa](https://github.com/anselmocossa)
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).
