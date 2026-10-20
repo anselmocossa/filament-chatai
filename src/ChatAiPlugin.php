@@ -31,6 +31,7 @@ use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\SpeechManager;
 use Filament\ChatAi\Speech\SpeechProvider;
 use Filament\ChatAi\Speech\VoiceCatalog;
+use Filament\ChatAi\Support\AccessList;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\ChatAi\Support\ContextResolver;
@@ -209,6 +210,7 @@ class ChatAiPlugin implements Plugin
             'startersFromScreen' => (bool) config('chatai.starters_from_screen', true),
             'shortcut' => filled($key = config('chatai.shortcut')) ? strtolower(substr((string) $key, 0, 1)) : null,
             'memory' => (bool) config('chatai.memory.enabled', true),
+            'maps' => config('chatai.maps.enabled', true) ? array_intersect_key((array) config('chatai.maps', []), array_flip(['script', 'script_integrity', 'style', 'style_integrity', 'tiles', 'attribution'])) : null,
             'memoriesUrl' => $panel->route('chatai.memories.index'),
             'batchUrl' => $panel->route('chatai.actions.batch'),
             'actionUrl' => $panel->route('chatai.actions.confirm', ['action' => '__action__']),
@@ -235,6 +237,9 @@ class ChatAiPlugin implements Plugin
                 'starterCreate' => [__('chatai::chatai.starters.create_help')],
                 'starterList' => [__('chatai::chatai.starters.list_summary')],
                 'opening' => __('chatai::chatai.screen.opening'),
+                'openRecord' => __('chatai::chatai.open_record'),
+                'mapAsk' => __('chatai::chatai.map_ask'),
+                'mapUnavailable' => __('chatai::chatai.map_unavailable'),
                 'confirmDeleteGroup' => __('chatai::chatai.history.confirm_delete_group'),
                 'newGroupName' => __('chatai::chatai.history.new_group_name'),
                 'pinned' => __('chatai::chatai.history.pinned'),
@@ -369,11 +374,21 @@ class ChatAiPlugin implements Plugin
             return false;
         }
 
-        return $this->canAccess === null || (bool) app()->call($this->canAccess, ['user' => auth()->user()]);
+        if ($this->canAccess !== null) {
+            return (bool) app()->call($this->canAccess, ['user' => auth()->user()]);
+        }
+
+        // Settings → Permissions (or CHATAI_USERS): empty = every user of the panel.
+        ChatAiSettings::apply();
+        $users = AccessList::normalize(config('chatai.access.users'));
+
+        return $users === [] || AccessList::matches(auth()->user(), $users) || $this->canManage();
     }
 
     /**
-     * Who may see the settings (keys included) and the usage/costs page. Closed by default.
+     * Who may see the settings (keys included) and the usage/costs page. Without
+     * a closure: the managers set on screen or in CHATAI_MANAGERS (e-mails or
+     * roles), and Shield's super admin. Closed when none is set.
      */
     public function canManageSettings(?Closure $condition): static
     {
@@ -384,9 +399,26 @@ class ChatAiPlugin implements Plugin
 
     public function canManage(): bool
     {
-        return $this->canManageSettings !== null
-            && auth()->check()
-            && (bool) app()->call($this->canManageSettings, ['user' => auth()->user()]);
+        if (! auth()->check()) {
+            return false;
+        }
+
+        if ($this->canManageSettings !== null) {
+            return (bool) app()->call($this->canManageSettings, ['user' => auth()->user()]);
+        }
+
+        ChatAiSettings::apply();
+
+        return AccessList::matches(auth()->user(), config('chatai.access.managers'))
+            || ChatAiPermissions::isSuperAdmin(auth()->user());
+    }
+
+    /**
+     * Managers come from a closure in code, so the settings page does not edit them.
+     */
+    public function managersFromCode(): bool
+    {
+        return $this->canManageSettings !== null;
     }
 
     public function adminNavigationGroup(string|Closure|null $group): static

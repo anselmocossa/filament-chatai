@@ -606,6 +606,49 @@
 .fi-chatai-table-footer { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.75rem; color: var(--chatai-muted); }
 .fi-chatai-link { color: var(--chatai-accent); font-weight: 500; }
 
+/* cards: records with their picture */
+.fi-chatai-cards { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.fi-chatai-card { display: flex; flex-direction: column; border: 1px solid var(--chatai-border); border-radius: calc(var(--chatai-radius) - 2px); overflow: hidden; background: var(--chatai-bg); min-width: 0; transition: border-color 0.15s, box-shadow 0.15s; }
+.fi-chatai-card.fi-chatai-row-link:hover { border-color: color-mix(in oklab, var(--chatai-accent) 45%, var(--chatai-border)); box-shadow: 0 2px 8px rgb(0 0 0 / 0.06); }
+.fi-chatai-card-image { position: relative; aspect-ratio: 4 / 3; background: var(--chatai-surface); display: grid; place-items: center; }
+.fi-chatai-card-image img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.fi-chatai-card-placeholder { width: 1.75rem; height: 1.75rem; color: var(--chatai-muted); opacity: 0.5; }
+.fi-chatai-card-badge { position: absolute; z-index: 2; top: 0.4rem; left: 0.4rem; background: var(--chatai-bg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+.fi-chatai-card-body { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.55rem 0.65rem 0.65rem; min-width: 0; }
+.fi-chatai-card-title { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-chatai-card-subtitle { font-size: 0.75rem; color: var(--chatai-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-chatai-card-fields { display: grid; gap: 0.1rem; margin: 0.3rem 0 0; font-size: 0.75rem; }
+.fi-chatai-card-fields div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem; }
+.fi-chatai-card-fields dt { color: var(--chatai-muted); }
+.fi-chatai-card-fields dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-chatai-thumb { display: block; width: 2.25rem; height: 2.25rem; border-radius: 0.375rem; overflow: hidden; background: var(--chatai-surface); }
+.fi-chatai-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.fi-chatai-form-image { display: block; max-width: 220px; border-radius: 0.5rem; overflow: hidden; border: 1px solid var(--chatai-border); background: var(--chatai-surface); }
+.fi-chatai-form-image img { display: block; width: 100%; max-height: 180px; object-fit: cover; }
+.fi-chatai-form-image.fi-small { max-width: 96px; margin-left: auto; }
+@media (max-width: 639px) { .fi-chatai-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.fi-chatai-card-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.fi-chatai-card-action { font: inherit; font-size: 0.7rem; font-weight: 500; padding: 0.2rem 0.55rem; border-radius: 9999px; border: 1px solid var(--chatai-border); background: var(--chatai-bg); color: var(--chatai-text); cursor: pointer; }
+.fi-chatai-card-action:hover:not(:disabled) { border-color: var(--chatai-accent); color: var(--chatai-accent); }
+.fi-chatai-card-action:disabled { opacity: 0.5; cursor: default; }
+
+/* table quick filter */
+.fi-chatai-table-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.fi-chatai-table-filter { font: inherit; font-size: 0.75rem; padding: 0.25rem 0.55rem; margin: 0 0 0.6rem auto; width: 11rem; max-width: 50%; border-radius: 0.5rem; border: 1px solid var(--chatai-border); background: var(--chatai-bg); color: var(--chatai-text); }
+.fi-chatai-table-filter:focus { outline: 2px solid color-mix(in oklab, var(--chatai-accent) 40%, transparent); outline-offset: 0; }
+
+/* map */
+.fi-chatai-map { height: 300px; border-radius: calc(var(--chatai-radius) - 2px); overflow: hidden; border: 1px solid var(--chatai-border); background: var(--chatai-surface); z-index: 0; position: relative; }
+.fi-chatai-map-off { display: grid; place-items: center; height: auto; padding: 1rem; font-size: 0.8rem; color: var(--chatai-muted); }
+.fi-chatai-map-popup { display: flex; flex-direction: column; gap: 0.15rem; font: 0.8rem/1.35 inherit; min-width: 8rem; }
+.fi-chatai-map-actions { display: flex; gap: 0.3rem; margin-top: 0.35rem; }
+.fi-chatai-map-actions button { font: inherit; font-size: 0.72rem; font-weight: 500; padding: 0.15rem 0.5rem; border-radius: 9999px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
+.fi-chatai-map-actions button:hover { border-color: var(--chatai-accent); color: var(--chatai-accent); }
+.dark .fi-chatai-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9); }
+.fi-chatai-chart-hint { font-size: 0.7rem; color: var(--chatai-muted); margin: -0.4rem 0 0.4rem; }
+@media (max-width: 639px) { .fi-chatai-map { height: 240px; } }
+
 .fi-chatai-chart .fi-wi-chart-frame { position: relative; height: 240px; }
 .fi-chatai-chart canvas { width: 100% !important; max-height: 240px; }
 

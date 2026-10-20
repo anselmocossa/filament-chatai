@@ -2,6 +2,7 @@
 
 namespace Filament\ChatAi\Models;
 
+use Filament\ChatAi\Tools\RecordTool;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -55,13 +56,14 @@ class ToolAction extends Model
     {
         $data = (array) ($this->result['data'] ?? []);
         $fields = [];
-        $text = fn ($v): string => is_bool($v) ? ($v ? 'yes' : 'no') : (string) $v;
+        $text = fn ($v): string => is_bool($v) ? ($v ? 'yes' : 'no') : ($v === null || $v === '' ? '—' : (string) $v);
+        $label = fn ($key): string => $key === RecordTool::IMAGE ? __('chatai::chatai.actions.image') : (string) str((string) $key)->replace(['_', '-'], ' ')->ucfirst();
 
         // A change that reports before / after: one line per column, "1 → 4".
         if (is_array($data['before'] ?? null) && is_array($data['after'] ?? null)) {
             foreach ($data['after'] as $column => $after) {
                 $before = $data['before'][$column] ?? null;
-                $fields[] = ['label' => (string) str((string) $column)->replace(['_', '-'], ' ')->ucfirst(), 'value' => is_scalar($before) || $before === null ? $text($before).' → '.$text($after) : $text($after)];
+                $fields[] = ['label' => $label($column), 'value' => is_scalar($before) || $before === null ? $text($before).' → '.$text($after) : $text($after)];
             }
 
             unset($data['before'], $data['after']);
@@ -71,7 +73,7 @@ class ToolAction extends Model
 
         foreach (array_slice($data, 0, 8, true) as $key => $value) {
             if (is_scalar($value) || $value === null) {
-                $scalars[] = ['label' => (string) str((string) $key)->replace(['_', '-'], ' ')->ucfirst(), 'value' => $text($value)];
+                $scalars[] = ['label' => $label($key), 'value' => $text($value)];
             }
         }
 

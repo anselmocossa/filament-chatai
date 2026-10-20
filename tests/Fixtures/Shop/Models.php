@@ -5,6 +5,7 @@ namespace Filament\ChatAi\Tests\Fixtures\Shop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 enum OrderStatus: string
 {
@@ -37,6 +38,18 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class, 'shop_order_id');
     }
+
+    public function address(): MorphOne
+    {
+        return $this->morphOne(Address::class, 'addressable');
+    }
+}
+
+class Address extends Model
+{
+    protected $table = 'shop_addresses';
+
+    protected $guarded = [];
 }
 
 class OrderItem extends Model

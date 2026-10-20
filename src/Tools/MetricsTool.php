@@ -9,12 +9,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 
 /**
  * Totals of a resource for a period, set up on screen: counts and sums,
  * the change against the previous period, and a breakdown by day, month,
- * a column or a related record. Optionally over a relation of the resource
+ * a column, a related record or a column of a one-to-one relation (e.g. the
+ * country of the order's address). Optionally over a relation of the resource
  * (e.g. the items of the orders).
  */
 final class MetricsTool
@@ -44,6 +48,7 @@ final class MetricsTool
         $groupBy = (string) ($config['group_by'] ?? '');
         $groupLimit = max(1, min((int) ($config['group_limit'] ?? 20), 100));
         $belongsTo = ResourceInspector::relations($target, [BelongsTo::class]);
+        $hasOne = ResourceInspector::relations($target, [HasOne::class, MorphOne::class]);
 
         $metrics = array_values(array_filter((array) ($config['metrics'] ?? []), fn ($m): bool => is_array($m)
             && in_array($m['function'] ?? null, self::FUNCTIONS, true)
@@ -68,7 +73,7 @@ final class MetricsTool
             name: $tool->name,
             description: $description,
             inputSchema: ['type' => 'object', 'properties' => $properties],
-            handler: function (array $args) use ($resource, $relation, $target, $targetColumns, $parentColumns, $dateField, $conditions, $compare, $defaultPeriod, $groupBy, $groupLimit, $belongsTo, $metrics): ToolResult {
+            handler: function (array $args) use ($resource, $relation, $target, $targetColumns, $parentColumns, $dateField, $conditions, $compare, $defaultPeriod, $groupBy, $groupLimit, $belongsTo, $hasOne, $metrics): ToolResult {
                 if (! $resource::canViewAny()) {
                     return ToolResult::error('The user does not have permission to see these records.');
                 }
@@ -103,7 +108,7 @@ final class MetricsTool
                 }
 
                 if ($groupBy !== '') {
-                    $result['breakdown'] = self::breakdown($select($base($from, $to)), $groupBy, $target, $targetColumns, $belongsTo, $dateField && ! $relation ? $dateField : null, $groupLimit, $read);
+                    $result['breakdown'] = self::breakdown($select($base($from, $to)), $groupBy, $target, $targetColumns, $belongsTo + $hasOne, $dateField && ! $relation ? $dateField : null, $groupLimit, $read);
                 }
 
                 return ToolResult::data($result);
@@ -128,7 +133,7 @@ final class MetricsTool
     }
 
     /**
-     * @param  array<string, BelongsTo>  $belongsTo
+     * @param  array<string, Relation>  $belongsTo  belongs-to, plus the one-to-one relations
      * @return array<int, array<string, mixed>>
      */
     protected static function breakdown(Builder $query, string $groupBy, $target, array $targetColumns, array $belongsTo, ?string $dateField, int $limit, \Closure $read): array
@@ -142,7 +147,29 @@ final class MetricsTool
                 ->map(fn ($row): array => ['group' => $row->grp, ...$read($row)])->all();
         }
 
-        if (str_starts_with($groupBy, 'rel:') && ($relation = $belongsTo[substr($groupBy, 4)] ?? null)) {
+        if (str_starts_with($groupBy, 'one:') && str_contains($groupBy, '.')) {
+            [$name, $column] = explode('.', substr($groupBy, 4), 2);
+            $relation = $belongsTo[$name] ?? null;
+
+            if (! ($relation instanceof HasOne || $relation instanceof MorphOne) || ! in_array($column, ResourceInspector::columns($relation->getRelated()), true)) {
+                return [];
+            }
+
+            // One row per record (one-to-one), so the totals are not multiplied.
+            $alias = 'chatai_one';
+            $query->leftJoin($relation->getRelated()->getTable().' as '.$alias, function ($join) use ($relation, $alias, $table): void {
+                $join->on("{$alias}.".$relation->getForeignKeyName(), '=', "{$table}.".$relation->getLocalKeyName());
+
+                if ($relation instanceof MorphOne) {
+                    $join->where("{$alias}.".$relation->getMorphType(), '=', $relation->getMorphClass());
+                }
+            });
+
+            return $query->selectRaw("{$alias}.{$column} as grp")->groupBy("{$alias}.{$column}")->orderByRaw('m0 desc')->limit($limit)->toBase()->get()
+                ->map(fn ($row): array => ['group' => $row->grp, ...$read($row)])->all();
+        }
+
+        if (str_starts_with($groupBy, 'rel:') && ($relation = $belongsTo[substr($groupBy, 4)] ?? null) instanceof BelongsTo) {
             $key = $relation->getForeignKeyName();
             $rows = $query->selectRaw("{$table}.{$key} as grp")->groupBy("{$table}.{$key}")->orderByRaw('m0 desc')->limit($limit)->toBase()->get();
             $owner = $relation->getRelated();

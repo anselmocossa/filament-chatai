@@ -6,6 +6,32 @@
  * catalog (kpi, table, chart, suggestions) through Blade/Alpine templates.
  */
 document.addEventListener('alpine:init', () => {
+    // Leaflet is loaded once, the first time an answer has a map.
+    let leaflet = null
+    const loadLeaflet = (maps) => {
+        if (!maps?.script) return Promise.resolve(null)
+        if (window.L?.map) return Promise.resolve(window.L)
+
+        leaflet ??= new Promise((resolve) => {
+            if (maps.style) {
+                const css = document.createElement('link')
+                css.rel = 'stylesheet'
+                css.href = maps.style
+                if (maps.style_integrity) { css.integrity = maps.style_integrity; css.crossOrigin = '' }
+                document.head.append(css)
+            }
+
+            const script = document.createElement('script')
+            script.src = maps.script
+            if (maps.script_integrity) { script.integrity = maps.script_integrity; script.crossOrigin = '' }
+            script.onload = () => resolve(window.L ?? null)
+            script.onerror = () => { leaflet = null; resolve(null) }
+            document.head.append(script)
+        })
+
+        return leaflet
+    }
+
     const escapeHtml = (text) =>
         String(text ?? '')
             .replace(/&/g, '&amp;')
@@ -356,6 +382,13 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => this.followEnd())
 
             if (id) this.open(id)
+            if (config.ask && !id) {
+                // Sent once: a reload must not ask again.
+                const url = new URL(window.location.href)
+                url.searchParams.delete('ask')
+                window.history.replaceState(window.history.state, '', url)
+                this.$nextTick(() => this.ask(config.ask))
+            }
             if (config.withSidebar) {
                 this.sidebarOpen = !isNarrow() && storage.get(SIDEBAR_KEY) === '1'
                 this.loadConversations()
@@ -427,6 +460,7 @@ document.addEventListener('alpine:init', () => {
                 this.conversationId
                     ? url.searchParams.set('conversation', this.conversationId)
                     : url.searchParams.delete('conversation')
+                url.searchParams.delete('ask') // asked already
                 window.history.replaceState(window.history.state, '', url)
             }
         },
@@ -1434,6 +1468,11 @@ document.addEventListener('alpine:init', () => {
                             + (item.description ? ` — ${item.description}` : '')).join('\n'))
                     } else if (c.type === 'table') {
                         answer.push(mdTable(c.columns.map((col) => col.label), c.rows.map((row) => c.columns.map((col) => this.formatCell(row[col.key], col.format)))))
+                    } else if (c.type === 'map') {
+                        answer.push(c.markers.map((m) => `- ${m.label}${typeof m.value === 'number' ? ': ' + this.formatKpi(m.value) + (c.unit ? ' ' + c.unit : '') : ''}`).join('\n'))
+                    } else if (c.type === 'cards') {
+                        answer.push(c.items.map((card) => `- ${card.title}${card.subtitle ? ' — ' + card.subtitle : ''}`
+                            + (card.fields || []).map((field) => ` · ${field.label}: ${field.value}`).join('')).join('\n'))
                     } else if (c.type === 'chart') {
                         answer.push(mdTable(['', ...c.series.map((serie) => serie.name || '')], c.labels.map((label, i) => [label, ...c.series.map((serie) => this.formatKpi(serie.data[i]))])))
                     }
@@ -1457,6 +1496,7 @@ document.addEventListener('alpine:init', () => {
 
         formatCell(value, format) {
             if (value === null || value === undefined || value === '') return '—'
+            if (format === 'image') return ''
 
             const locale = config.locale || undefined
 
@@ -1518,10 +1558,95 @@ document.addEventListener('alpine:init', () => {
 
         chartOptions(component) {
             const circular = ['pie', 'doughnut'].includes(component.chart_type)
+            const drill = component.drill
+                ? {
+                    // Clicking a bar or slice asks about it.
+                    onClick: (event, elements) => {
+                        const label = elements?.length ? component.labels[elements[0].index] : null
+                        if (label !== null && label !== undefined && !this.busy) this.ask(component.drill.replaceAll('{label}', label))
+                    },
+                    onHover: (event, elements) => { if (event.native?.target) event.native.target.style.cursor = elements?.length ? 'pointer' : '' },
+                }
+                : {}
             return {
                 plugins: { legend: { display: circular || component.series.length > 1 } },
                 ...(circular ? { scales: { x: { display: false }, y: { display: false } } } : {}),
+                ...drill,
             }
+        },
+
+        filterRows(rows, filter) {
+            const needle = String(filter || '').trim().toLowerCase()
+            if (!needle) return rows
+            return rows.filter((row) => Object.entries(row).some(([key, value]) => !key.startsWith('_') && String(value ?? '').toLowerCase().includes(needle)))
+        },
+
+        // ---- maps ----------------------------------------------------------
+
+        async renderMap(el, component) {
+            const L = await loadLeaflet(config.maps)
+            if (!L || !el.isConnected) {
+                el.classList.add('fi-chatai-map-off')
+                el.textContent = config.i18n.mapUnavailable || ''
+                return
+            }
+
+            // Kept on the world: no panning into the grey above the poles.
+            const map = L.map(el, { scrollWheelZoom: false, minZoom: 1, maxBounds: [[-85, -220], [85, 220]], maxBoundsViscosity: 1 })
+            L.tileLayer(config.maps.tiles, { maxZoom: 18, noWrap: false, attribution: config.maps.attribution || '' }).addTo(map)
+
+            const values = component.markers.map((m) => m.value).filter((v) => typeof v === 'number' && v > 0)
+            const max = values.length ? Math.max(...values) : 0
+            const accent = getComputedStyle(el).getPropertyValue('--chatai-accent').trim() || '#3b82f6'
+            const format = (v) => new Intl.NumberFormat(config.locale || undefined, { maximumFractionDigits: 2 }).format(v)
+            const bounds = []
+
+            for (const marker of component.markers) {
+                // Bubbles sized by value (area, not radius, grows with it); plain dots otherwise.
+                const radius = max && typeof marker.value === 'number' ? 6 + Math.sqrt(Math.max(marker.value, 0) / max) * 22 : 7
+                const point = L.circleMarker([marker.lat, marker.lng], { radius, color: accent, weight: 1.5, fillColor: accent, fillOpacity: 0.35 }).addTo(map)
+
+                // Popup built from DOM nodes: model text never becomes HTML.
+                const box = document.createElement('div')
+                box.className = 'fi-chatai-map-popup'
+                const title = document.createElement('strong')
+                title.textContent = marker.label
+                box.append(title)
+
+                if (typeof marker.value === 'number') {
+                    const value = document.createElement('span')
+                    value.textContent = format(marker.value) + (component.unit ? ' ' + component.unit : '')
+                    box.append(value)
+                }
+
+                const buttons = document.createElement('div')
+                buttons.className = 'fi-chatai-map-actions'
+
+                if (marker.prompt) {
+                    const ask = document.createElement('button')
+                    ask.type = 'button'
+                    ask.textContent = config.i18n.mapAsk || 'Ask'
+                    ask.addEventListener('click', () => { map.closePopup(); if (!this.busy) this.ask(marker.prompt) })
+                    buttons.append(ask)
+                }
+
+                if (marker.url) {
+                    const open = document.createElement('button')
+                    open.type = 'button'
+                    open.textContent = config.i18n.openRecord || 'Open'
+                    open.addEventListener('click', () => this.openRecord(marker.url))
+                    buttons.append(open)
+                }
+
+                if (buttons.children.length) box.append(buttons)
+                point.bindPopup(box, { closeButton: false, autoPanPaddingTopLeft: [60, 20] })
+                point.bindTooltip(marker.label + (typeof marker.value === 'number' ? ' · ' + format(marker.value) : ''), { direction: 'top' })
+                bounds.push([marker.lat, marker.lng])
+            }
+
+            bounds.length === 1 ? map.setView(bounds[0], 6) : map.fitBounds(bounds, { padding: [24, 24], maxZoom: 6 })
+            // The card may still be growing when the map is made.
+            setTimeout(() => map.invalidateSize(), 150)
         },
     }))
 })

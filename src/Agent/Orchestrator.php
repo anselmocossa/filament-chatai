@@ -176,7 +176,10 @@ class Orchestrator
 
                 foreach ($calls as $call) {
                     if ($call->toolName === ShowUiTool::NAME) {
-                        foreach ($this->validator->validateMany((array) ($call->arguments['components'] ?? [])) as $component) {
+                        $asked = array_values(array_filter((array) ($call->arguments['components'] ?? []), 'is_array'));
+                        $valid = $this->validator->validateMany($asked);
+
+                        foreach ($valid as $component) {
                             if ($this->alreadyShown($components, $component)) {
                                 continue;
                             }
@@ -186,7 +189,11 @@ class Orchestrator
                         }
 
                         // Said here because this is where the model decides how to refer to it.
-                        $result = ToolResult::text('Shown to the user, under your text. Do not say where it is ("above", "below", "in the table"); just give the key finding.');
+                        $result = match (true) {
+                            $asked !== [] && $valid === [] => ToolResult::error('Nothing was shown: the components did not match the schema (check the field names, e.g. cards and kpi use "items"). Fix them and call '.ShowUiTool::NAME.' again.'),
+                            count($valid) < count($asked) => ToolResult::text('Shown to the user, except '.(count($asked) - count($valid)).' component(s) that did not match the schema. Do not say where it is; just give the key finding.'),
+                            default => ToolResult::text('Shown to the user, under your text. Do not say where it is ("above", "below", "in the table"); just give the key finding.'),
+                        };
                     } elseif ($call->toolName === FillFormTool::NAME && isset($available[FillFormTool::NAME])) {
                         // The browser writes these into the open form; the user saves.
                         $filled = FillFormTool::fields($context, (array) $call->arguments);

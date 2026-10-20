@@ -21,10 +21,16 @@ class ChatAiPage extends Page
 
     public ?string $conversation = null;
 
+    /** A question to send right away (launchpad "ask" tiles link here with ?ask=). */
+    public ?string $ask = null;
+
     protected $queryString = ['conversation'];
 
     public function mount(): void
     {
+        // Read once, not kept in the URL: the browser removes it after sending.
+        $this->ask = is_string($ask = request()->query('ask')) ? $ask : null;
+
         // Only hand the browser a conversation it may open.
         if ($this->conversation !== null) {
             $owned = Conversation::query()->whereKey($this->conversation)->first()?->isOwnedBy(auth()->user());
@@ -78,7 +84,10 @@ class ChatAiPage extends Page
             'label' => $plugin->getLabel(),
             'icon' => $plugin->getIcon(),
             'avatarUrl' => $plugin->getAvatarUrl(),
-            'config' => $plugin->clientConfig(remember: false, withSidebar: true, conversationId: $this->conversation),
+            'config' => [
+                ...$plugin->clientConfig(remember: false, withSidebar: true, conversationId: $this->conversation),
+                'ask' => $this->conversation === null && filled($this->ask) ? mb_substr(trim($this->ask), 0, 2000) : null,
+            ],
         ];
     }
 }

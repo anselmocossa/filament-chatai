@@ -3,6 +3,7 @@
 namespace Filament\ChatAi\Tools;
 
 use Filament\ChatAi\Models\CustomTool;
+use Filament\ChatAi\Support\ImageSource;
 use Filament\ChatAi\Tools\NoCode\Conditions;
 use Filament\ChatAi\Tools\NoCode\ResourceInspector;
 use Filament\Facades\Filament;
@@ -77,6 +78,7 @@ final class ResourceQueryTool
         $countBy = in_array($config['count_by'] ?? null, $visible, true) ? $config['count_by'] : null;
         $totals = array_values(array_filter((array) ($config['totals'] ?? []), fn ($t): bool => is_array($t) && isset($hasMany[$t['relation'] ?? ''])));
         $related = array_values(array_filter((array) ($config['related'] ?? []), fn ($r): bool => is_array($r) && isset($hasMany[$r['relation'] ?? ''])));
+        $image = config('chatai.images.enabled', true) ? ImageSource::valid($instance, $config['image'] ?? null) : null;
 
         $properties = [];
 
@@ -97,13 +99,14 @@ final class ResourceQueryTool
 
         $description = $tool->description
             .' Returns the total number of matching '.$resource::getPluralModelLabel().' (with no filters: all of them, so it also answers "how many") and up to '.$limit.' rows.'
-            .(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '');
+            .(($fixed = Conditions::describe($conditions)) !== '' ? " Already filtered: {$fixed}." : '')
+            .($image ? ' Rows carry "_image", the record\'s picture: show them as cards (or a table column with format image) when the user wants to see them.' : '');
 
         return new ChatAiTool(
             name: $tool->name,
             description: $description,
             inputSchema: ['type' => 'object', 'properties' => $properties],
-            handler: function (array $args) use ($resource, $instance, $visible, $fields, $relatedFields, $filters, $search, $conditions, $dateField, $sort, $direction, $limit, $countBy, $totals, $related, $hasMany): ToolResult {
+            handler: function (array $args) use ($resource, $instance, $visible, $fields, $relatedFields, $filters, $search, $conditions, $dateField, $sort, $direction, $limit, $countBy, $totals, $related, $hasMany, $image): ToolResult {
                 if (! $resource::canViewAny()) {
                     return ToolResult::error('The user does not have permission to see these records.');
                 }
@@ -157,11 +160,19 @@ final class ResourceQueryTool
                         : $query->withAggregate([$total['relation'].' as '.$alias => $constraint], $column, $function);
                 }
 
+                if ($image && str_starts_with($image, ImageSource::MEDIA) && method_exists($instance, 'media')) {
+                    $query->with('media'); // one query for every row's picture
+                }
+
                 $total = (clone $query)->count();
                 $records = $query->orderBy($sort, $direction)->limit(max(1, min((int) ($args['limit'] ?? $limit), $limit)))->get();
 
-                $rows = $records->map(function ($record) use ($resource, $fields, $relatedFields, $totals, $related): array {
+                $rows = $records->map(function ($record) use ($resource, $fields, $relatedFields, $totals, $related, $image): array {
                     $row = Arr::only($record->attributesToArray(), $fields);
+
+                    if ($image && ($url = ImageSource::url($record, $image))) {
+                        $row['_image'] = $url;
+                    }
 
                     // Where the record opens, if the user may open it (for clickable rows).
                     foreach (['view', 'edit'] as $page) {

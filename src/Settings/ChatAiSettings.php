@@ -23,6 +23,7 @@ final class ChatAiSettings
         'instructions', 'http_tools.allowed_hosts',
         'assistant.name', 'assistant.icon', 'assistant.avatar',
         'screen.read', 'screen.fill', 'screen.navigate', 'starters', 'starters_from_screen', 'shortcut', 'memory.enabled', 'actions.enabled', 'permissions.enabled', 'permissions.require_chat',
+        'access.users', 'access.managers',
         'files.disk', 'files.max_kb', 'files.max_per_message',
         'rate_limit.per_minute', 'rate_limit.per_day', 'max_iterations', 'timeout', 'max_tool_result_bytes',
     ];

@@ -6,6 +6,7 @@ use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\ChatAiPermissions;
+use Filament\ChatAi\Support\ImageSource;
 use Filament\ChatAi\Tools\HttpApiTool;
 use Filament\ChatAi\Tools\MetricsTool;
 use Filament\ChatAi\Tools\NoCode\ResourceInspector;
@@ -21,6 +22,8 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Validation\Rule;
 
 /**
@@ -167,6 +170,9 @@ trait BuildsToolForms
                 TextInput::make('config.limit')->label($t('limit'))->numeric()->minValue(1)->maxValue(ResourceQueryTool::MAX_ROWS),
             ]),
             $conditions('config.conditions', $columns, true)->visible(fn (Get $get): bool => $isResource($get) && $picked($get)),
+            Select::make('config.image')->label($t('image'))->helperText($t('image_help'))->native(false)->placeholder($t('image_none'))
+                ->options(fn (Get $get): array => ImageSource::options(ResourceInspector::model($get('config.resource'))))
+                ->visible(fn (Get $get): bool => $isResource($get) && $picked($get)),
             Select::make('config.count_by')->label($t('count_by'))->helperText($t('count_by_help'))->options($columns)->native(false)
                 ->visible(fn (Get $get): bool => $isResource($get) && $picked($get)),
             Repeater::make('config.totals')->label($t('totals'))->helperText($t('totals_help'))->defaultItems(0)->columns(7)->addActionLabel($t('add_total'))
@@ -219,10 +225,13 @@ trait BuildsToolForms
                     ->options(function (Get $get) use ($metricsTarget, $t): array {
                         $target = $metricsTarget($get);
                         $byRelation = collect(ResourceInspector::relations($target, [BelongsTo::class]))->keys()->mapWithKeys(fn ($r) => ['rel:'.$r => $r])->all();
+                        $byOne = collect(ResourceInspector::relations($target, [HasOne::class, MorphOne::class]))
+                            ->flatMap(fn ($rel, $name) => collect(ResourceInspector::columns($rel->getRelated()))->mapWithKeys(fn ($c) => ["one:{$name}.{$c}" => "{$name} › {$c}"]))->all();
 
                         return [
                             $t('group_dates') => blank($get('config.relation')) ? ['day' => $t('group_day'), 'month' => $t('group_month')] : [],
                             $t('group_related') => $byRelation,
+                            $t('group_one') => $byOne,
                             $t('group_columns') => ResourceInspector::columnOptions($target),
                         ];
                     }),
@@ -246,6 +255,9 @@ trait BuildsToolForms
                 ->visible(fn (Get $get): bool => $get('type') === CustomTool::TYPE_UPDATE && $picked($get))->required(fn (Get $get): bool => $get('type') === CustomTool::TYPE_UPDATE),
             Toggle::make('config.no_negative')->label($t('no_negative'))->default(true)
                 ->visible(fn (Get $get): bool => $get('type') === CustomTool::TYPE_UPDATE && $picked($get)),
+            Select::make('config.image')->label($t('image_save'))->helperText($t('image_save_help'))->native(false)->placeholder($t('image_none'))
+                ->options(fn (Get $get): array => ImageSource::options(ResourceInspector::model($get('config.resource'))))
+                ->visible(fn (Get $get): bool => $isRecord($get) && $picked($get)),
 
             // Call an API
             TextInput::make('config.url')->label($t('url'))->url()->visible($isHttp)->required($isHttp)

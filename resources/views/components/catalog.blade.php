@@ -34,8 +34,12 @@
 
 {{-- table --}}
 <template x-if="component.type === 'table'">
-    <div class="fi-chatai-table-wrap" x-data="{ sortKey: null, sortDir: 1 }">
-        <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+    <div class="fi-chatai-table-wrap" x-data="{ sortKey: null, sortDir: 1, filter: '' }">
+        <div class="fi-chatai-table-head">
+            <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+            {{-- Long lists get a quick filter --}}
+            <input type="search" class="fi-chatai-table-filter" x-show="component.rows.length > 8" x-model="filter" placeholder="{{ __('chatai::chatai.filter') }}" aria-label="{{ __('chatai::chatai.filter') }}">
+        </div>
         <div class="fi-chatai-table-scroll">
             <table class="fi-chatai-table">
                 <thead>
@@ -50,14 +54,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <template x-for="(row, r) in (sortKey ? [...component.rows].sort((a, b) => (a[sortKey] > b[sortKey] ? 1 : a[sortKey] < b[sortKey] ? -1 : 0) * sortDir) : component.rows)" :key="r">
+                    <template x-for="(row, r) in filterRows(sortKey ? [...component.rows].sort((a, b) => (a[sortKey] > b[sortKey] ? 1 : a[sortKey] < b[sortKey] ? -1 : 0) * sortDir) : component.rows, filter)" :key="r">
                         <tr :class="{ 'fi-chatai-row-link': row._url }" x-on:click="row._url && openRecord(row._url)" :title="row._url ? @js(__('chatai::chatai.open_record')) : null">
                             <template x-for="column in component.columns" :key="column.key">
                                 <td :class="{ 'fi-chatai-num': ['number', 'money'].includes(column.format) }">
                                     <template x-if="column.format === 'badge'">
                                         <span class="fi-chatai-badge" x-text="formatCell(row[column.key], column.format)"></span>
                                     </template>
-                                    <template x-if="column.format !== 'badge'">
+                                    <template x-if="column.format === 'image'">
+                                        <span class="fi-chatai-thumb">
+                                            <template x-if="row[column.key]"><img :src="row[column.key]" alt="" loading="lazy" x-on:error="$el.remove()"></template>
+                                        </span>
+                                    </template>
+                                    <template x-if="! ['badge', 'image'].includes(column.format)">
                                         <span x-text="formatCell(row[column.key], column.format)"></span>
                                     </template>
                                 </td>
@@ -76,8 +85,9 @@
 
 {{-- chart: Filament's own Chart.js component, so it matches every other chart in the panel --}}
 <template x-if="component.type === 'chart'">
-    <div class="fi-chatai-chart fi-wi-chart">
+    <div class="fi-chatai-chart fi-wi-chart" :class="{ 'fi-chatai-chart-drill': component.drill }">
         <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+        <p class="fi-chatai-chart-hint" x-show="component.drill">{{ __('chatai::chatai.chart_drill') }}</p>
         <div class="fi-wi-chart-image">
             <div
                 x-load
@@ -97,6 +107,55 @@
                 <span x-ref="tooltipBorderColorElement" class="fi-wi-chart-tooltip-border-color"></span>
             </div>
         </div>
+    </div>
+</template>
+
+{{-- cards: a gallery of records, each with its picture --}}
+<template x-if="component.type === 'cards'">
+    <div class="fi-chatai-cards-wrap">
+        <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+        <div class="fi-chatai-cards">
+            <template x-for="(card, i) in component.items" :key="i">
+                <div class="fi-chatai-card" :class="{ 'fi-chatai-row-link': card.url }" x-on:click="card.url && openRecord(card.url)" :title="card.url ? @js(__('chatai::chatai.open_record')) : null">
+                    <div class="fi-chatai-card-image">
+                        <template x-if="card.image"><img :src="card.image" :alt="card.title" loading="lazy" x-on:error="$el.remove()"></template>
+                        <x-filament::icon icon="heroicon-o-photo" class="fi-chatai-card-placeholder" />
+                        <span class="fi-chatai-badge fi-chatai-card-badge" x-show="card.badge" x-text="card.badge"></span>
+                    </div>
+                    <div class="fi-chatai-card-body">
+                        <span class="fi-chatai-card-title" x-text="card.title"></span>
+                        <span class="fi-chatai-card-subtitle" x-show="card.subtitle" x-text="card.subtitle"></span>
+                        <template x-if="card.fields?.length">
+                            <dl class="fi-chatai-card-fields">
+                                <template x-for="(field, f) in card.fields" :key="f">
+                                    <div><dt x-text="field.label"></dt><dd x-text="field.value"></dd></div>
+                                </template>
+                            </dl>
+                        </template>
+                        <template x-if="card.actions?.length">
+                            <div class="fi-chatai-card-actions">
+                                <template x-for="(action, a) in card.actions" :key="a">
+                                    <button type="button" class="fi-chatai-card-action" :disabled="busy && ! action.url"
+                                            x-on:click.stop="action.url ? openRecord(action.url) : ask(action.prompt)" x-text="action.label"></button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div class="fi-chatai-table-footer" x-show="component.link">
+            <span></span>
+            <a :href="component.link" class="fi-chatai-link">{{ __('chatai::chatai.see_all') }} →</a>
+        </div>
+    </div>
+</template>
+
+{{-- map: markers or country bubbles (Leaflet, loaded on first use) --}}
+<template x-if="component.type === 'map'">
+    <div class="fi-chatai-map-wrap">
+        <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+        <div class="fi-chatai-map" wire:ignore x-init="renderMap($el, component)"></div>
     </div>
 </template>
 
@@ -134,7 +193,7 @@
         <template x-if="component.status === 'pending'">
             <form class="fi-chatai-form" x-on:submit.prevent="answerAction(component, true)">
                 <template x-for="(field, i) in component.fields" :key="field.key || i">
-                    <label class="fi-chatai-form-field" :class="{ 'fi-wide': field.type === 'textarea', 'fi-check': field.type === 'checkbox', 'fi-error': component.errors?.[field.key] }">
+                    <label class="fi-chatai-form-field" :class="{ 'fi-wide': ['textarea', 'image'].includes(field.type), 'fi-check': field.type === 'checkbox', 'fi-error': component.errors?.[field.key] }">
                         <span class="fi-chatai-form-label" x-show="field.type !== 'checkbox'">
                             <span x-text="field.label"></span><span class="fi-chatai-form-required" x-show="field.required">*</span>
                         </span>
@@ -152,7 +211,13 @@
                         <template x-if="field.type === 'checkbox'">
                             <span class="fi-chatai-form-checkbox"><input type="checkbox" x-model="field.value"> <span x-text="field.label"></span></span>
                         </template>
-                        <template x-if="! ['select', 'textarea', 'checkbox'].includes(field.type)">
+                        <template x-if="field.type === 'image'">
+                            <span class="fi-chatai-form-image">
+                                <template x-if="field.preview"><img :src="field.preview" alt=""></template>
+                                <span x-show="! field.preview">—</span>
+                            </span>
+                        </template>
+                        <template x-if="! ['select', 'textarea', 'checkbox', 'image'].includes(field.type)">
                             <input class="fi-chatai-form-input" :type="field.type" x-model="field.value" :required="field.required" :placeholder="field.help || ''">
                         </template>
                         <span class="fi-chatai-form-error" x-show="component.errors?.[field.key]" x-text="component.errors?.[field.key]"></span>
@@ -168,7 +233,12 @@
                 <template x-for="(field, i) in component.fields.filter((f) => f.value !== '' && f.value !== null)" :key="field.key || i">
                     <div class="fi-chatai-confirm-field">
                         <dt x-text="field.label"></dt>
-                        <dd x-text="field.type === 'checkbox' ? (field.value ? '✓' : '—') : (field.options?.find((o) => o.value === field.value)?.label || field.value)"></dd>
+                        <template x-if="field.type === 'image'">
+                            <dd><span class="fi-chatai-form-image fi-small"><template x-if="field.preview"><img :src="field.preview" alt=""></template></span></dd>
+                        </template>
+                        <template x-if="field.type !== 'image'">
+                            <dd x-text="field.type === 'checkbox' ? (field.value ? '✓' : '—') : (field.options?.find((o) => o.value === field.value)?.label || field.value)"></dd>
+                        </template>
                     </div>
                 </template>
             </dl>

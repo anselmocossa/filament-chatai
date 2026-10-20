@@ -21,7 +21,11 @@ final class FileParts
     public static function for(ConversationFile $file): array
     {
         if ($file->isImage()) {
-            return [['type' => 'image_url', 'image_url' => ['url' => self::dataUrl($file)]]];
+            // The id lets a tool put this image onto a record.
+            return [
+                ['type' => 'text', 'text' => "Attached image \"{$file->name}\" (file id: {$file->id})"],
+                ['type' => 'image_url', 'image_url' => ['url' => self::dataUrl($file)]],
+            ];
         }
 
         if ($file->isPdf()) {

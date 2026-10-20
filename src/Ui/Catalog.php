@@ -8,7 +8,7 @@ namespace Filament\ChatAi\Ui;
  */
 final class Catalog
 {
-    public const TYPES = ['kpi', 'table', 'chart', 'suggestions'];
+    public const TYPES = ['kpi', 'table', 'chart', 'cards', 'map', 'suggestions'];
 
     /** Only built by server tools (never by show_ui): a document to download. */
     public const FILE = 'file';
@@ -36,9 +36,13 @@ final class Catalog
 
     public const MAX_SUGGESTIONS = 4;
 
+    public const MAX_CARDS = 12;
+
+    public const MAX_MARKERS = 200;
+
     public const MAX_POINTS = 100;
 
-    public const COLUMN_FORMATS = ['text', 'number', 'money', 'date', 'badge'];
+    public const COLUMN_FORMATS = ['text', 'number', 'money', 'date', 'badge', 'image'];
 
     public const CHART_TYPES = ['line', 'bar', 'pie', 'doughnut'];
 
@@ -63,12 +67,12 @@ final class Catalog
                             'title' => ['type' => 'string'],
                             'items' => [
                                 'type' => 'array',
-                                'description' => 'kpi: [{label, value, unit?, change? (percent), trend? (up|down|flat), description?}] (1-4). suggestions: [{label, prompt}] (max 4) — follow-up questions the user can click.',
+                                'description' => 'kpi: [{label, value, unit?, change? (percent), trend? (up|down|flat), description?}] (1-4). suggestions: [{label, prompt}] (max 4) — follow-up questions the user can click. cards: [{title, subtitle?, image?, badge?, fields?: [{label, value}], url?}] (max 12) — a gallery, best for records with a picture (products, people); copy "image" from a row\'s "_image" and "url" from its "_url". Each card may have actions: [{label, prompt}] (max 3), buttons that ask the assistant about that record (e.g. "Ver encomendas").',
                                 'items' => ['type' => 'object'],
                             ],
                             'columns' => [
                                 'type' => 'array',
-                                'description' => 'table: [{key, label, format? (text|number|money|date|badge)}]',
+                                'description' => 'table: [{key, label, format? (text|number|money|date|badge|image)}]. format image shows a thumbnail: use key "_image" when the rows have one.',
                                 'items' => ['type' => 'object'],
                             ],
                             'rows' => [
@@ -77,6 +81,13 @@ final class Catalog
                                 'items' => ['type' => 'object'],
                             ],
                             'chart_type' => ['type' => 'string', 'enum' => self::CHART_TYPES],
+                            'drill' => ['type' => 'string', 'description' => 'chart: optional question asked when the user clicks a bar/slice, with {label} for the clicked label, e.g. "Mostra as encomendas de {label}".'],
+                            'markers' => [
+                                'type' => 'array',
+                                'description' => 'map: [{country? (ISO 2-letter code, placed for you), lat?, lng?, label, value?, url?, prompt?}] (max 200). Prefer country codes; give lat/lng only for real places you are sure of. value sizes the bubble; prompt is a question in the user\'s language, naming the place (not its code), asked when the user clicks "Ask" on the marker.',
+                                'items' => ['type' => 'object'],
+                            ],
+                            'unit' => ['type' => 'string', 'description' => 'map: what value counts, e.g. "encomendas".'],
                             'labels' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'chart: x-axis labels.'],
                             'series' => [
                                 'type' => 'array',

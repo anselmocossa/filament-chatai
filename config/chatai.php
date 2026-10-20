@@ -54,16 +54,17 @@ return [
     // Tool results kept in the conversation history are cut to this size.
     'max_tool_result_bytes' => 20_000,
 
-    /*
-    | Filament Shield / spatie-permission: when enabled, each tool needs its own
-    | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
-    | "Custom permissions" tab — and the chat can require UseChatAi.
-    */
     // Shown when the chat is empty: questions set here, plus ones for the page on screen
     // (edit, create, list). The shortcut opens/closes the chat with ⌘/Ctrl + that key (null = off).
     'starters' => [],
     'starters_from_screen' => true,
     'shortcut' => 'j',
+
+    // With anselmocossa/filament-launchpad: the assistant's tiles (questions, pending approvals,
+    // cost, one "ask" tile per suggested question) appear in the launchpad's card library.
+    'launchpad' => [
+        'enabled' => true,
+    ],
 
     // Memory: the assistant keeps what each user asks it to remember, across conversations.
     'memory' => [
@@ -88,6 +89,23 @@ return [
         'enabled' => true,
     ],
 
+    /*
+    | Who may use the assistant and who may manage it (providers and keys, models,
+    | tools, usage and costs). Each entry is a user's e-mail, a user id or a role
+    | name (spatie/laravel-permission). No users = every user of the panel.
+    | No managers = only Shield's super admin. Also set in Settings → Permissions;
+    | ChatAiPlugin::make()->canAccess() / ->canManageSettings() in code win over both.
+    */
+    'access' => [
+        'users' => array_values(array_filter(array_map('trim', explode(',', (string) env('CHATAI_USERS', ''))))),
+        'managers' => array_values(array_filter(array_map('trim', explode(',', (string) env('CHATAI_MANAGERS', ''))))),
+    ],
+
+    /*
+    | Filament Shield / spatie-permission: when enabled, each tool needs its own
+    | permission (UseChatAiTool:SalesStats) — granted per role in Shield's
+    | "Custom permissions" tab — and the chat can require UseChatAi.
+    */
     'permissions' => [
         'enabled' => false,
         'require_chat' => false,
@@ -109,6 +127,25 @@ return [
         'max_kb' => 10240,
         'max_per_message' => 5,
         'max_text_chars' => 100_000, // text/CSV/Excel content passed to the model
+    ],
+
+    // Pictures of records in answers (tables, cards) and images saved onto records.
+    'images' => [
+        'enabled' => true,
+        'disk' => env('CHATAI_IMAGES_DISK', 'public'), // where an image saved to a plain column goes
+        'hosts' => [], // outside https hosts pictures may come from, e.g. ['cdn.mystore.co.mz']
+    ],
+
+    // Maps in answers (Leaflet, loaded only when a map is shown). Point these at
+    // your own copies or another tile server if the panel must not call outside hosts.
+    'maps' => [
+        'enabled' => true,
+        'script' => 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+        'script_integrity' => 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=',
+        'style' => 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+        'style_integrity' => 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=',
+        'tiles' => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'attribution' => '&copy; OpenStreetMap contributors',
     ],
 
     // Extra rules for the assistant written by the admin (tone, business terms).

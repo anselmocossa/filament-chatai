@@ -11,6 +11,7 @@ use Filament\ChatAi\Llm\StreamChunk;
 use Filament\ChatAi\Pages\Concerns\ChecksChatAiManager;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Speech\VoiceCatalog;
+use Filament\ChatAi\Support\AccessList;
 use Filament\ChatAi\Support\ChatAiPermissions;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
@@ -136,6 +137,11 @@ class ChatAiSettingsPage extends Page
                     ]),
 
                     Tab::make($t('permissions'))->icon('heroicon-m-lock-closed')->schema([
+                        TagsInput::make('access.managers')->label($t('access_managers'))->helperText($t('access_managers_help'))
+                            ->placeholder('admin@example.com')
+                            ->visible(fn (): bool => ! ChatAiPlugin::get()->managersFromCode()),
+                        TagsInput::make('access.users')->label($t('access_users'))->helperText($t('access_users_help'))
+                            ->placeholder($t('access_users_placeholder')),
                         Text::make($t('permissions_help'))->color('gray'),
                         Toggle::make('actions.enabled')->label($t('actions_enabled'))->helperText($t('actions_enabled_help')),
                         Toggle::make('permissions.enabled')->label($t('permissions_enabled'))->live()->helperText($t('permissions_enabled_help')),
@@ -200,12 +206,30 @@ class ChatAiSettingsPage extends Page
             }
         }
 
+        if (array_key_exists('access.managers', $values) && ! $this->keepsManaging($values['access.managers'])) {
+            Notification::make()->danger()->title(__('chatai::chatai.settings.access_lockout'))->send();
+
+            return;
+        }
+
         ChatAiSettings::save($values);
 
         // Never keep a typed key in the component state after saving.
         $this->form->fill(ChatAiSettings::formState());
 
         Notification::make()->success()->title(__('chatai::chatai.settings.saved'))->send();
+    }
+
+    /**
+     * The one saving must stay a manager, or nobody could open this page again.
+     *
+     * @param  array<int, string>|null  $managers
+     */
+    protected function keepsManaging(?array $managers): bool
+    {
+        $managers = AccessList::normalize($managers) ?: AccessList::normalize(ChatAiSettings::default('access.managers'));
+
+        return AccessList::matches(auth()->user(), $managers) || ChatAiPermissions::isSuperAdmin(auth()->user());
     }
 
     protected function getHeaderActions(): array

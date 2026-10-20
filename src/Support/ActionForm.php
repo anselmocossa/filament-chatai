@@ -2,6 +2,8 @@
 
 namespace Filament\ChatAi\Support;
 
+use Filament\Facades\Filament;
+
 /**
  * Turns a tool's input schema into the form shown on the confirmation card,
  * and checks what the user sends back before the tool runs.
@@ -35,6 +37,8 @@ final class ActionForm
                 'help' => isset($property['description']) ? str((string) $property['description'])->limit(140)->toString() : null,
                 'options' => isset($property['enum']) ? array_map(fn ($v): array => ['value' => (string) $v, 'label' => (string) str((string) $v)->replace(['_', '-'], ' ')->ucfirst()], (array) $property['enum']) : null,
                 'value' => $type === 'checkbox' ? (bool) $value : (is_scalar($value) ? (string) $value : ($value === null ? '' : (string) json_encode($value, JSON_UNESCAPED_UNICODE))),
+                // An attached image is shown, not typed.
+                'preview' => $type === 'image' && is_string($value) && preg_match('/^[0-9A-Za-z]{26}$/', $value) ? Filament::getCurrentPanel()?->route('chatai.files.download', ['file' => $value]) : null,
             ], fn ($v): bool => $v !== null);
         }
 
@@ -79,6 +83,7 @@ final class ActionForm
                 ($property['type'] ?? null) === 'integer' => preg_match('/^-?\d+$/', (string) $raw) === 1,
                 ($property['type'] ?? null) === 'number' => is_numeric($raw),
                 $type === 'email' => filter_var($raw, FILTER_VALIDATE_EMAIL) !== false,
+                $type === 'image' => preg_match('/^[0-9A-Za-z]{26}$/', (string) $raw) === 1,
                 $type === 'date' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $raw) === 1 && strtotime((string) $raw) !== false,
                 default => is_scalar($raw),
             };
@@ -107,6 +112,7 @@ final class ActionForm
         $format = $property['format'] ?? null;
 
         return match (true) {
+            $format === 'chatai-image' => 'image',
             isset($property['enum']) => 'select',
             ($property['type'] ?? null) === 'boolean' => 'checkbox',
             in_array($property['type'] ?? null, ['integer', 'number'], true) => 'number',

@@ -2,6 +2,8 @@
 
 namespace Filament\ChatAi\Ui;
 
+use Filament\ChatAi\Support\Countries;
+
 /**
  * Normalizes what the model asked to render. A bad component never reaches
  * the browser: it is repaired, downgraded to a table, or dropped (null).
@@ -64,6 +66,8 @@ class ComponentValidator
             'kpi' => $this->kpi($component),
             'table' => $this->table($component),
             'chart' => $this->chart($component),
+            'cards' => $this->cards($component),
+            'map' => $this->map($component),
             'suggestions' => $this->suggestions($component),
         };
     }
@@ -148,13 +152,16 @@ class ComponentValidator
         }
 
         $keys = array_column($columns, 'key');
+        $images = array_column(array_filter($columns, fn (array $c): bool => $c['format'] === 'image'), 'key');
         $total = count($rows);
 
-        $clean = array_map(function (array $row) use ($keys): array {
+        $clean = array_map(function (array $row) use ($keys, $images): array {
             $out = [];
             foreach ($keys as $key) {
                 $value = $row[$key] ?? null;
-                $out[$key] = $this->scalar($value) ? (is_string($value) ? $this->str($value, 200) : $value) : null;
+                $out[$key] = in_array($key, $images, true)
+                    ? $this->imageUrl($value)
+                    : ($this->scalar($value) ? (is_string($value) ? $this->str($value, 200) : $value) : null);
             }
 
             // A row can open its record — only places of this application.
@@ -220,6 +227,8 @@ class ComponentValidator
             'chart_type' => in_array($c['chart_type'] ?? null, Catalog::CHART_TYPES, true) ? $c['chart_type'] : 'line',
             'labels' => array_values(array_slice($labels, 0, Catalog::MAX_POINTS)),
             'series' => $series,
+            // Clicking a bar asks this, with the clicked label in place of {label}.
+            'drill' => is_string($c['drill'] ?? null) && str_contains($c['drill'], '{label}') ? $this->str($c['drill'], 200) : null,
         ]);
     }
 
@@ -262,7 +271,7 @@ class ComponentValidator
                 continue;
             }
 
-            $type = in_array($field['type'] ?? null, ['text', 'email', 'number', 'date', 'select', 'checkbox', 'textarea'], true) ? $field['type'] : 'text';
+            $type = in_array($field['type'] ?? null, ['text', 'email', 'number', 'date', 'select', 'checkbox', 'textarea', 'image'], true) ? $field['type'] : 'text';
 
             $fields[] = array_filter([
                 'key' => isset($field['key']) ? $this->str((string) $field['key'], 60) : null,
@@ -272,6 +281,7 @@ class ComponentValidator
                 'help' => isset($field['help']) ? $this->str((string) $field['help'], 140) : null,
                 'options' => $type === 'select' ? array_values(array_map(fn ($o): array => ['value' => $this->str((string) ($o['value'] ?? ''), 80), 'label' => $this->str((string) ($o['label'] ?? $o['value'] ?? ''), 80)], array_slice(array_filter((array) ($field['options'] ?? []), 'is_array'), 0, 30))) : null,
                 'value' => $type === 'checkbox' ? (bool) ($field['value'] ?? false) : $this->str((string) ($field['value'] ?? ''), 2000),
+                'preview' => $type === 'image' && $this->internalUrl($field['preview'] ?? null) ? (string) $field['preview'] : null,
             ], fn ($v): bool => $v !== null);
         }
 
@@ -317,6 +327,129 @@ class ComponentValidator
             'rows' => $rows,
             'status' => in_array($c['status'] ?? null, $statuses, true) ? $c['status'] : 'pending',
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $c
+     * @return array<string, mixed>|null
+     */
+    protected function cards(array $c): ?array
+    {
+        $items = [];
+
+        // Models sometimes name the list after the type.
+        foreach (array_slice($this->list($c['items'] ?? $c['cards'] ?? []), 0, Catalog::MAX_CARDS) as $item) {
+            if (! is_array($item) || ! $this->scalar($item['title'] ?? null)) {
+                continue;
+            }
+
+            $fields = [];
+
+            foreach (array_slice($this->list($item['fields'] ?? []), 0, 4) as $field) {
+                if (is_array($field) && $this->scalar($field['label'] ?? null) && $this->scalar($field['value'] ?? null)) {
+                    $fields[] = ['label' => $this->str($field['label'], 40), 'value' => $this->str($field['value'], 80)];
+                }
+            }
+
+            $items[] = array_filter([
+                'title' => $this->str($item['title'], 80),
+                'subtitle' => $this->scalar($item['subtitle'] ?? null) ? $this->str($item['subtitle'], 120) : null,
+                'image' => $this->imageUrl($item['image'] ?? null),
+                'badge' => $this->scalar($item['badge'] ?? null) ? $this->str($item['badge'], 30) : null,
+                'fields' => $fields ?: null,
+                'url' => $this->internalUrl($item['url'] ?? null) ? (string) $item['url'] : null,
+                'actions' => $this->actions($item['actions'] ?? null) ?: null,
+            ], fn ($v) => $v !== null);
+        }
+
+        return $items === [] ? null : array_filter([
+            'type' => 'cards',
+            'title' => $this->title($c),
+            'items' => $items,
+            'link' => $this->link($c['link'] ?? null),
+        ]);
+    }
+
+    /**
+     * Buttons on a card: ask the assistant something, or open a place of the app.
+     *
+     * @return array<int, array<string, string>>
+     */
+    protected function actions(mixed $actions): array
+    {
+        $out = [];
+
+        foreach (array_slice($this->list($actions), 0, 3) as $action) {
+            if (! is_array($action) || ! $this->scalar($action['label'] ?? null)) {
+                continue;
+            }
+
+            $button = array_filter([
+                'label' => $this->str($action['label'], 30),
+                'prompt' => $this->scalar($action['prompt'] ?? null) ? $this->str($action['prompt'], 300) : null,
+                'url' => $this->internalUrl($action['url'] ?? null) ? (string) $action['url'] : null,
+            ]);
+
+            if (isset($button['prompt']) || isset($button['url'])) {
+                $out[] = $button;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, mixed>  $c
+     * @return array<string, mixed>|null
+     */
+    protected function map(array $c): ?array
+    {
+        if (! config('chatai.maps.enabled', true)) {
+            return null;
+        }
+
+        $markers = [];
+
+        foreach ($this->list($c['markers'] ?? $c['items'] ?? []) as $marker) {
+            if (! is_array($marker)) {
+                continue;
+            }
+
+            // A country code wins over coordinates: the server knows where countries are.
+            $country = Countries::find($marker['country'] ?? null);
+            $lat = $country['lat'] ?? (is_numeric($marker['lat'] ?? null) ? (float) $marker['lat'] : null);
+            $lng = $country['lng'] ?? (is_numeric($marker['lng'] ?? $marker['lon'] ?? null) ? (float) ($marker['lng'] ?? $marker['lon']) : null);
+
+            if ($lat === null || $lng === null || abs($lat) > 90 || abs($lng) > 180) {
+                continue;
+            }
+
+            $label = $this->scalar($marker['label'] ?? null) ? $this->str($marker['label'], 80) : ($country['name'] ?? null);
+
+            if ($label === null) {
+                continue;
+            }
+
+            $markers[] = array_filter([
+                'lat' => round($lat, 6),
+                'lng' => round($lng, 6),
+                'label' => $label,
+                'value' => is_numeric($marker['value'] ?? null) ? round((float) $marker['value'], 2) : null,
+                'url' => $this->internalUrl($marker['url'] ?? null) ? (string) $marker['url'] : null,
+                'prompt' => $this->scalar($marker['prompt'] ?? null) ? $this->str($marker['prompt'], 300) : null,
+            ], fn ($v) => $v !== null);
+
+            if (count($markers) === Catalog::MAX_MARKERS) {
+                break;
+            }
+        }
+
+        return $markers === [] ? null : array_filter([
+            'type' => 'map',
+            'title' => $this->title($c),
+            'unit' => $this->scalar($c['unit'] ?? null) ? $this->str($c['unit'], 30) : null,
+            'markers' => $markers,
+        ]);
     }
 
     protected function suggestions(array $c): ?array
@@ -366,6 +499,27 @@ class ComponentValidator
     {
         // Only same-app paths or http(s) URLs — never javascript: or data:.
         return is_string($link) && preg_match('#^(https?://|/)#i', $link) ? mb_substr($link, 0, 500) : null;
+    }
+
+    /**
+     * Pictures only from this application or from hosts the config allows
+     * (an outside image would tell that host who is looking).
+     */
+    protected function imageUrl(mixed $url): ?string
+    {
+        if (! config('chatai.images.enabled', true) || ! is_string($url) || $url === '' || mb_strlen($url) > 1000) {
+            return null;
+        }
+
+        if ($this->internalUrl($url) || (filled(config('app.url')) && str_starts_with($url, rtrim((string) config('app.url'), '/').'/'))) {
+            return $url;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return str_starts_with($url, 'https://') && is_string($host) && in_array(strtolower($host), array_map('strtolower', (array) config('chatai.images.hosts', [])), true)
+            ? $url
+            : null;
     }
 
     protected function internalUrl(mixed $url): bool

@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('sku')->unique();
             $table->integer('qty')->default(0);
             $table->integer('security_stock')->default(0);
+            $table->string('photo')->nullable();
             $table->timestamps();
         });
 
@@ -22,6 +23,13 @@ return new class extends Migration
             $table->string('number')->unique();
             $table->string('status');
             $table->decimal('total', 10, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('shop_addresses', function (Blueprint $table): void {
+            $table->id();
+            $table->morphs('addressable');
+            $table->string('country', 2)->nullable();
             $table->timestamps();
         });
 

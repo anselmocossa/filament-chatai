@@ -3,8 +3,11 @@
 namespace Filament\ChatAi\Tools;
 
 use BackedEnum;
+use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\CustomTool;
+use Filament\ChatAi\Support\ImageSource;
 use Filament\ChatAi\Tools\NoCode\ResourceInspector;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -14,9 +17,15 @@ use Illuminate\Database\Eloquent\Model;
  * Create: the chosen columns become the form; "unique" columns are checked.
  * Update: the record is found by one of the lookup columns; each chosen column
  * is either set to a new value or added to (e.g. stock + 5).
+ *
+ * Image: when set up, an image the user attached in the chat is put onto the
+ * record (a column, or a Spatie media collection).
  */
 final class RecordTool
 {
+    /** Input key of the attached image (not a column name, so it never clashes with one). */
+    public const IMAGE = 'attach_image';
+
     public static function make(CustomTool $tool): ?ChatAiTool
     {
         $resource = ResourceInspector::resource($tool->config['resource'] ?? null);
@@ -36,7 +45,9 @@ final class RecordTool
             ->keyBy('column')
             ->all();
 
-        if ($fields === []) {
+        $image = config('chatai.images.enabled', true) ? ImageSource::valid($model, $config['image'] ?? null) : null;
+
+        if ($fields === [] && ! $image) {
             return null;
         }
 
@@ -70,12 +81,25 @@ final class RecordTool
             }
         }
 
+        if ($image) {
+            $properties[self::IMAGE] = ['type' => 'string', 'format' => 'chatai-image', 'title' => __('chatai::chatai.actions.image'), 'description' => 'File id of an image the user attached in this conversation (shown as "file id" next to it).'];
+        }
+
         return new ChatAiTool(
             name: $tool->name,
-            description: $tool->description,
+            description: $tool->description.($image ? ' It can also put an image the user attached onto the record.' : ''),
             inputSchema: ['type' => 'object', 'properties' => $properties, 'required' => $required],
-            handler: function (array $args) use ($resource, $model, $creating, $fields, $lookup, $unique, $noNegative): ToolResult {
+            handler: function (array $args) use ($resource, $model, $creating, $fields, $lookup, $unique, $noNegative, $image): ToolResult {
                 $values = array_intersect_key($args, $fields);
+                $file = null;
+
+                if ($image && filled($args[self::IMAGE] ?? null)) {
+                    $file = self::attachment((string) $args[self::IMAGE]);
+
+                    if (! $file) {
+                        return ToolResult::error('That image was not found among the files the user attached.');
+                    }
+                }
 
                 if ($creating) {
                     if (! $resource::canCreate()) {
@@ -92,7 +116,11 @@ final class RecordTool
                     $record = $model->newInstance()->forceFill(array_filter($values, fn ($v): bool => $v !== null && $v !== ''));
                     $record->save();
 
-                    return ToolResult::data(['created' => $resource::getModelLabel(), 'id' => $record->getKey(), ...self::show($record, array_keys($fields))]);
+                    if ($file && ($error = ImageSource::attach($record, $image, $file))) {
+                        return ToolResult::data(['created' => $resource::getModelLabel(), 'id' => $record->getKey(), 'image_error' => $error]);
+                    }
+
+                    return ToolResult::data(['created' => $resource::getModelLabel(), 'id' => $record->getKey(), ...self::show($record, array_keys($fields)), ...($file ? [self::IMAGE => $file->name] : [])]);
                 }
 
                 $search = trim((string) ($args['record'] ?? ''));
@@ -119,6 +147,12 @@ final class RecordTool
 
                 $before = self::show($record, array_keys($values));
 
+                // A gallery (media collection) gains the image; a column has its old one replaced.
+                if ($file && ! str_starts_with($image, ImageSource::MEDIA)) {
+                    $current = ImageSource::url($record, $image);
+                    $before[self::IMAGE] = $current ? basename((string) parse_url($current, PHP_URL_PATH)) : null;
+                }
+
                 foreach ($values as $column => $value) {
                     if ($value === null || $value === '') {
                         continue;
@@ -139,15 +173,39 @@ final class RecordTool
 
                 $record->save();
 
+                if ($file && ($error = ImageSource::attach($record, $image, $file))) {
+                    return ToolResult::error($error);
+                }
+
+                $gallery = $file && str_starts_with($image, ImageSource::MEDIA);
+
                 return ToolResult::data([
                     'record' => $record->getAttribute(ResourceInspector::titleColumn($model)),
+                    ...($gallery ? [self::IMAGE => $file->name] : []),
                     'before' => $before,
-                    'after' => self::show($record->refresh(), array_keys($values)),
+                    'after' => self::show($record->refresh(), array_keys($values)) + ($file && ! $gallery ? [self::IMAGE => $file->name] : []),
                 ]);
             },
             readOnly: false,
             title: $tool->title,
         );
+    }
+
+    /**
+     * An image the current user attached (never someone else's file).
+     */
+    protected static function attachment(string $id): ?ConversationFile
+    {
+        $user = Filament::auth()->user() ?? auth()->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $file = ConversationFile::query()->whereKey($id)->where('kind', ConversationFile::KIND_UPLOAD)
+            ->where('user_type', $user->getMorphClass())->where('user_id', $user->getKey())->first();
+
+        return $file?->isImage() ? $file : null;
     }
 
     /**

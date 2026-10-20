@@ -2,7 +2,9 @@
 
 namespace Filament\ChatAi;
 
+use Filament\ChatAi\Commands\InstallCommand;
 use Filament\ChatAi\Events\TurnCompleted;
+use Filament\ChatAi\Launchpad\LaunchpadCards;
 use Filament\ChatAi\Listeners\RecordChatUsage;
 use Filament\ChatAi\Livewire\FloatingChat;
 use Filament\ChatAi\Llm\LlmClient;
@@ -31,6 +33,7 @@ class ChatAiServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasTranslations()
             ->hasViews(static::$viewNamespace)
+            ->hasCommands([InstallCommand::class])
             ->hasMigrations(['create_chatai_tables', 'create_chatai_settings_tables', 'create_chatai_tools_tables', 'create_chatai_models_table', 'create_chatai_provider_connections_table', 'update_chatai_budgets_table', 'update_chatai_models_effort_table', 'update_chatai_tool_permissions_table', 'update_chatai_files_table', 'update_chatai_history_table', 'update_chatai_actions_table', 'update_chatai_feedback_table', 'update_chatai_memories_table']);
     }
 
@@ -46,6 +49,11 @@ class ChatAiServiceProvider extends PackageServiceProvider
         Livewire::component('chatai-floating', FloatingChat::class);
 
         Event::listen(TurnCompleted::class, RecordChatUsage::class);
+
+        // With anselmocossa/filament-launchpad installed, the assistant brings its own tiles.
+        if (config('chatai.launchpad.enabled', true)) {
+            LaunchpadCards::register();
+        }
 
         // Loaded on request: only panels that use the plugin pull them in.
         FilamentAsset::register([

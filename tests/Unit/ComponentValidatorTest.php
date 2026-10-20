@@ -55,13 +55,13 @@ it('limits suggestions to four and requires a prompt', function () {
         ->and(array_column($component['items'], 'label'))->toBe(['A', 'B', 'C', 'D']);
 });
 
-it('describes the four component types in the show_ui tool schema', function () {
+it('describes the component types in the show_ui tool schema', function () {
     $schema = Catalog::showToolSchema();
 
     expect($schema['type'])->toBe('object')
         ->and($schema['required'])->toBe(['components'])
         ->and($schema['properties']['components']['items']['properties']['type']['enum'])
-        ->toBe(['kpi', 'table', 'chart', 'suggestions'])
+        ->toBe(['kpi', 'table', 'chart', 'cards', 'map', 'suggestions'])
         ->and(json_encode($schema))->toBeJson();
 });
 
