@@ -4,8 +4,21 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.4] - 2026-10-23
+
 ### Added
 - Interactive clarification questions in full-page, floating and tool editor chat: a compact Codex-style card fixed above the message composer with numbered options and an inline answer, one question per step with Back/Next and a progress indicator, selectable options, free-text answers and one submission that continues the conversation. The assistant pauses for answers; the original form keeps its answered summary after reload. Answers are validated against the saved conversation and cannot be submitted twice.
+
+- `describe_tools` inspects available tool contracts without executing tools. Skill proposals validate dependencies and optional call examples, and loaded skills include current dependency schemas.
+- Tool arguments are validated against JSON Schema before handlers run, with actionable errors for missing fields, invalid enum values, types and limits. Requires `opis/json-schema` ^2.4.
+
+### Fixed
+- Reopening a conversation no longer fails when a confirmed change includes a list (for example candidate ids). The list is shown as JSON, which the confirmation form can read again. A list written as text is sent back to the model to correct before any confirmation card is proposed.
+- Markdown headings now render as styled titles in assistant replies, including streamed and stopped answers, instead of displaying literal # markers.
+- Stop is checked between tool calls returned in the same model round, including proposed writes, while keeping a valid tool-call history.
+- Empty provider responses and empty answers after the tool-step limit now show an explicit message; valid visual-only answers remain supported.
+- Unexpected tool exception details stay in server logs instead of being sent to the model or conversation history.
+- Requests to create reusable summaries, comparisons and workflows are directed to skills. The assistant is instructed to request variable record inputs when the skill is used, and invalid skill examples can be repaired before human confirmation.
 
 ## [1.3.3] - 2026-10-23
 

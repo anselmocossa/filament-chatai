@@ -184,3 +184,14 @@ it('stops between rounds when the user presses Stop, keeping the conversation va
         ->and($roles)->toBe(['user', 'assistant', 'tool', 'assistant'])
         ->and($conversation->fresh()->messages->last()->status)->toBe('stopped');
 });
+
+it('pauses after interactive questions without another model round or running later tools', function () {
+    $llm = FakeLlmClient::script([
+        [FakeLlmClient::call('show_ui', ['components' => [['type' => 'questions', 'questions' => [['question' => 'Qual área?', 'options' => [['label' => 'SAP']]]]]]]), FakeLlmClient::call('sales-stats')],
+        ['Must wait for an answer'],
+    ]);
+    [$events, $conversation] = runTurn($llm);
+    expect($llm->requests)->toHaveCount(1)
+        ->and(collect($events)->where('type', 'tool_start'))->toHaveCount(0)
+        ->and($conversation->messages->last()->components[0]['type'])->toBe('questions');
+});

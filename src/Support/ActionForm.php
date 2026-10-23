@@ -36,13 +36,30 @@ final class ActionForm
                 'required' => in_array($key, $required, true),
                 'help' => isset($property['description']) ? str((string) $property['description'])->limit(140)->toString() : null,
                 'options' => isset($property['enum']) ? array_map(fn ($v): array => ['value' => (string) $v, 'label' => (string) str((string) $v)->replace(['_', '-'], ' ')->ucfirst()], (array) $property['enum']) : null,
-                'value' => $type === 'checkbox' ? (bool) $value : (is_scalar($value) ? (string) $value : ($value === null ? '' : (string) json_encode($value, JSON_UNESCAPED_UNICODE))),
+                'value' => $type === 'checkbox' ? (bool) $value : self::shown($value),
                 // An attached image is shown, not typed.
                 'preview' => $type === 'image' && is_string($value) && preg_match('/^[0-9A-Za-z]{26}$/', $value) ? Filament::getCurrentPanel()?->route('chatai.files.download', ['file' => $value]) : null,
             ], fn ($v): bool => $v !== null);
         }
 
         return $fields;
+    }
+
+    /**
+     * A value safe to put back in a text field. A list stays JSON, which
+     * {@see self::validate()} reads again; a bool stays a bool for a checkbox.
+     */
+    public static function shown(mixed $value): mixed
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        return $value === null ? '' : (string) json_encode($value, JSON_UNESCAPED_UNICODE);
     }
 
     /**

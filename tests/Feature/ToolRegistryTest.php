@@ -141,3 +141,13 @@ it('uses a hand-written input schema for an API tool, sending non-path arguments
 
     Http::assertSent(fn ($r) => $r->url() === 'https://api.loja.test/weather/Maputo?days=3');
 });
+
+it('loads current argument contracts with a skill and does not expose a restricted dependency schema', function () {
+    Skill::create(['name' => 'compare', 'title' => 'Compare', 'when_to_use' => 'Compare', 'instructions' => 'Compare the returned data.', 'tools' => ['sales-stats', 'payroll'], 'enabled' => true]);
+    ToolOverride::create(['tool_name' => 'payroll', 'enabled' => false]);
+    $tool = toolsFor(registryUser())[SkillTool::NAME];
+    $text = $tool->call(['name' => 'compare'])->text;
+    expect($text)->toContain('Current tool contracts')->toContain('"name":"sales-stats"')
+        ->and($text)->toContain('Some dependencies are unavailable')
+        ->and($text)->not->toContain('"name":"payroll"');
+});

@@ -13,12 +13,14 @@ use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\Budget;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\UrlContext;
+use Filament\ChatAi\Ui\QuestionAnswer;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MessageStreamController
@@ -36,6 +38,7 @@ class MessageStreamController
             'attachments' => ['nullable', 'array', 'max:'.(int) config('chatai.files.max_per_message', 5)],
             'attachments.*' => ['string', 'max:26'],
             'replace_last' => ['nullable', 'boolean'],
+            ...QuestionAnswer::rules(),
         ]);
 
         if ($limited = static::rateLimit($request)) {
@@ -44,6 +47,13 @@ class MessageStreamController
 
         if ($paused = static::budgetPaused()) {
             return $paused;
+        }
+
+        if (isset($validated['question_answer'])) {
+            if ($validated['replace_last'] ?? false) {
+                throw ValidationException::withMessages(['question_answer' => __('chatai::chatai.questions.unavailable')]);
+            }
+            $validated['message'] = QuestionAnswer::submit($conversation, $validated['question_answer']);
         }
 
         // Stop button: the browser sets this flag and the turn ends at the next safe point.

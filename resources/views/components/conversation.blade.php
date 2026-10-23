@@ -69,7 +69,7 @@
                         </template>
 
                         <template x-for="(component, index) in message.components" :key="message.id + '-' + index">
-                            <div class="fi-chatai-component">
+                            <div class="fi-chatai-component" x-show="component.type !== 'questions' || component.status === 'answered'">
                                 @include('filament-chatai::components.catalog')
                             </div>
                         </template>
@@ -190,8 +190,23 @@
         </div>
     </template>
 
+    {{-- Outside the message scroller, so the active question stays attached to the composer. --}}
+    <div class="fi-chatai-question-dock" x-show="pendingQuestionMessages().length" x-cloak>
+        <template x-for="message in pendingQuestionMessages()" :key="message.id">
+            <div>
+                <template x-for="(component, index) in message.components" :key="message.id + '-question-' + index">
+                    <div>
+                        <template x-if="component.type === 'questions' && component.status === 'pending'">
+                            @include('filament-chatai::components.questions')
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
     {{-- Composer: one card with the text on top and the actions below, like the big chat apps. --}}
-    <form class="fi-chatai-composer" x-on:submit.prevent="send()">
+    <form class="fi-chatai-composer" :class="{ 'fi-chatai-has-questions': pendingQuestionMessages().length > 0 }" x-on:submit.prevent="send()">
         {{-- @ tools / skills list --}}
         <div class="fi-chatai-picker" x-show="picker && pickerItems().length" x-cloak role="listbox">
             <p class="fi-chatai-picker-title" x-text="picker?.type === '@' ? @js(__('chatai::chatai.picker_tools')) : @js(__('chatai::chatai.picker_skills'))"></p>

@@ -6,6 +6,7 @@ use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\Skill;
 use Filament\ChatAi\Models\ToolAction;
+use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Testing\FakeLlmClient;
@@ -14,6 +15,7 @@ use Filament\ChatAi\Tests\Fixtures\Shop\ProductResource;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
+use Filament\ChatAi\Tools\ToolResult;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
@@ -104,6 +106,7 @@ it('refuses a duplicate name, an unknown resource or broken settings', function 
 
 it('saves a skill', function () {
     $this->actingAs($this->boss);
+    builderTools($this->boss)[BuilderTools::CREATE_TOOL]->call(lowStockArgs());
 
     builderTools($this->boss)[BuilderTools::CREATE_SKILL]->call([
         'name' => 'stock-review', 'title' => 'Stock review', 'when_to_use' => 'Weekly stock check',
@@ -142,4 +145,90 @@ it('does not tell other users it can build tools', function () {
     $this->actingAs($this->ana)->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Total de horas da Camilla?'])->assertOk()->streamedContent();
 
     expect($llm->requests[0]['messages'][0]['content'])->not->toContain('new abilities');
+});
+
+it('describes available tool contracts without executing them or exposing a disabled tool', function () {
+    $this->actingAs($this->boss);
+    $ran = false;
+    builderPlugin()->tools(fn () => [
+        new ChatAiTool('profile-search', 'Search profiles', ['type' => 'object', 'properties' => ['by' => ['type' => 'string', 'enum' => ['name', 'role']], 'location' => ['type' => 'string']]], function () use (&$ran) {
+            $ran = true;
+
+            return ToolResult::data([]);
+        }, readOnly: true),
+        new ChatAiTool('disabled-tool', 'Disabled', ['type' => 'object'], fn () => ToolResult::data([]), readOnly: true),
+    ]);
+    ToolOverride::create(['tool_name' => 'disabled-tool', 'enabled' => false]);
+    try {
+        $tools = builderTools($this->boss);
+        expect($tools)->toHaveKey('describe_tools');
+        $catalog = $tools['describe_tools']->call([]);
+        expect(array_column($catalog->data['tools'], 'name'))->toContain('profile-search', 'show_ui')->not->toContain('disabled-tool')
+            ->and($tools['describe_tools']->call(['name' => 'profile-search'])->data['tools'][0]['parameters']['properties']['by']['enum'])->toBe(['name', 'role'])
+            ->and($tools['describe_tools']->call(['name' => 'disabled-tool'])->isError())->toBeTrue()
+            ->and($ran)->toBeFalse();
+    } finally {
+        builderPlugin()->tools(null);
+    }
+});
+
+it('rejects unknown skill dependencies and empty instructions', function () {
+    $this->actingAs($this->boss);
+    $create = builderTools($this->boss)[BuilderTools::CREATE_SKILL];
+    $args = ['name' => 'compare-profiles', 'title' => 'Compare', 'when_to_use' => 'Compare profiles', 'instructions' => 'Search and compare.', 'tools' => 'invented-tool'];
+    expect($create->call($args)->isError())->toBeTrue()
+        ->and($create->call([...$args, 'tools' => '', 'instructions' => ''])->isError())->toBeTrue()
+        ->and(Skill::query()->count())->toBe(0);
+});
+
+it('validates skill examples without running them and stores their canonical contracts', function () {
+    $this->actingAs($this->boss);
+    $ran = false;
+    builderPlugin()->tools(fn () => [new ChatAiTool('profile-search', 'Search', ['type' => 'object', 'properties' => [
+        'term' => ['type' => 'string'], 'by' => ['type' => 'string', 'enum' => ['name', 'role']], 'location' => ['type' => 'string'],
+    ], 'required' => ['term']], function () use (&$ran) {
+        $ran = true;
+
+        return ToolResult::data([]);
+    }, readOnly: true)]);
+    try {
+        $create = builderTools($this->boss)[BuilderTools::CREATE_SKILL];
+        $args = ['name' => 'compare-profiles', 'title' => 'Compare', 'when_to_use' => 'Compare profiles', 'instructions' => 'Ask for the reference when the skill is used, then search.', 'tools' => 'profile-search'];
+        $bad = $create->call([...$args, 'examples' => json_encode([['tool' => 'profile-search', 'arguments' => ['term' => '<reference>', 'by' => 'location']]])]);
+        expect($bad->isError())->toBeTrue()->and(Skill::query()->count())->toBe(0);
+        $good = $create->call([...$args, 'examples' => json_encode([['tool' => 'profile-search', 'arguments' => ['term' => '<reference>', 'by' => 'role', 'location' => '<optional location>']]])]);
+        expect($good->isError())->toBeFalse()->and($ran)->toBeFalse()
+            ->and(Skill::query()->sole()->instructions)->toContain('Validated call examples')->toContain('"by":"role"');
+    } finally {
+        builderPlugin()->tools(null);
+    }
+});
+
+it('guides reusable workflow creation separately from running it', function () {
+    app()->instance(LlmClient::class, $llm = FakeLlmClient::script([['Vou preparar a capacidade reutilizável.']]));
+    $conversation = Conversation::start($this->boss, 'admin');
+    $this->actingAs($this->boss)->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Cria uma ferramenta para comparar perfis'])->assertOk()->streamedContent();
+    $prompt = $llm->requests[0]['messages'][0]['content'];
+    expect($prompt)->toContain('create_skill')->toContain('describe_tools')->toContain('runtime inputs')
+        ->and($prompt)->toContain('Do not turn a creation request into a search');
+});
+
+it('lets the model repair a bad skill example before showing a single confirmation', function () {
+    builderPlugin()->tools(fn () => [new ChatAiTool('profile-search', 'Search profiles', ['type' => 'object', 'properties' => ['by' => ['type' => 'string', 'enum' => ['role']]]], fn () => ToolResult::data([]), readOnly: true)]);
+    $args = ['name' => 'compare-profiles', 'title' => 'Compare', 'when_to_use' => 'Compare profiles', 'instructions' => 'Ask for the reference when used.', 'tools' => 'profile-search'];
+    $bad = [...$args, 'examples' => json_encode([['tool' => 'profile-search', 'arguments' => ['by' => 'location']]])];
+    $good = [...$args, 'examples' => json_encode([['tool' => 'profile-search', 'arguments' => ['by' => 'role']]])];
+    app()->instance(LlmClient::class, FakeLlmClient::script([[FakeLlmClient::call(BuilderTools::CREATE_SKILL, $bad)], [FakeLlmClient::call(BuilderTools::CREATE_SKILL, $good)], ['Confirme a proposta.']]));
+    try {
+        $conversation = Conversation::start($this->boss, 'admin');
+        $response = $this->actingAs($this->boss)->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Cria uma capacidade para comparar perfis']);
+        expect($response->assertOk()->streamedContent())->toContain('"type":"confirm"')
+            ->and(Skill::query()->count())->toBe(0)
+            ->and(ToolAction::query()->count())->toBe(1)
+            ->and(ToolAction::query()->sole()->arguments['examples'])->toBe($good['examples']);
+        $this->postJson(route('filament.admin.chatai.actions.confirm', ToolAction::query()->sole()))->assertOk()->assertJsonPath('status', 'done');
+        expect(Skill::query()->sole()->name)->toBe('compare-profiles');
+    } finally {
+        builderPlugin()->tools(null);
+    }
 });

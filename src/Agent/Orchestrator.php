@@ -16,6 +16,7 @@ use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ActionForm;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Support\FileParts;
+use Filament\ChatAi\Support\ToolArguments;
 use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\DocumentTool;
@@ -92,6 +93,7 @@ class Orchestrator
         $proposals = [];
         $toolsUsed = [];
         $stopped = false;
+        $awaitingAnswers = false;
         $checkedAt = 0.0;
 
         // The user pressed Stop: checked at safe points (between rounds, while writing), at most every 0.3 s.
@@ -122,7 +124,7 @@ class Orchestrator
                 }
                 $calls = [];
 
-                foreach ($stopped ? [] : $this->llm->stream($config, $messages, $offer) as $chunk) {
+                foreach (($stopped || $awaitingAnswers) ? [] : $this->llm->stream($config, $messages, $offer) as $chunk) {
                     if ($stopRequested()) {
                         $stopped = true;
                         $calls = [];
@@ -156,6 +158,12 @@ class Orchestrator
                         }
                     }
 
+                    // A provider can ignore the final no-tools request or return no text.
+                    if (trim($text) === '' && $components === [] && ! $stopped) {
+                        $text = $offer === [] ? __('chatai::chatai.steps_exhausted') : __('chatai::chatai.unavailable');
+                        yield new AgentEvent(AgentEvent::DELTA, ['text' => $text]);
+                    }
+
                     $answer = $conversation->addMessage(Message::ROLE_ASSISTANT, $text, [
                         'components' => $components ?: null,
                         ...($stopped ? ['status' => 'stopped'] : []),
@@ -178,7 +186,14 @@ class Orchestrator
                 $messages[] = ['role' => 'assistant', 'content' => $text ?: null, 'tool_calls' => $toolCalls];
 
                 foreach ($calls as $call) {
-                    if ($call->toolName === ShowUiTool::NAME) {
+                    // Check every call, including calls returned together in one model round.
+                    $stopped = $stopped || ($shouldStop !== null && $shouldStop());
+                    if ($stopped) {
+                        // Keep the tool-call protocol complete without starting more work.
+                        $result = ToolResult::error('The user stopped this turn. This tool was not run.');
+                    } elseif ($awaitingAnswers) {
+                        $result = ToolResult::error('Wait for the user to answer the questions before calling more tools.');
+                    } elseif ($call->toolName === ShowUiTool::NAME) {
                         $asked = array_map(fn (array $c): array => TablePager::prepare($c, $available), array_values(array_filter((array) ($call->arguments['components'] ?? []), 'is_array')));
                         $valid = $this->validator->validateMany($asked);
 
@@ -187,6 +202,7 @@ class Orchestrator
                                 continue;
                             }
 
+                            $awaitingAnswers = $awaitingAnswers || $component['type'] === 'questions';
                             $components[] = $component;
                             yield new AgentEvent(AgentEvent::COMPONENT, ['component' => $component]);
                         }
@@ -224,15 +240,28 @@ class Orchestrator
                             : ToolResult::data(['filled' => array_column($filled, 'path'), 'note' => $onlyFilters
                                 ? 'Applied as filters of the list on screen: the user now sees the filtered list. Nothing is saved. To give figures from it, use '.QueryDataTool::NAME.' or another tool; do not ask the user to press Save.'
                                 : 'The values are in the form on screen. Nothing is saved: tell the user to review them and press Save.']);
+                    } elseif ($call->toolName === BuilderTools::CREATE_SKILL && isset($available[BuilderTools::CREATE_SKILL])
+                        && ($prepared = BuilderTools::prepareSkill((array) $call->arguments, array_values($available)))->isError()) {
+                        // Let the model fix an invalid plan before asking the user to approve it.
+                        $result = $prepared;
                     } elseif (($tool = $available[$call->toolName] ?? null) !== null && ! $tool->readOnly) {
-                        // A change: nothing runs until the user confirms; shown when the answer ends.
-                        $proposals[] = ['tool' => $tool->name, 'card' => $this->propose($conversation, $user, $context, $tool, (array) $call->arguments)];
-                        $toolsUsed[] = $call->toolName;
+                        // A change still waits for the user. Missing values stay for the form
+                        // (the prompt tells the model to leave them out). A value of the wrong
+                        // shape, such as a list written as text, goes back to the model first.
+                        $schema = $tool->inputSchema;
+                        unset($schema['required']);
 
-                        $result = ToolResult::data([
-                            'status' => 'awaiting_confirmation',
-                            'note' => 'Nothing has changed yet. The user gets a form with these values (several calls of this tool become one list they approve at once), can correct them, then Confirm or Cancel. For a list (e.g. rows of a file), call the tool once per row. In one sentence, say what will happen and ask them to check and confirm. Do not ask for missing values in text.',
-                        ]);
+                        if (($error = ToolArguments::error($schema, (array) $call->arguments)) !== null) {
+                            $result = ToolResult::error($error);
+                        } else {
+                            $proposals[] = ['tool' => $tool->name, 'card' => $this->propose($conversation, $user, $context, $tool, (array) $call->arguments)];
+                            $toolsUsed[] = $call->toolName;
+
+                            $result = ToolResult::data([
+                                'status' => 'awaiting_confirmation',
+                                'note' => 'Nothing has changed yet. The user gets a form with these values (several calls of this tool become one list they approve at once), can correct them, then Confirm or Cancel. For a list (e.g. rows of a file), call the tool once per row. In one sentence, say what will happen and ask them to check and confirm. Do not ask for missing values in text.',
+                            ]);
+                        }
                     } else {
                         $tool = $available[$call->toolName] ?? null;
 
@@ -269,7 +298,7 @@ class Orchestrator
         // Named from the first exchange, so the history reads as a list of subjects
         // and not of half-questions. Before DONE, which carries the title to the
         // browser; skipped when the user stopped the turn.
-        if (! ($shouldStop !== null && $shouldStop())) {
+        if (! $stopped && ! $awaitingAnswers && ! ($shouldStop !== null && $shouldStop())) {
             ConversationTitle::write($conversation, $question, (string) $answer->content, $config, $this->llm);
         }
 
@@ -380,6 +409,12 @@ class Orchestrator
         if (isset($available[BuilderTools::CREATE_TOOL])) {
             $hint .= "\nThis user manages the assistant, so you can also give yourself new abilities: when they ask for a tool, or after answering a question that is likely to come back, "
                 .'offer to save it as a tool with '.BuilderTools::CREATE_TOOL.' ("metrics" for sums, counts and averages, "resource" for lists; give it filters for what the user will name). '
+                .'For a reusable workflow (summarise, compare, recommend, combine several tools), choose '.BuilderTools::CREATE_SKILL.' instead. A user may call either a tool: choose by the desired behaviour, not that word. '
+                .'Inspect '.BuilderTools::DESCRIBE_TOOLS.' before designing a skill, and include valid call examples with exact parameter names, types and enum values. '
+                .'Separate creation from execution: names, dates, records and reference profiles are runtime inputs. Put instructions to request them when the skill is USED; they are not required to CREATE it. '
+                .'Do not turn a creation request into a search. Do not refuse the goal just because create_tool only supports resource/metrics: use create_skill when existing tools can perform the steps. '
+                .'If the objective is clear, propose the reusable skill for confirmation now. Ask at most one batch about genuinely missing design choices; do not repeat runtime-input questions when the user asks to create it. '
+                .'Reuse an existing skill that already covers the task instead of creating a duplicate. Never claim it is saved before confirmation. '
                 .'Without '.QueryDataTool::NAME.', build it in the same answer and say the answer comes as soon as they confirm.';
         }
 

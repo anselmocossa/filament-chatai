@@ -8,7 +8,7 @@ namespace Filament\ChatAi\Ui;
  */
 final class Catalog
 {
-    public const TYPES = ['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions'];
+    public const TYPES = ['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions', 'questions'];
 
     /** Only built by server tools (never by show_ui): a document to download. */
     public const FILE = 'file';
@@ -27,6 +27,10 @@ final class Catalog
 
     /** A note that something was saved to the user's memory. */
     public const MEMORY = 'memory';
+
+    public const MAX_QUESTIONS = 3;
+
+    public const MAX_OPTIONS = 6;
 
     public const MAX_BATCH = 500;
 
@@ -74,6 +78,14 @@ final class Catalog
                                 'type' => 'array',
                                 'description' => 'kpi: [{label, value, unit?, change? (percent), trend? (up|down|flat), description?}] (1-4). suggestions: [{label, prompt}] (max 4) — follow-up questions the user can click. cards: [{title, subtitle?, image?, badge?, fields?: [{label, value}], url?}] (max 12) — a gallery, best for records with a picture (products, people); copy "image" from a row\'s "_image" and "url" from its "_url". Each card may have actions: [{label, prompt}] (max 3), buttons that ask the assistant about that record (e.g. "Ver encomendas"). records: [{title, subtitle?, image?, badges?: [string], fields?: [{label, value}], sections?: [{heading, text?, items?: [string]}], url?, actions?}] (max 10) — a full-width sheet per record, for when the user needs to read each one: the fields sit beside the heading and each section holds a paragraph ("text") or a list ("items"), e.g. a summary, work history and education.',
                                 'items' => ['type' => 'object'],
+                            ],
+                            'questions' => [
+                                'type' => 'array',
+                                'description' => 'questions: 1-3 clarification questions. Each has question (string) and optional options: [{label, description?}] (max 6). A free-text answer is always available. Call this instead of asking questions as prose, then wait for the user.',
+                                'items' => ['type' => 'object', 'properties' => [
+                                    'question' => ['type' => 'string'],
+                                    'options' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['label' => ['type' => 'string'], 'description' => ['type' => 'string']], 'required' => ['label']]],
+                                ], 'required' => ['question']],
                             ],
                             'columns' => [
                                 'type' => 'array',

@@ -434,3 +434,8 @@
         <span class="fi-chatai-memory-note-text" x-text="component.text"></span>
     </button>
 </template>
+
+{{-- Answered questions stay in the history; pending questions are docked by the composer. --}}
+<template x-if="component.type === 'questions' && component.status === 'answered'">
+    @include('filament-chatai::components.questions')
+</template>

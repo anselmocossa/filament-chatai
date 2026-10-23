@@ -1,12 +1,28 @@
 <?php
 
 return [
+    'questions' => [
+        'heading' => 'Question',
+        'inline_free' => 'Or write your own answer',
+
+        'step' => 'Question :current of :total',
+        'previous' => 'Back',
+        'next' => 'Next',
+
+        'free' => 'Write my own answer',
+        'send' => 'Send answers',
+        'other' => 'Your answer or additional details',
+        'answered' => 'Answered',
+        'required' => 'Answer every question before sending.',
+        'unavailable' => 'These questions are no longer available or have already been answered.',
+    ],
     'builder_continue' => 'Use the new tool to answer my question.',
     'table_page' => 'Page :page of :pages · :total rows',
     'table_prev' => 'Previous page',
     'table_next' => 'Next page',
     'table_truncated' => 'Showing :shown of :total rows.',
     'unavailable' => 'The assistant is unavailable right now. Please try again shortly.',
+    'steps_exhausted' => 'The assistant reached the step limit before completing this request. Please narrow the request and try again.',
     'budget_reached' => 'The assistant spending limit has been reached. It will answer again next period, or ask an administrator to raise it.',
     'rate_limited' => 'You have reached the message limit. Please wait a moment and try again.',
     'empty_title' => "Hi! I'm :name.",

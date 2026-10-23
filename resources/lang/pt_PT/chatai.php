@@ -1,12 +1,28 @@
 <?php
 
 return [
+    'questions' => [
+        'heading' => 'Pergunta',
+        'inline_free' => 'Ou escreva a sua própria resposta',
+
+        'step' => 'Pergunta :current de :total',
+        'previous' => 'Anterior',
+        'next' => 'Seguinte',
+
+        'free' => 'Escrever outra resposta',
+        'send' => 'Enviar respostas',
+        'other' => 'A sua resposta ou detalhes adicionais',
+        'answered' => 'Respondido',
+        'required' => 'Responda a todas as perguntas antes de enviar.',
+        'unavailable' => 'Estas perguntas já foram respondidas ou já não estão disponíveis.',
+    ],
     'builder_continue' => 'Usa a ferramenta nova para responder à minha pergunta.',
     'table_page' => 'Página :page de :pages · :total linhas',
     'table_prev' => 'Página anterior',
     'table_next' => 'Página seguinte',
     'table_truncated' => 'A mostrar :shown de :total linhas.',
     'unavailable' => 'O assistente está indisponível de momento. Tente de novo dentro de instantes.',
+    'steps_exhausted' => 'O assistente atingiu o limite de passos antes de concluir este pedido. Divida o pedido em partes menores e tente novamente.',
     'budget_reached' => 'O limite de gasto do assistente foi atingido. Volta a responder no próximo período, ou peça ao administrador para o aumentar.',
     'rate_limited' => 'Atingiu o limite de mensagens. Aguarde um pouco e tente de novo.',
     'empty_title' => 'Olá! Sou o :name.',

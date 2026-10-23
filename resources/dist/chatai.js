@@ -40,7 +40,7 @@ document.addEventListener('alpine:init', () => {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;')
 
-    // Deliberately small Markdown: bold, italics, inline code, code blocks,
+    // Deliberately small Markdown: headings, bold, italics, inline code, code blocks,
     // lists and http(s) links. Everything is escaped first, so model output
     // can never inject HTML.
     const renderMarkdown = (source) => {
@@ -85,6 +85,14 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (line.trim() === '') continue
+
+            const heading = line.match(/^ {0,3}(#{1,6})(?:[ \t]+(.*))?$/)
+            if (heading) {
+                const level = heading[1].length
+                const title = (heading[2] || '').replace(/[ \t]+#+[ \t]*$/, '')
+                html.push(`<h${level}>${inline(title)}</h${level}>`)
+                continue
+            }
 
             html.push(/^\u0000\d+\u0000$/.test(line.trim()) ? line.trim() : `<p>${inline(line)}</p>`)
         }
@@ -939,18 +947,76 @@ document.addEventListener('alpine:init', () => {
             if (this.lastQuestion) this.ask(this.lastQuestion)
         },
 
-        async send() {
+        pendingQuestionMessages() {
+            if (this.loading) return []
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const message = this.messages[i]
+                if (message.role !== 'assistant') continue
+                const questions = (message.components || []).filter((c) => c.type === 'questions')
+                if (questions.length) return questions.some((c) => c.status === 'pending') ? [message] : []
+            }
+            return []
+        },
+
+        questionStepComplete(component, choices, texts, step) {
+            const question = component.questions[step]
+            return !!question && ((Number.isInteger(choices[step]) && choices[step] >= 0 && !!question.options[choices[step]]) || !!(texts[step] || '').trim())
+        },
+
+        nextQuestionStep(component, step, choices, texts) {
+            return this.questionStepComplete(component, choices, texts, step)
+                ? Math.min(step + 1, component.questions.length - 1) : step
+        },
+
+        questionsComplete(component, choices, texts) {
+            return component.questions.every((q, i) => this.questionStepComplete(component, choices, texts, i))
+        },
+
+        async answerQuestions(message, index, choices, texts) {
+            const component = message.components[index]
+            if (this.busy || component.busy || component.status !== 'pending') return
+            if (!this.questionsComplete(component, choices, texts)) {
+                component.error = config.i18n.questionsRequired
+                return
+            }
+            component.error = null
+            component.busy = true
+            const draft = this.input
+            const answers = component.questions.map((q, i) => ({
+                option: Number.isInteger(choices[i]) && choices[i] >= 0 ? choices[i] : null,
+                text: Number.isInteger(choices[i]) && choices[i] >= 0 ? '' : (texts[i] || '').trim(),
+            }))
+            const summary = component.questions.map((q, i) => ({
+                question: q.question,
+                answer: [answers[i].option !== null ? q.options[answers[i].option].label : '', answers[i].text].filter(Boolean).join('; '),
+            }))
+            this.input = summary.map((a) => a.question + '\n' + a.answer).join('\n\n')
+            try {
+                const sending = this.send({ message_id: message.id, component: index, answers })
+                this.input = draft
+                if (await sending) {
+                    component.status = 'answered'
+                    component.answers = summary
+                }
+            } finally {
+                component.busy = false
+            }
+        },
+
+        async send(questionAnswer = null) {
             const question = this.input.trim()
 
             if (!question || this.busy || this.attachments.some((a) => a.uploading)) return
 
-            const files = this.attachments.filter((a) => a.id)
-            this.attachments = []
+            let accepted = false
+            const files = questionAnswer ? [] : this.attachments.filter((a) => a.id)
+            if (!questionAnswer) this.attachments = []
             this.input = ''
             this.busy = true
             this.notice = null
             this.lastQuestion = question
-            this.messages.push({ id: `local-${Date.now()}`, role: 'user', content: question, components: [], attachments: files })
+            const userMessageId = `local-${Date.now()}`
+            this.messages.push({ id: userMessageId, role: 'user', content: question, components: [], attachments: files })
 
             const answer = { id: `answer-${Date.now()}`, role: 'assistant', content: '', components: [], status: 'streaming', tool: null }
             this.messages.push(answer)
@@ -968,7 +1034,7 @@ document.addEventListener('alpine:init', () => {
                     headers: this.headers(false),
                     credentials: 'same-origin',
                     signal: this.abort.signal,
-                    body: JSON.stringify({ message: question, context: readContext(config), attachments: files.map((f) => f.id), replace_last: replaceLast || undefined, ...this.picks(question), ...this.playgroundDraft() }),
+                    body: JSON.stringify({ message: question, question_answer: questionAnswer || undefined, context: readContext(config), attachments: files.map((f) => f.id), replace_last: replaceLast || undefined, ...this.picks(question), ...this.playgroundDraft() }),
                 })
 
                 if (!response.ok || !response.body) {
@@ -979,6 +1045,7 @@ document.addEventListener('alpine:init', () => {
                     throw new Error(message)
                 }
 
+                accepted = true
                 await this.consume(response.body, target)
 
                 if (target.status === 'streaming') target.status = 'interrupted'
@@ -1002,6 +1069,12 @@ document.addEventListener('alpine:init', () => {
                 this.scrollToEnd()
                 this.$nextTick(() => this.$refs.input?.focus())
             }
+            if (questionAnswer && !accepted) {
+                // A rejected question submission must leave only the saved conversation.
+                const userIndex = this.messages.findIndex((m) => m.id === userMessageId)
+                if (userIndex >= 0) this.messages.splice(userIndex, 1)
+            }
+            return accepted
         },
 
         async consume(body, target) {

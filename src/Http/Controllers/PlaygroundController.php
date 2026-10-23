@@ -11,8 +11,10 @@ use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\Skill;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Tools\ArrayToolProvider;
+use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\SkillTool;
 use Filament\ChatAi\Tools\ToolDraft;
+use Filament\ChatAi\Ui\QuestionAnswer;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,6 +47,7 @@ class PlaygroundController
 
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
+            ...QuestionAnswer::rules(),
             'draft' => ['required', 'array'],
             'draft.mode' => ['required', 'in:'.ToolDraft::MODE_CODE.','.ToolDraft::MODE_CUSTOM],
             'draft.tool' => ['nullable', 'string', 'max:64'],
@@ -66,12 +69,16 @@ class PlaygroundController
             return response()->json(['message' => __('chatai::chatai.editor.incomplete')], 422);
         }
 
+        if (isset($validated['question_answer'])) {
+            $validated['message'] = QuestionAnswer::submit($conversation, $validated['question_answer']);
+        }
+
         // A change proposed here is confirmed against this same unsaved tool.
         Cache::put(self::draftKey($conversation->id), $validated['draft'], now()->addHour());
 
         // The skills chosen in the editor, saved or not, so a whole task can be tried.
         $skills = Skill::query()->whereIn('id', (array) ($validated['draft']['data']['skills'] ?? []))->orderBy('title')->get();
-        $tools = $skills->isEmpty() ? [$tool] : [$tool, SkillTool::make($skills)];
+        $tools = $skills->isEmpty() ? [$tool] : [$tool, SkillTool::make($skills, [$tool, ShowUiTool::make()])];
 
         $events = (new Orchestrator(app(LlmClient::class)))->run(
             conversation: $conversation,

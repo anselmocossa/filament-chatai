@@ -5,6 +5,7 @@ namespace Filament\ChatAi\Tools;
 use Filament\ChatAi\Models\CustomTool;
 use Filament\ChatAi\Models\Skill;
 use Filament\ChatAi\Support\ImageSource;
+use Filament\ChatAi\Support\ToolArguments;
 use Filament\ChatAi\Tools\NoCode\ResourceInspector;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,12 +25,14 @@ final class BuilderTools
 
     public const CREATE_SKILL = 'create_skill';
 
+    public const DESCRIBE_TOOLS = 'describe_tools';
+
     /**
      * @return array<int, ChatAiTool>
      */
-    public static function make(): array
+    public static function make(array $available = []): array
     {
-        return [self::describe(), self::createTool(), self::createSkill()];
+        return [self::describe(), self::describeTools($available), self::createTool(), self::createSkill($available)];
     }
 
     public static function describe(): ChatAiTool
@@ -78,11 +81,35 @@ final class BuilderTools
         );
     }
 
+    /** The snapshot has already been filtered for this user's access. */
+    public static function describeTools(array $available): ChatAiTool
+    {
+        $byName = collect($available)->keyBy('name');
+
+        return new ChatAiTool(
+            name: self::DESCRIBE_TOOLS,
+            description: 'Inspect the exact names, descriptions and input schemas of available tools before designing a reusable skill. With name, describe one tool; without it, list all. This does not execute tools. Use supported parameters and enum values exactly.',
+            inputSchema: ['type' => 'object', 'properties' => ['name' => ['type' => 'string']]],
+            handler: function (array $args) use ($byName): ToolResult {
+                $tools = filled($args['name'] ?? null) ? $byName->only($args['name']) : $byName;
+                if ($tools->isEmpty() && filled($args['name'] ?? null)) {
+                    return ToolResult::error('That tool is not available to this user. Use describe_tools without a name to see the available tools.');
+                }
+
+                return ToolResult::data(['tools' => $tools->map(fn (ChatAiTool $tool): array => array_filter([
+                    'name' => $tool->name, 'description' => $tool->description, 'parameters' => filled($args['name'] ?? null) ? $tool->inputSchema : null, 'read_only' => $tool->readOnly,
+                ], fn ($value) => $value !== null))->values()->all(), 'note' => 'Call describe_tools with a name for its full argument schema.']);
+            },
+            readOnly: true,
+            title: 'Tool contracts',
+        );
+    }
+
     public static function createTool(): ChatAiTool
     {
         return new ChatAiTool(
             name: self::CREATE_TOOL,
-            description: 'Gives the assistant a new ability, made on screen (no code): "resource" lists records, "metrics" gives totals for a period. '
+            description: 'Creates a reusable data query, not a multi-step workflow. For summaries, comparisons, recommendations or composing existing tools, use create_skill instead. Gives the assistant a new ability, made on screen (no code): "resource" lists records, "metrics" gives totals for a period. '
                 .'Call describe_data first and use only real columns and relations. The manager confirms before it is saved; it can be used from the next question and edited in Tools. '
                 .'config for "resource": {fields: [columns or "relation.column"], search: [columns], filters: [columns], date_field, sort, sort_dir: asc|desc, limit (≤50), '
                 .'conditions: [{column, operator: = != < <= > >= like null not_null, value | compare_column}], count_by, image, '
@@ -109,23 +136,24 @@ final class BuilderTools
         );
     }
 
-    public static function createSkill(): ChatAiTool
+    public static function createSkill(array $available = []): ChatAiTool
     {
         return new ChatAiTool(
             name: self::CREATE_SKILL,
-            description: 'Saves a skill: instructions the assistant follows for a kind of task (steps, tone, which tools to use). The manager confirms before it is saved.',
+            description: 'Creates a reusable capability by composing existing tools: comparisons, summaries, recommendations and multi-step tasks. A user may call this a tool. Inspect describe_tools first; use exact schemas and enum values. Put missing runtime inputs in the instructions to ask when the skill is used, not while creating it. The manager confirms before it is saved.',
             inputSchema: [
                 'type' => 'object',
                 'properties' => [
                     'name' => ['type' => 'string', 'title' => 'Name', 'description' => 'lowercase-with-dashes, unique'],
                     'title' => ['type' => 'string', 'title' => 'Title'],
                     'when_to_use' => ['type' => 'string', 'title' => 'When to use it', 'maxLength' => 500],
-                    'instructions' => ['type' => 'string', 'title' => 'Instructions', 'maxLength' => 10000],
+                    'instructions' => ['type' => 'string', 'title' => 'Instructions', 'minLength' => 1, 'maxLength' => 10000],
+                    'examples' => ['type' => 'string', 'title' => 'Call examples (JSON)', 'maxLength' => 10000, 'description' => 'Optional JSON list: [{tool, arguments}]. Each example is validated against the real tool schema but never executed. Use placeholder strings for variable inputs; use real enum values and typed numeric/boolean examples.'],
                     'tools' => ['type' => 'string', 'title' => 'Tools', 'description' => 'Tool names to use, comma-separated.'],
                 ],
                 'required' => ['name', 'title', 'when_to_use', 'instructions'],
             ],
-            handler: fn (array $args): ToolResult => self::saveSkill($args),
+            handler: fn (array $args): ToolResult => self::saveSkill($args, $available),
             readOnly: false,
             title: 'New skill for the assistant',
         );
@@ -187,7 +215,19 @@ final class BuilderTools
     /**
      * @param  array<string, mixed>  $args
      */
-    protected static function saveSkill(array $args): ToolResult
+    protected static function saveSkill(array $args, array $available): ToolResult
+    {
+        $prepared = self::prepareSkill($args, $available);
+        if ($prepared->isError()) {
+            return $prepared;
+        }
+        $skill = Skill::query()->create($prepared->data['definition']);
+
+        return ToolResult::data(['created' => $skill->name, 'note' => 'Saved and enabled. It applies from the next question.']);
+    }
+
+    /** Validate a proposal without persisting it or executing its example calls. */
+    public static function prepareSkill(array $args, array $available): ToolResult
     {
         $name = Str::slug((string) ($args['name'] ?? ''));
 
@@ -196,16 +236,43 @@ final class BuilderTools
         }
 
         $tools = array_values(array_filter(array_map('trim', explode(',', (string) ($args['tools'] ?? '')))));
+        $byName = collect($available)->keyBy('name');
+        $unknown = array_values(array_diff($tools, $byName->keys()->all()));
+        if ($unknown !== []) {
+            return ToolResult::error('Unavailable skill tools: '.implode(', ', $unknown).'. Inspect describe_tools and use only tools available to this user.');
+        }
+        $instructions = trim((string) ($args['instructions'] ?? ''));
+        if ($instructions === '' || trim((string) ($args['when_to_use'] ?? '')) === '') {
+            return ToolResult::error('Provide non-empty instructions and when_to_use for the reusable skill.');
+        }
+        if (filled($args['examples'] ?? null)) {
+            $examples = json_decode($args['examples'], true);
+            if (! is_array($examples) || ! array_is_list($examples) || count($examples) > 12) {
+                return ToolResult::error('examples must be a JSON list of at most 12 {tool, arguments} objects.');
+            }
+            $clean = [];
+            foreach ($examples as $example) {
+                $tool = is_array($example) && is_string($example['tool'] ?? null) ? $byName->get($example['tool']) : null;
+                if (! $tool || ! in_array($tool->name, $tools, true) || ! is_array($example['arguments'] ?? null)) {
+                    return ToolResult::error('Each example must name a declared skill tool and provide an arguments object.');
+                }
+                if (($error = ToolArguments::error($tool->inputSchema, $example['arguments'])) !== null) {
+                    return ToolResult::error('Invalid skill example for '.$tool->name.': '.$error);
+                }
+                $clean[] = ['tool' => $tool->name, 'arguments' => (object) $example['arguments']];
+            }
+            if ($clean !== []) {
+                $instructions .= "\n\nValidated call examples (substitute runtime inputs; do not treat example values as user choices):\n".json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
 
-        Skill::query()->create([
+        return ToolResult::data(['definition' => [
             'name' => $name,
             'title' => Str::limit(trim((string) ($args['title'] ?? '')) ?: $name, 120, ''),
             'when_to_use' => trim((string) ($args['when_to_use'] ?? '')),
-            'instructions' => trim((string) ($args['instructions'] ?? '')),
+            'instructions' => $instructions,
             'tools' => $tools ?: null,
             'enabled' => true,
-        ]);
-
-        return ToolResult::data(['created' => $name, 'note' => 'Saved and enabled. It applies from the next question.']);
+        ]]);
     }
 }

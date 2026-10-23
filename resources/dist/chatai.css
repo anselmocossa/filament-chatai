@@ -229,6 +229,12 @@
     border-bottom-left-radius: 0.35rem;
 }
 
+.fi-chatai-prose :is(h1, h2, h3, h4, h5, h6) { margin: 0.85rem 0 0.4rem; font-weight: 650; line-height: 1.35; }
+.fi-chatai-prose :is(h1, h2, h3, h4, h5, h6):first-child { margin-top: 0; }
+.fi-chatai-prose h1 { font-size: 1.3em; }
+.fi-chatai-prose h2 { font-size: 1.15em; }
+.fi-chatai-prose h3 { font-size: 1.05em; }
+.fi-chatai-prose :is(h4, h5, h6) { font-size: 1em; }
 .fi-chatai-prose p + p,
 .fi-chatai-prose p + ul,
 .fi-chatai-prose p + ol,
@@ -778,3 +784,43 @@ body:has(.fi-chatai-page) .fi-chatai-floating { display: none; }
 @media (prefers-reduced-motion: reduce) {
     .fi-chatai-floating *, .fi-chatai-page * { transition: none !important; animation: none !important; }
 }
+
+/* Compact clarification card, anchored immediately above the chat composer. */
+.fi-chatai-questions { border: 1px solid var(--chatai-border); border-radius: 1rem; padding: 0.85rem 1rem; background: var(--chatai-bubble); min-width: 0; }
+.fi-chatai-question-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; color: var(--chatai-muted); font-size: 0.75rem; margin-bottom: 0.85rem; }
+.fi-chatai-question-heading-label { display: inline-flex; align-items: center; gap: 0.45rem; }
+.fi-chatai-question-heading-label svg { width: 0.95rem; height: 0.95rem; }
+.fi-chatai-question-progress { font-variant-numeric: tabular-nums; }
+.fi-chatai-question { border: 0; padding: 0; margin: 0; min-width: 0; }
+.fi-chatai-question legend { font-size: 0.86rem; font-weight: 600; line-height: 1.5; margin-bottom: 0.6rem; overflow-wrap: anywhere; }
+.fi-chatai-question-options { display: grid; gap: 0.2rem; }
+.fi-chatai-question-option { position: relative; display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.45rem 0.25rem; border-radius: 0.45rem; cursor: pointer; font-size: 0.82rem; }
+.fi-chatai-question-option:hover { background: color-mix(in oklab, var(--chatai-text) 4%, transparent); }
+.fi-chatai-question-option.fi-selected { background: color-mix(in oklab, var(--chatai-accent) 10%, transparent); }
+.fi-chatai-question-option:focus-within { outline: 1px solid var(--chatai-accent); outline-offset: 1px; }
+.fi-chatai-question-radio { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fi-chatai-question-number { display: grid; place-items: center; flex-shrink: 0; width: 1.2rem; height: 1.2rem; border: 1px solid var(--chatai-border); border-radius: 0.25rem; background: color-mix(in oklab, var(--chatai-text) 5%, transparent); color: var(--chatai-muted); font-size: 0.72rem; line-height: 1; }
+.fi-chatai-question-option.fi-selected .fi-chatai-question-number { border-color: var(--chatai-accent); color: var(--chatai-text); }
+.fi-chatai-question-option-text { min-width: 0; overflow-wrap: anywhere; }
+.fi-chatai-question-option-text strong { display: block; font-weight: 400; line-height: 1.45; }
+.fi-chatai-question-option-text small { display: block; color: var(--chatai-muted); margin-top: 0.1rem; font-size: 0.74rem; }
+.fi-chatai-question:disabled { opacity: 0.65; }
+.fi-chatai-question-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.85rem; }
+.fi-chatai-question-free-inline { display: flex; align-items: center; gap: 0.55rem; flex: 1 1 10rem; min-width: 0; color: var(--chatai-muted); }
+.fi-chatai-question-free-inline svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+.fi-chatai-question-free-inline input { width: 100%; min-width: 0; border: 0; outline: none; padding: 0.3rem 0; background: transparent; color: var(--chatai-text); font-size: 0.82rem; box-shadow: none; }
+.fi-chatai-question-free-inline input::placeholder { color: var(--chatai-muted); opacity: 0.7; }
+.fi-chatai-question-free-inline.fi-selected svg { color: var(--chatai-accent); }
+.fi-chatai-question-free-inline:focus-within { outline: 1px solid var(--chatai-border); outline-offset: 3px; border-radius: 0.3rem; }
+.fi-chatai-question-footer-buttons { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+.fi-chatai-question-button { padding: 0.3rem 0.7rem; border: 1px solid var(--chatai-border); border-radius: 9999px; color: var(--chatai-text); font-size: 0.78rem; line-height: 1.3; }
+.fi-chatai-question-button:hover { background: color-mix(in oklab, var(--chatai-text) 8%, transparent); }
+.fi-chatai-question-button.fi-primary { background: var(--chatai-text); border-color: transparent; color: var(--chatai-bg); }
+.fi-chatai-question-button:disabled { opacity: 0.35; cursor: default; }
+.fi-chatai-question-badge { color: var(--chatai-muted); font-size: 0.75rem; }
+.fi-chatai-question-summary { display: grid; gap: 0.8rem; font-size: 0.85rem; overflow-wrap: anywhere; }
+.fi-chatai-question-summary dt { font-weight: 600; }
+.fi-chatai-question-summary dd { margin: 0.2rem 0 0; color: var(--chatai-muted); white-space: pre-wrap; }
+.fi-chatai-question-dock { flex-shrink: 0; min-height: 0; max-height: 55%; overflow-y: auto; overscroll-behavior: contain; padding: 0 0.9rem; background: var(--chatai-bg); }
+.fi-chatai-main .fi-chatai-question-dock { width: 100%; max-width: 48rem; margin-inline: auto; }
+.fi-chatai-composer.fi-chatai-has-questions { padding-top: 0.45rem; }

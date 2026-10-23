@@ -3,6 +3,7 @@
 namespace Filament\ChatAi\Tools;
 
 use Closure;
+use Filament\ChatAi\Support\ToolArguments;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -31,13 +32,17 @@ final class ChatAiTool
     public function call(array $arguments): ToolResult
     {
         try {
+            if (($error = ToolArguments::error($this->inputSchema, $arguments)) !== null) {
+                return ToolResult::error($error);
+            }
+
             return ($this->handler)($arguments);
         } catch (AuthorizationException) {
             return ToolResult::error('The user does not have permission to do this.');
         } catch (Throwable $e) {
             Log::warning("[chatai] tool {$this->name} failed: {$e->getMessage()}", ['exception' => $e]);
 
-            return ToolResult::error('The tool failed: '.$e->getMessage());
+            return ToolResult::error('The tool failed unexpectedly. Internal details are available to the administrator.');
         }
     }
 

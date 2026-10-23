@@ -22,6 +22,7 @@ use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\ToolCode;
 use Filament\ChatAi\Tools\ToolResult;
+use Filament\ChatAi\Ui\ComponentValidator;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Gate;
@@ -295,4 +296,21 @@ it('describes only the data the user may open', function () {
 
     expect($listed())->toBe([])
         ->and(($describe->handler)(['resource' => OrderResource::class])->isError())->toBeTrue();
+});
+
+it('answers clarification questions in the tool editors test chat', function () {
+    $this->withoutMiddleware(VerifyCsrfToken::class);
+    $conversation = Conversation::start(auth()->user(), 'admin:playground');
+    $message = $conversation->addMessage('assistant', '', ['components' => [(new ComponentValidator)->validate([
+        'type' => 'questions', 'questions' => [['question' => 'Qual formato?', 'options' => [['label' => 'Tabela']]]],
+    ])]]);
+    app()->instance(LlmClient::class, FakeLlmClient::script([['Recebido.']]));
+    $response = $this->postJson(route('filament.admin.chatai.playground.messages', $conversation), [
+        'message' => 'label from client',
+        'question_answer' => ['message_id' => $message->id, 'component' => 0, 'answers' => [['option' => 0]]],
+        'draft' => ['mode' => 'code', 'tool' => 'sales-stats', 'data' => ['enabled' => true]],
+    ])->assertOk();
+    expect($response->streamedContent())->toContain('event: done')
+        ->and($message->fresh()->components[0]['status'])->toBe('answered')
+        ->and($conversation->messages()->where('role', 'user')->first()->content)->toBe("Qual formato?\nTabela");
 });

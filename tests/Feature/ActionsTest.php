@@ -5,6 +5,7 @@ use Filament\ChatAi\Llm\LlmClient;
 use Filament\ChatAi\Models\Conversation;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
+use Filament\ChatAi\Models\ToolOverride;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Testing\FakeLlmClient;
@@ -155,4 +156,59 @@ it('turns several changes of one tool into a single list approved at once, leavi
 
     $this->getJson(route('filament.admin.chatai.conversations.show', $conversation))
         ->assertJsonFragment(['type' => 'confirm_batch', 'status' => 'done']);
+});
+
+it('rechecks availability at confirmation after a tool is disabled', function () {
+    [, $action] = proposeChange();
+    ToolOverride::create(['tool_name' => 'adjust-stock', 'enabled' => false]);
+    $this->postJson(route('filament.admin.chatai.actions.confirm', $action))->assertOk()->assertJsonPath('status', 'failed');
+    expect($this->runs)->toBe(0)->and($action->fresh()->status)->toBe(ToolAction::FAILED);
+});
+
+it('reopens a confirmed change whose argument is a list', function () {
+    $seen = ['args' => null];
+    actionPlugin()->tools(function () use (&$seen) {
+        return [new ChatAiTool('criar-grupo', 'Create a group of candidates', [
+            'type' => 'object',
+            'properties' => [
+                'nome' => ['type' => 'string', 'title' => 'Nome'],
+                'candidatos' => ['type' => 'array', 'items' => ['type' => 'integer'], 'title' => 'Candidatos'],
+            ],
+            'required' => ['nome', 'candidatos'],
+        ], function (array $args) use (&$seen) {
+            $seen['args'] = $args;
+
+            return ToolResult::data(['nome' => $args['nome'], 'total' => count($args['candidatos'])]);
+        }, readOnly: false, title: 'Criar grupo')];
+    });
+    app()->instance(LlmClient::class, FakeLlmClient::script([
+        [FakeLlmClient::call('criar-grupo', ['nome' => 'Teste Assistente', 'candidatos' => [8835, 8820]])],
+        ['Confirme o grupo.'],
+    ]));
+
+    $conversation = Conversation::start($this->user, 'admin');
+    $this->actingAs($this->user)->post(route('filament.admin.chatai.messages.store', $conversation), ['message' => 'Cria o grupo'])->assertOk()->streamedContent();
+    $action = ToolAction::query()->sole();
+
+    $this->postJson(route('filament.admin.chatai.actions.confirm', $action))->assertOk()->assertJsonPath('status', 'done');
+
+    expect($seen['args'])->toBe(['nome' => 'Teste Assistente', 'candidatos' => [8835, 8820]]);
+
+    $this->getJson(route('filament.admin.chatai.conversations.show', $conversation))
+        ->assertOk()
+        ->assertJsonFragment(['key' => 'candidatos', 'value' => '[8835,8820]'])
+        ->assertJsonFragment(['type' => 'confirm', 'status' => 'done']);
+});
+
+it('rechecks the current schema before running an older confirmed proposal', function () {
+    [, $action] = proposeChange();
+    actionPlugin()->tools(fn () => [new ChatAiTool('adjust-stock', 'Adjust stock', [
+        'type' => 'object', 'properties' => ['quantity' => ['type' => 'integer', 'minimum' => 10]],
+    ], function () {
+        $this->runs++;
+
+        return ToolResult::data([]);
+    })]);
+    $this->postJson(route('filament.admin.chatai.actions.confirm', $action))->assertOk()->assertJsonPath('status', 'failed');
+    expect($this->runs)->toBe(0)->and($action->fresh()->result['error'])->toContain('quantity');
 });

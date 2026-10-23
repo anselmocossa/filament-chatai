@@ -18,7 +18,7 @@ final class ShowUiTool
             name: self::NAME,
             description: 'Show numbers, lists and trends visually instead of writing them as text: '
                 .'kpi for 1-4 headline figures, table for lists, cards (in "items") for records with pictures, map for anything by country or place, chart for trends over time or shares, '
-                .'suggestions for 2-4 short follow-up questions. Use only data you got from other tools.',
+                .'suggestions for 2-4 short follow-up questions; questions for clarification with selectable options and free text (1-3 questions). Ask clarification through this tool instead of prose, then wait. Use real tool data for figures and records.',
             inputSchema: Catalog::showToolSchema(),
             handler: fn (array $arguments): ToolResult => ToolResult::text('Shown to the user.'),
             readOnly: true,

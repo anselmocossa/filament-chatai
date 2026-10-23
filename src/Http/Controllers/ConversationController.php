@@ -7,6 +7,7 @@ use Filament\ChatAi\Models\ConversationFile;
 use Filament\ChatAi\Models\ConversationGroup;
 use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
+use Filament\ChatAi\Support\ActionForm;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -127,7 +128,7 @@ class ConversationController
 
             // Show the values it actually ran with (the user may have edited the form).
             $fields = array_map(fn (array $f): array => isset($f['key']) && array_key_exists($f['key'], (array) $action->arguments)
-                ? [...$f, 'value' => is_bool($action->arguments[$f['key']]) ? $action->arguments[$f['key']] : (string) $action->arguments[$f['key']]]
+                ? [...$f, 'value' => ActionForm::shown($action->arguments[$f['key']])]
                 : $f, (array) ($c['fields'] ?? []));
 
             return [...$c, 'fields' => $fields, 'status' => $action->status, 'result' => $action->status === ToolAction::DONE ? $action->resultFields() : []];

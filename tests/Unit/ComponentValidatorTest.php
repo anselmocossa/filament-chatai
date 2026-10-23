@@ -61,7 +61,7 @@ it('describes the component types in the show_ui tool schema', function () {
     expect($schema['type'])->toBe('object')
         ->and($schema['required'])->toBe(['components'])
         ->and($schema['properties']['components']['items']['properties']['type']['enum'])
-        ->toBe(['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions'])
+        ->toBe(['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions', 'questions'])
         ->and(json_encode($schema))->toBeJson();
 });
 

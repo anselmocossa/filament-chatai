@@ -258,6 +258,10 @@ When no tool answers, the assistant reads the resource itself (`query_data`): it
 
 A manager can ask for something no tool answers yet — *"I want the employees sorted by date of birth, you have no tool for that: build it"*. The assistant looks at the panel's data (`describe_data`), then proposes a new **list** or **totals** tool built only from real columns and relations, or a **skill**. The proposal is a confirmation card the manager can edit; on **Confirm** the tool must answer a test call before it is saved, and it answers from the next question. It shows up in **Tools**, where it can be adjusted or switched off like any tool made on screen.
 
+For reusable summaries, comparisons and tasks that combine existing tools, the assistant proposes a **skill**. Record names, dates and reference profiles are requested when the skill is used. Creating the skill does not require choosing those records or running the task first. `describe_tools` lists the tools available to the current user; a request with `name` returns that tool's exact input schema without executing it.
+
+Skill proposals check that their declared tools exist and are available. Optional JSON call examples are checked against those schemas without running them; invalid examples are returned to the model for correction before showing a confirmation card. Loading a skill includes the current schemas of its available dependencies, so old parameter names and enum values can be corrected. Every tool call validates its arguments before its handler runs, without converting their types. Structural validation cannot prove that all prose in a skill is correct.
+
 Only managers get this, and only while tools that change data are allowed. It never writes code. Switch it off in **Settings → Permissions** (`chatai.builder.enabled`).
 
 ## Several changes at once
@@ -312,9 +316,23 @@ Say *"remember that I look after the Maputo store"* or *"call me Boss and keep a
 - With the chat empty it suggests up to four questions: for the page on screen (*"Summarise this record"*, *"Is anything odd or missing here?"* on an edit page; *"Help me fill in this form"* on a create page; *"Summarise this list"* on a list) plus the ones you set in **Settings → Assistant** or in code with `->starters(['How did sales go this week?'])` (or a closure receiving the user).
 - **⌘/Ctrl + J** opens and closes the chat; change the key or switch it off in Settings.
 
+## Interactive clarification questions
+
+When the assistant needs to clarify the user's intent, it asks through a form in the conversation: up to three questions, each with optional choices and a free-text answer. Nothing is preselected. A compact card with numbered options and a one-line custom answer stays anchored immediately above the message composer while the conversation history scrolls. Questions appear one at a time with a progress indicator, **Back** and **Next**. Answers stay filled when going back. On the last step, the user presses **Send answers**; the assistant continues in the same conversation. The answered form stays in the history after reloading. Available in full-page chat, floating chat and the tool editor's test chat.
+
+The model uses `show_ui` with this component (the system prompt teaches it the format):
+
+```json
+{"components":[{"type":"questions","title":"Before continuing","questions":[{"question":"What would you like to do?","options":[{"label":"Summarise","description":"One record"},{"label":"Compare","description":"Several records"}]},{"question":"Which area?"}]}]}
+```
+
+Showing questions ends the turn and waits for the user. Answers are checked against the saved questions, kept on the original message, and sent as a normal user turn. Empty answers, invalid options and duplicate submissions are rejected. Forms that confirm data changes still use the existing confirmation flow.
+
 ## Answer controls
 
 Every answer can be **copied**, **answered again**, and rated **👍 / 👎** (a 👎 can say what went wrong); the last question can be **edited** — the last exchange is replaced, not added to. **Stop** ends an answer mid-way: the server stops at its next safe point and keeps what was written. Ratings and comments show in **Logs**, with a filter, so whoever looks after the assistant sees what went wrong.
+
+Stop is also checked between tools returned in the same round: remaining handlers and new write proposals do not start. A handler already running finishes before the stop takes effect. If the provider returns no text and no usable UI, the user gets an explicit failure message; if this happens after the tool-step limit, the message explains that limit. Unexpected handler exception details remain in server logs.
 
 > Stop and long answers need the server to take more than one request at a time (php-fpm, Octane…). With `php artisan serve` use `PHP_CLI_SERVER_WORKERS=4 php artisan serve --no-reload`. A turn may take up to `chatai.max_turn_seconds` (300 s).
 
@@ -380,6 +398,8 @@ composer test
 ```
 
 Use `Filament\ChatAi\Testing\FakeLlmClient::script([...])` to script the model in your own tests.
+
+The harness regression scenarios cover invalid arguments, unknown tools, failure recovery, Stop within a batch, exhausted steps, malformed UI and confirmation after tool availability or schema changes. See [the evaluation and remaining limits](docs/investigations/2026-10-23-harness.md) and the [documentation index](docs/README.md).
 
 ## Changelog
 

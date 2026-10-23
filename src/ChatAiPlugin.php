@@ -158,14 +158,14 @@ class ChatAiPlugin implements Plugin
 
         $panel
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => $this->isAccessible()
-                ? '<link rel="stylesheet" href="'.e(FilamentAsset::getStyleHref('chatai', 'anselmokossa/filament-chatai')).'">'
+                ? '<link rel="stylesheet" href="'.e(FilamentAsset::getStyleHref('chatai', 'anselmokossa/filament-chatai').'&build='.substr(hash_file('sha256', __DIR__.'/../resources/dist/chatai.css'), 0, 12)).'">'
                 : '')
             ->renderHook(PanelsRenderHook::BODY_START, fn (): string => $this->isAccessible()
                 ? '<script type="application/json" id="chatai-context">'.json_encode(ContextResolver::current(), JSON_HEX_TAG | JSON_HEX_AMP).'</script>'
                 : '')
             // Before Alpine starts, so the chataiChat component is defined in time.
             ->renderHook(PanelsRenderHook::SCRIPTS_BEFORE, fn (): string => $this->isAccessible()
-                ? '<script src="'.e(FilamentAsset::getScriptSrc('chatai', 'anselmokossa/filament-chatai')).'"></script>'
+                ? '<script src="'.e(FilamentAsset::getScriptSrc('chatai', 'anselmokossa/filament-chatai').'&build='.substr(hash_file('sha256', __DIR__.'/../resources/dist/chatai.js'), 0, 12)).'"></script>'
                 : '')
             ->renderHook(PanelsRenderHook::BODY_END, fn (): string => $this->floatingWidget && $this->isAccessible()
                 ? Blade::render("@livewire('chatai-floating')")
@@ -225,6 +225,7 @@ class ChatAiPlugin implements Plugin
                 'max' => (int) config('chatai.files.max_per_message', 5),
             ],
             'i18n' => [
+                'questionsRequired' => __('chatai::chatai.questions.required'),
                 'unavailable' => __('chatai::chatai.unavailable'),
                 'confirmDelete' => __('chatai::chatai.confirm_delete'),
                 'micDenied' => __('chatai::chatai.mic_denied'),

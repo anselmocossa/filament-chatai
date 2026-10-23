@@ -38,6 +38,13 @@ it('reports missing and wrong values, and casts the good ones', function () use 
         ->and($values)->toBe(['name' => 'Ana', 'email' => 'ana@x.mz', 'units' => 4, 'status' => 'new', 'birthday' => '1990-12-31', 'vip' => true]);
 });
 
+it('shows a list as JSON the form can read back', function () {
+    expect(ActionForm::shown([8835, 8820]))->toBe('[8835,8820]')
+        ->and(ActionForm::shown(null))->toBe('')
+        ->and(ActionForm::shown(false))->toBeFalse()
+        ->and(ActionForm::shown(12))->toBe('12');
+});
+
 it('reads a list typed into one field', function () {
     $schema = [
         'type' => 'object',

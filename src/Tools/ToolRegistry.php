@@ -62,10 +62,6 @@ class ToolRegistry implements ToolProvider
                 : $tool;
         }
 
-        if (($skills = self::skills())->isNotEmpty()) {
-            $tools[SkillTool::NAME] = SkillTool::make($skills);
-        }
-
         // Any resource the user may see can be read, when no tool of its own answers.
         if (config('chatai.query_data.enabled', true) && (! $guarded || ChatAiPermissions::allows($user, ChatAiPermissions::forTool(QueryDataTool::NAME)))) {
             $tools[QueryDataTool::NAME] ??= QueryDataTool::make();
@@ -74,9 +70,13 @@ class ToolRegistry implements ToolProvider
 
         // Managers can have the assistant build new tools and skills for itself (each one confirmed).
         if ($actions && config('chatai.builder.enabled', true) && self::table('chatai_custom_tools') && self::manages()) {
-            foreach (BuilderTools::make() as $tool) {
+            foreach (BuilderTools::make([...array_values($tools), ShowUiTool::make()]) as $tool) {
                 $tools[$tool->name] ??= $tool;
             }
+        }
+
+        if (($skills = self::skills())->isNotEmpty()) {
+            $tools[SkillTool::NAME] = SkillTool::make($skills, [...array_values($tools), ShowUiTool::make()]);
         }
 
         return array_values($tools);

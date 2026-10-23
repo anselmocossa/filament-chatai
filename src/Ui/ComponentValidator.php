@@ -70,6 +70,7 @@ class ComponentValidator
             'records' => $this->records($component),
             'map' => $this->map($component),
             'suggestions' => $this->suggestions($component),
+            'questions' => $this->questions($component),
         };
     }
 
@@ -540,6 +541,34 @@ class ComponentValidator
             'unit' => $this->scalar($c['unit'] ?? null) ? $this->str($c['unit'], 30) : null,
             'markers' => $markers,
         ]);
+    }
+
+    protected function questions(array $c): ?array
+    {
+        $questions = [];
+
+        foreach (array_slice($this->list($c['questions'] ?? []), 0, Catalog::MAX_QUESTIONS) as $question) {
+            if (! is_array($question) || ! is_string($question['question'] ?? null) || trim($question['question']) === '') {
+                continue;
+            }
+
+            $options = [];
+            foreach (array_slice($this->list($question['options'] ?? []), 0, Catalog::MAX_OPTIONS) as $option) {
+                if (is_string($option)) {
+                    $option = ['label' => $option];
+                }
+                if (! is_array($option) || ! is_string($option['label'] ?? null) || trim($option['label']) === '') {
+                    continue;
+                }
+                $options[] = array_filter([
+                    'label' => $this->str($option['label'], 160),
+                    'description' => is_string($option['description'] ?? null) ? $this->str($option['description'], 240) : null,
+                ], fn ($v) => $v !== null);
+            }
+            $questions[] = ['question' => $this->str($question['question'], 300), 'options' => $options];
+        }
+
+        return $questions === [] ? null : ['type' => 'questions', 'title' => $this->title($c), 'questions' => $questions, 'status' => 'pending'];
     }
 
     protected function suggestions(array $c): ?array
