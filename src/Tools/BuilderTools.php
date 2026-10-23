@@ -47,9 +47,18 @@ final class BuilderTools
             handler: function (array $args): ToolResult {
                 $resource = ResourceInspector::resource($args['resource'] ?? null);
 
+                // Only what the user may open: the column names of a resource they
+                // cannot see are not theirs to read either.
+                $mayView = fn (string $class): bool => rescue(fn (): bool => $class::canViewAny(), false, false);
+
                 if ($resource === null) {
                     return ToolResult::data(['resources' => collect(ResourceQueryTool::panelResources())
+                        ->filter(fn (string $label, string $id): bool => $mayView($id))
                         ->map(fn (string $label, string $id): array => ['resource' => $id, 'label' => $label])->values()->all()]);
+                }
+
+                if (! $mayView($resource)) {
+                    return ToolResult::error('The user does not have permission to see these records.');
                 }
 
                 $model = ResourceInspector::model($resource);

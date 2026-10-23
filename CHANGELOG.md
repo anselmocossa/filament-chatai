@@ -4,6 +4,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.2] - 2026-10-23
+
+### Security
+- `describe_data` listed every resource of the panel and described the columns and relations of any of them, whatever the user's permissions. The data itself was never reachable — `query_data` and the resource tools check `canViewAny()` — but the shape of it was: a user who may only see job posts could read the column names of candidates, their attachments and their scores. It now lists only what the user may open, and refuses to describe anything else.
+
 ## [1.3.1] - 2026-10-23
 
 ### Fixed

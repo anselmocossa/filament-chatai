@@ -15,13 +15,16 @@ use Filament\ChatAi\Pages\ChatAiSkillsPage;
 use Filament\ChatAi\Pages\ChatAiToolEditorPage;
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Testing\FakeLlmClient;
+use Filament\ChatAi\Tests\Fixtures\Shop\OrderResource;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\ChatAi\Tests\Fixtures\UserResource;
+use Filament\ChatAi\Tools\BuilderTools;
 use Filament\ChatAi\Tools\ChatAiTool;
 use Filament\ChatAi\Tools\ToolCode;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
@@ -279,4 +282,17 @@ it('chooses the Shield permission of a tool in its editor', function () {
         ->assertHasNoFormErrors();
 
     expect(ToolOverride::query()->where('tool_name', 'sales-stats')->value('permission'))->toBe('ViewAny:Order');
+});
+
+it('describes only the data the user may open', function () {
+    $describe = BuilderTools::describe();
+    $listed = fn (): array => collect(($describe->handler)([])->data['resources'] ?? [])->pluck('resource')->all();
+
+    expect($listed())->toContain(OrderResource::class);
+
+    // What the user may not open is neither listed nor described.
+    Gate::before(fn (): bool => false);
+
+    expect($listed())->toBe([])
+        ->and(($describe->handler)(['resource' => OrderResource::class])->isError())->toBeTrue();
 });
