@@ -67,6 +67,7 @@ class ComponentValidator
             'table' => $this->table($component),
             'chart' => $this->chart($component),
             'cards' => $this->cards($component),
+            'records' => $this->records($component),
             'map' => $this->map($component),
             'suggestions' => $this->suggestions($component),
         };
@@ -371,6 +372,88 @@ class ComponentValidator
 
         return $items === [] ? null : array_filter([
             'type' => 'cards',
+            'title' => $this->title($c),
+            'items' => $items,
+            'link' => $this->link($c['link'] ?? null),
+        ]);
+    }
+
+    /**
+     * Full-width sheets, one per record: the heading with its fields beside it,
+     * then sections holding a paragraph or a list. For when the user has to read
+     * each record (a candidate's summary, work history and education) and a card
+     * is too small to tell them apart.
+     *
+     * @param  array<string, mixed>  $c
+     * @return array<string, mixed>|null
+     */
+    protected function records(array $c): ?array
+    {
+        $items = [];
+
+        foreach (array_slice($this->list($c['items'] ?? $c['records'] ?? []), 0, Catalog::MAX_RECORDS) as $item) {
+            if (! is_array($item) || ! $this->scalar($item['title'] ?? null)) {
+                continue;
+            }
+
+            $fields = [];
+
+            foreach (array_slice($this->list($item['fields'] ?? []), 0, 6) as $field) {
+                if (is_array($field) && $this->scalar($field['label'] ?? null) && $this->scalar($field['value'] ?? null)) {
+                    $fields[] = ['label' => $this->str($field['label'], 40), 'value' => $this->str($field['value'], 120)];
+                }
+            }
+
+            $badges = [];
+
+            foreach (array_slice($this->list($item['badges'] ?? []), 0, 3) as $badge) {
+                if ($this->scalar($badge)) {
+                    $badges[] = $this->str($badge, 30);
+                }
+            }
+
+            $sections = [];
+
+            foreach (array_slice($this->list($item['sections'] ?? []), 0, Catalog::MAX_RECORD_SECTIONS) as $section) {
+                if (! is_array($section) || ! $this->scalar($section['heading'] ?? null)) {
+                    continue;
+                }
+
+                $lines = [];
+
+                foreach (array_slice($this->list($section['items'] ?? []), 0, 8) as $line) {
+                    if ($this->scalar($line)) {
+                        $lines[] = $this->str($line, 300);
+                    }
+                }
+
+                $text = $this->scalar($section['text'] ?? null) ? $this->str($section['text'], 1200) : null;
+
+                if ($text === null && $lines === []) {
+                    continue;
+                }
+
+                $sections[] = array_filter([
+                    'heading' => $this->str($section['heading'], 60),
+                    'text' => $text,
+                    'items' => $lines ?: null,
+                ], fn ($v) => $v !== null);
+            }
+
+            $items[] = array_filter([
+                'title' => $this->str($item['title'], 80),
+                'subtitle' => $this->scalar($item['subtitle'] ?? null) ? $this->str($item['subtitle'], 160) : null,
+                'image' => $this->imageUrl($item['image'] ?? null),
+                'badges' => $badges ?: null,
+                'fields' => $fields ?: null,
+                'sections' => $sections ?: null,
+                'url' => $this->internalUrl($item['url'] ?? null) ? (string) $item['url'] : null,
+                'actions' => $this->actions($item['actions'] ?? null) ?: null,
+            ], fn ($v) => $v !== null);
+        }
+
+        return $items === [] ? null : array_filter([
+            'type' => 'records',
             'title' => $this->title($c),
             'items' => $items,
             'link' => $this->link($c['link'] ?? null),

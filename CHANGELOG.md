@@ -4,6 +4,14 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.2.0] - 2026-10-23
+
+### Added
+- **Record sheets** (`records`), a component for lists the user has to read rather than scan: one full-width sheet per record, with the heading and its fields side by side, up to three badges, and up to four sections holding a paragraph (`text`) or a list (`items`) — a summary, a work history, an education. Cards stay for galleries; a sheet is for when a card is too small to tell two records apart. Max 10 per component.
+
+### Fixed
+- `show_ui` called without any component — typically `component` (an object) instead of `components` (a list) — was answered with «Shown to the user». The model believed it had drawn something, said nothing more, and the user was left with an empty answer. It is now an error that tells the model the expected shape, so it calls again. Smaller models hit this often.
+
 ### Security
 - A security policy in [SECURITY.md](SECURITY.md): private advisory reporting, what counts as a vulnerability in an assistant that calls tools, and what to expect after a report.
 - The actions in the test workflow are pinned to a commit SHA, so a moved tag cannot change what runs in CI. Dependabot now watches Composer and the actions weekly and holds a release back for a few days before proposing it.

@@ -157,6 +157,69 @@
     </div>
 </template>
 
+{{-- records: one full-width sheet per record, for lists the user has to read --}}
+<template x-if="component.type === 'records'">
+    <div class="fi-chatai-records-wrap">
+        <p class="fi-chatai-component-title" x-show="component.title" x-text="component.title"></p>
+        <div class="fi-chatai-records">
+            <template x-for="(record, i) in component.items" :key="i">
+                <article class="fi-chatai-record">
+                    <header class="fi-chatai-record-header">
+                        <div class="fi-chatai-record-identity">
+                            <template x-if="record.image">
+                                <img class="fi-chatai-record-avatar" :src="record.image" :alt="record.title" loading="lazy" x-on:error="$el.remove()">
+                            </template>
+                            <div class="fi-chatai-record-naming">
+                                <span class="fi-chatai-record-title" :class="{ 'fi-chatai-row-link': record.url }"
+                                      x-on:click="record.url && openRecord(record.url)"
+                                      :title="record.url ? @js(__('chatai::chatai.open_record')) : null"
+                                      x-text="record.title"></span>
+                                <span class="fi-chatai-record-subtitle" x-show="record.subtitle" x-text="record.subtitle"></span>
+                                <div class="fi-chatai-record-badges" x-show="record.badges?.length">
+                                    <template x-for="(badge, b) in record.badges" :key="b">
+                                        <span class="fi-chatai-badge" x-text="badge"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <dl class="fi-chatai-record-fields" x-show="record.fields?.length">
+                            <template x-for="(field, f) in record.fields" :key="f">
+                                <div><dt x-text="field.label"></dt><dd x-text="field.value"></dd></div>
+                            </template>
+                        </dl>
+
+                        <div class="fi-chatai-record-actions" x-show="record.actions?.length">
+                            <template x-for="(action, a) in record.actions" :key="a">
+                                <button type="button" class="fi-chatai-card-action" :disabled="busy && ! action.url"
+                                        x-on:click.stop="action.url ? openRecord(action.url) : ask(action.prompt)" x-text="action.label"></button>
+                            </template>
+                        </div>
+                    </header>
+
+                    <div class="fi-chatai-record-sections" x-show="record.sections?.length">
+                        <template x-for="(section, se) in record.sections" :key="se">
+                            <section class="fi-chatai-record-section">
+                                <h4 x-text="section.heading"></h4>
+                                <p x-show="section.text" x-text="section.text"></p>
+                                <ul x-show="section.items?.length">
+                                    <template x-for="(line, l) in section.items" :key="l">
+                                        <li x-text="line"></li>
+                                    </template>
+                                </ul>
+                            </section>
+                        </template>
+                    </div>
+                </article>
+            </template>
+        </div>
+        <div class="fi-chatai-table-footer" x-show="component.link">
+            <span></span>
+            <a :href="component.link" class="fi-chatai-link">{{ __('chatai::chatai.see_all') }} →</a>
+        </div>
+    </div>
+</template>
+
 {{-- map: markers or country bubbles (Leaflet, loaded on first use) --}}
 <template x-if="component.type === 'map'">
     <div class="fi-chatai-map-wrap">

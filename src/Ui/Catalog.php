@@ -8,7 +8,7 @@ namespace Filament\ChatAi\Ui;
  */
 final class Catalog
 {
-    public const TYPES = ['kpi', 'table', 'chart', 'cards', 'map', 'suggestions'];
+    public const TYPES = ['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions'];
 
     /** Only built by server tools (never by show_ui): a document to download. */
     public const FILE = 'file';
@@ -37,6 +37,11 @@ final class Catalog
     public const MAX_SUGGESTIONS = 4;
 
     public const MAX_CARDS = 12;
+
+    /** Full-width record sheets: heavier than a card, so fewer of them. */
+    public const MAX_RECORDS = 10;
+
+    public const MAX_RECORD_SECTIONS = 4;
 
     public const MAX_MARKERS = 200;
 
@@ -67,7 +72,7 @@ final class Catalog
                             'title' => ['type' => 'string'],
                             'items' => [
                                 'type' => 'array',
-                                'description' => 'kpi: [{label, value, unit?, change? (percent), trend? (up|down|flat), description?}] (1-4). suggestions: [{label, prompt}] (max 4) — follow-up questions the user can click. cards: [{title, subtitle?, image?, badge?, fields?: [{label, value}], url?}] (max 12) — a gallery, best for records with a picture (products, people); copy "image" from a row\'s "_image" and "url" from its "_url". Each card may have actions: [{label, prompt}] (max 3), buttons that ask the assistant about that record (e.g. "Ver encomendas").',
+                                'description' => 'kpi: [{label, value, unit?, change? (percent), trend? (up|down|flat), description?}] (1-4). suggestions: [{label, prompt}] (max 4) — follow-up questions the user can click. cards: [{title, subtitle?, image?, badge?, fields?: [{label, value}], url?}] (max 12) — a gallery, best for records with a picture (products, people); copy "image" from a row\'s "_image" and "url" from its "_url". Each card may have actions: [{label, prompt}] (max 3), buttons that ask the assistant about that record (e.g. "Ver encomendas"). records: [{title, subtitle?, image?, badges?: [string], fields?: [{label, value}], sections?: [{heading, text?, items?: [string]}], url?, actions?}] (max 10) — a full-width sheet per record, for when the user needs to read each one: the fields sit beside the heading and each section holds a paragraph ("text") or a list ("items"), e.g. a summary, work history and education.',
                                 'items' => ['type' => 'object'],
                             ],
                             'columns' => [
@@ -78,6 +83,16 @@ final class Catalog
                             'rows' => [
                                 'type' => 'array',
                                 'description' => 'table: objects keyed by column key (max 50). Copy a row\'s "_url" from the tool result when it has one, so the row opens that record.',
+                                'items' => ['type' => 'object'],
+                            ],
+                            'badges' => [
+                                'type' => 'array',
+                                'description' => 'records: short labels shown under the subtitle, e.g. the kind of application and its status (max 3).',
+                                'items' => ['type' => 'string'],
+                            ],
+                            'sections' => [
+                                'type' => 'array',
+                                'description' => 'records: blocks of the sheet, [{heading, text?, items?}] (max 4). Use "text" for a paragraph and "items" for a list of lines.',
                                 'items' => ['type' => 'object'],
                             ],
                             'source' => ['type' => 'object', 'description' => 'table: copy "source" from a list tool result that has several pages; the table then pages through all of them by itself.'],

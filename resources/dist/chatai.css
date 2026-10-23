@@ -634,6 +634,32 @@
 @media (max-width: 639px) { .fi-chatai-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .fi-chatai-card-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+/* records: one full-width sheet per record, for lists the user has to read */
+.fi-chatai-records-wrap { display: grid; gap: 0.5rem; }
+.fi-chatai-records { display: grid; gap: 0.75rem; container-type: inline-size; }
+.fi-chatai-record { border: 1px solid var(--chatai-border); border-radius: 0.75rem; background: var(--chatai-bg); overflow: hidden; }
+.fi-chatai-record-header { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto; gap: 0.75rem; align-items: start; padding: 0.75rem 0.9rem; }
+.fi-chatai-record-identity { display: flex; gap: 0.65rem; align-items: flex-start; min-width: 0; }
+.fi-chatai-record-avatar { width: 2.75rem; height: 2.75rem; border-radius: 9999px; object-fit: cover; flex: none; }
+.fi-chatai-record-naming { display: grid; gap: 0.15rem; min-width: 0; }
+.fi-chatai-record-title { font-weight: 600; font-size: 0.9rem; }
+.fi-chatai-record-subtitle { color: var(--chatai-muted); font-size: 0.78rem; }
+.fi-chatai-record-badges { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.15rem; }
+.fi-chatai-record-fields { display: grid; gap: 0.15rem; margin: 0; font-size: 0.75rem; min-width: 0; }
+.fi-chatai-record-fields div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem; }
+.fi-chatai-record-fields dt { color: var(--chatai-muted); }
+.fi-chatai-record-fields dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fi-chatai-record-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end; }
+.fi-chatai-record-sections { display: grid; gap: 0.6rem; padding: 0 0.9rem 0.85rem; }
+.fi-chatai-record-section h4 { margin: 0 0 0.2rem; font-size: 0.78rem; font-weight: 600; }
+.fi-chatai-record-section p { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--chatai-muted); }
+.fi-chatai-record-section ul { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; line-height: 1.5; color: var(--chatai-muted); }
+@container (max-width: 34rem) {
+    .fi-chatai-record-header { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
+    .fi-chatai-record-fields div { grid-template-columns: auto minmax(0, 1fr); }
+    .fi-chatai-record-actions { justify-content: flex-start; }
+}
+
 .fi-chatai-card-action { font: inherit; font-size: 0.7rem; font-weight: 500; padding: 0.2rem 0.55rem; border-radius: 9999px; border: 1px solid var(--chatai-border); background: var(--chatai-bg); color: var(--chatai-text); cursor: pointer; }
 .fi-chatai-card-action:hover:not(:disabled) { border-color: var(--chatai-accent); color: var(--chatai-accent); }
 .fi-chatai-card-action:disabled { opacity: 0.5; cursor: default; }

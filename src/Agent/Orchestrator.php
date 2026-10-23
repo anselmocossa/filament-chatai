@@ -193,7 +193,11 @@ class Orchestrator
 
                         // Said here because this is where the model decides how to refer to it.
                         $result = match (true) {
-                            $asked !== [] && $valid === [] => ToolResult::error('Nothing was shown: the components did not match the schema (check the field names, e.g. cards and kpi use "items"). Fix them and call '.ShowUiTool::NAME.' again.'),
+                            // No component at all: usually "component" (an object) instead of
+                            // "components" (a list). Saying "shown" here leaves the user with
+                            // nothing on screen and the model with nothing left to say.
+                            $asked === [] => ToolResult::error('Nothing was shown: '.ShowUiTool::NAME.' takes "components", a LIST of components, e.g. {"components": [{"type": "table", ...}]}. Call it again with that shape.'),
+                            $valid === [] => ToolResult::error('Nothing was shown: the components did not match the schema (check the field names, e.g. cards, records and kpi use "items"). Fix them and call '.ShowUiTool::NAME.' again.'),
                             count($valid) < count($asked) => ToolResult::text('Shown to the user, except '.(count($asked) - count($valid)).' component(s) that did not match the schema. Do not say where it is; just give the key finding.'),
                             default => ToolResult::text('Shown to the user, under your text. Do not say where it is ("above", "below", "in the table"); just give the key finding.'),
                         };

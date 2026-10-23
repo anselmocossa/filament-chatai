@@ -61,8 +61,41 @@ it('describes the component types in the show_ui tool schema', function () {
     expect($schema['type'])->toBe('object')
         ->and($schema['required'])->toBe(['components'])
         ->and($schema['properties']['components']['items']['properties']['type']['enum'])
-        ->toBe(['kpi', 'table', 'chart', 'cards', 'map', 'suggestions'])
+        ->toBe(['kpi', 'table', 'chart', 'cards', 'records', 'map', 'suggestions'])
         ->and(json_encode($schema))->toBeJson();
+});
+
+it('builds a record sheet with its badges, fields and sections', function () {
+    $records = (new ComponentValidator)->validate([
+        'type' => 'records',
+        'title' => 'Candidates',
+        'items' => [[
+            'title' => 'Alex Manhica',
+            'subtitle' => 'Industrial Mechanic',
+            'badges' => ['Internship', 'Finished', 'Third', 'Dropped'],
+            'fields' => [['label' => 'Place', 'value' => 'Maputo']],
+            'sections' => [
+                ['heading' => 'Summary', 'text' => 'Keeps machines running.'],
+                ['heading' => 'Experience', 'items' => ['Cimentos', 'Portos']],
+                ['heading' => 'Nothing to show'],
+            ],
+            'actions' => [['label' => 'Open', 'url' => '/admin/candidates/1']],
+        ]],
+    ]);
+
+    expect($records['type'])->toBe('records')
+        ->and($records['items'][0]['badges'])->toBe(['Internship', 'Finished', 'Third'])
+        ->and($records['items'][0]['sections'])->toHaveCount(2)
+        ->and($records['items'][0]['sections'][0]['text'])->toBe('Keeps machines running.')
+        ->and($records['items'][0]['sections'][1]['items'])->toBe(['Cimentos', 'Portos'])
+        ->and($records['items'][0]['actions'][0]['url'])->toBe('/admin/candidates/1');
+});
+
+it('drops a record sheet with no usable item', function () {
+    expect((new ComponentValidator)->validate([
+        'type' => 'records',
+        'items' => [['subtitle' => 'no title here']],
+    ]))->toBeNull();
 });
 
 it('keeps a row link only when it points inside the application', function () {

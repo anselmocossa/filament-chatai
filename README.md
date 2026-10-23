@@ -330,6 +330,7 @@ Every answer can be **copied**, **answered again**, and rated **👍 / 👎** (a
 - **Pictures** — a list tool can name the column (or Spatie Media Library collection) that holds a record's picture: tables get a thumbnail and the assistant can answer with **record cards**, each with up to three buttons that ask about that record. An image the user drops in the chat can be saved onto a record (a column or a media collection), through the usual confirmation. Outside hosts pictures may come from are listed in `chatai.images.hosts`.
 - **Maps** — figures per country (ISO codes, placed by the plugin) or per place (latitude/longitude) are drawn on a Leaflet map, loaded only when a map is shown. Point `chatai.maps.*` at your own copies or tile server if the panel must not call outside hosts, or turn maps off.
 - **Drill-down** — a click on a bar, a slice or a map point's «Ask» asks the assistant about it ("Show the orders of Germany").
+- **Record sheets** — for lists the user has to read rather than scan (candidates for a job, suppliers for a tender), the assistant answers with one full-width sheet per record: the heading with its fields beside it, badges, and sections holding a paragraph or a list — a summary, a work history, an education. Up to ten per answer, each with the same buttons as a card.
 
 ## Filament Launchpad
 
