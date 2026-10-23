@@ -386,7 +386,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Security
 
-If you find a security issue, please e-mail anselmo.cossa@enh.co.mz instead of opening an issue.
+Please do not open a public issue for a security problem. Report it through
+[a private advisory](https://github.com/anselmocossa/filament-chatai/security/advisories/new)
+or by e-mail to anselmo.cossa@enh.co.mz. [SECURITY.md](SECURITY.md) says what is in scope, what to
+include and what to expect.
 
 ## Credits
 

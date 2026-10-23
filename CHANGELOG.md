@@ -4,6 +4,10 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+### Security
+- A security policy in [SECURITY.md](SECURITY.md): private advisory reporting, what counts as a vulnerability in an assistant that calls tools, and what to expect after a report.
+- The actions in the test workflow are pinned to a commit SHA, so a moved tag cannot change what runs in CI. Dependabot now watches Composer and the actions weekly and holds a release back for a few days before proposing it.
+
 ## [1.1.0] - 2026-10-20
 
 ### Fixed
