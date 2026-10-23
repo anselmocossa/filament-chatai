@@ -35,7 +35,7 @@
         "anselmocossa/filament-launchpad": "^1.16",
         "anthropic-ai/sdk": "^0.59.0",
         "dompdf/dompdf": "^3.0",
-        "laravel/mcp": "^0.6|^0.7",
+        "laravel/mcp": "^1.0.2",
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^7.0|^8.0",
         "orchestra/testbench": "^9.0|^10.0|^11.0",
