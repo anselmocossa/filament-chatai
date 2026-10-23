@@ -79,6 +79,7 @@ final class ActionForm
             }
 
             $ok = match (true) {
+                ($property['type'] ?? null) === 'array' => self::list($raw, $property) !== [],
                 isset($property['enum']) => in_array((string) $raw, array_map('strval', (array) $property['enum']), true),
                 ($property['type'] ?? null) === 'integer' => preg_match('/^-?\d+$/', (string) $raw) === 1,
                 ($property['type'] ?? null) === 'number' => is_numeric($raw),
@@ -97,11 +98,43 @@ final class ActionForm
             $values[$key] = match ($property['type'] ?? null) {
                 'integer' => (int) $raw,
                 'number' => (float) $raw,
+                'array' => self::list($raw, $property),
                 default => (string) $raw,
             };
         }
 
         return [$values, $errors];
+    }
+
+    /**
+     * A list typed into a single field: JSON ("[1, 2]") or just separated by
+     * commas or semicolons. Items are cast to what the schema says they are, so
+     * a tool that asks for ids gets ids and not the strings the field holds.
+     *
+     * @param  array<string, mixed>  $property
+     * @return array<int, mixed>
+     */
+    protected static function list(mixed $raw, array $property): array
+    {
+        $items = is_array($raw) ? $raw : null;
+
+        if ($items === null) {
+            $text = trim((string) $raw);
+            $decoded = json_decode($text, true);
+            $items = is_array($decoded) ? $decoded : preg_split('/[,;]/', trim($text, "[] \t\n\r"));
+        }
+
+        $type = (array) ($property['items'] ?? []);
+        $type = $type['type'] ?? null;
+
+        return array_values(array_filter(array_map(
+            fn ($item): mixed => match ($type) {
+                'integer' => is_numeric(trim((string) $item)) ? (int) trim((string) $item) : null,
+                'number' => is_numeric(trim((string) $item)) ? (float) trim((string) $item) : null,
+                default => trim((string) $item) !== '' ? trim((string) $item) : null,
+            },
+            is_array($items) ? $items : [],
+        ), fn ($item): bool => $item !== null));
     }
 
     /**

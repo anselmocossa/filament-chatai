@@ -4,6 +4,9 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+### Added
+- Interactive clarification questions in full-page, floating and tool editor chat: a compact Codex-style card fixed above the message composer with numbered options and an inline answer, one question per step with Back/Next and a progress indicator, selectable options, free-text answers and one submission that continues the conversation. The assistant pauses for answers; the original form keeps its answered summary after reload. Answers are validated against the saved conversation and cannot be submitted twice.
+
 ## [1.3.2] - 2026-10-23
 
 ### Security

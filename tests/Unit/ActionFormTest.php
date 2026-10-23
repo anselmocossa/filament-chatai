@@ -37,3 +37,31 @@ it('reports missing and wrong values, and casts the good ones', function () use 
     expect($errors)->toBe([])
         ->and($values)->toBe(['name' => 'Ana', 'email' => 'ana@x.mz', 'units' => 4, 'status' => 'new', 'birthday' => '1990-12-31', 'vip' => true]);
 });
+
+it('reads a list typed into one field', function () {
+    $schema = [
+        'type' => 'object',
+        'properties' => [
+            'nome' => ['type' => 'string'],
+            'candidatos' => ['type' => 'array', 'items' => ['type' => 'integer']],
+            'etiquetas' => ['type' => 'array', 'items' => ['type' => 'string']],
+        ],
+        'required' => ['nome'],
+    ];
+
+    // JSON, commas and semicolons all give the same list, with the items typed.
+    foreach (['[8835, 8820]', '8835,8820', ' 8835 ; 8820 '] as $written) {
+        [$values, $errors] = ActionForm::validate($schema, ['nome' => 'Grupo', 'candidatos' => $written]);
+
+        expect($errors)->toBe([])->and($values['candidatos'])->toBe([8835, 8820]);
+    }
+
+    [$values] = ActionForm::validate($schema, ['nome' => 'Grupo', 'etiquetas' => 'urgente, maputo']);
+
+    expect($values['etiquetas'])->toBe(['urgente', 'maputo']);
+
+    // Something that holds no item at all is an error, not an empty list.
+    [, $errors] = ActionForm::validate($schema, ['nome' => 'Grupo', 'candidatos' => '[]']);
+
+    expect($errors)->toHaveKey('candidatos');
+});
