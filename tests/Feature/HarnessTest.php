@@ -3,6 +3,7 @@
 use Filament\ChatAi\Agent\Orchestrator;
 use Filament\ChatAi\Llm\LlmConfig;
 use Filament\ChatAi\Models\Conversation;
+use Filament\ChatAi\Models\Message;
 use Filament\ChatAi\Models\ToolAction;
 use Filament\ChatAi\Support\ChatAiContext;
 use Filament\ChatAi\Testing\FakeLlmClient;
@@ -205,6 +206,49 @@ it('shows an explicit failure when the provider returns no text or usable UI', f
     [$events, $conversation] = harnessTurn(FakeLlmClient::script([[]]), []);
     expect($conversation->messages->last()->content)->toBe(__('chatai::chatai.unavailable'))
         ->and(collect($events)->where('type', 'delta')->pluck('data.text')->implode(''))->toBe(__('chatai::chatai.unavailable'));
+});
+
+it('compacts an over-budget conversation before the model sees it', function () {
+    config([
+        'chatai.history_budget_chars' => 3_000,
+        'chatai.history_keep_chars' => 2_500,
+    ]);
+    $user = User::create(['name' => 'Harness', 'email' => 'compact@example.test', 'password' => 'x']);
+    $conversation = Conversation::start($user, 'admin');
+    $old = str_repeat('ANTIGO-UNICO-', 700);
+    $conversation->addMessage(Message::ROLE_USER, $old);
+    $conversation->addMessage(Message::ROLE_ASSISTANT, null, ['tool_calls' => [[
+        'id' => 'call-grupo',
+        'type' => 'function',
+        'function' => ['name' => 'criar-grupo', 'arguments' => '{"nome":"Grupo Norte"}'],
+    ]]]);
+    $conversation->addMessage(Message::ROLE_TOOL, '{"status":"awaiting_confirmation","nome":"Grupo Norte"}', [
+        'tool_call_id' => 'call-grupo',
+        'tool_name' => 'criar-grupo',
+    ]);
+    $recent = str_repeat('RECENTE-', 300);
+    $conversation->addMessage(Message::ROLE_USER, $recent);
+
+    $llm = FakeLlmClient::script([['Continuo daqui.']]);
+    iterator_to_array((new Orchestrator($llm))->run(
+        conversation: $conversation,
+        question: 'AGORA-RESPONDE',
+        context: new ChatAiContext('admin'),
+        tools: new ArrayToolProvider([]),
+        user: $user,
+        config: new LlmConfig('https://llm.test', 'k', 'harness-model'),
+    ), false);
+
+    $messages = $llm->requests[0]['messages'];
+    $encoded = json_encode($messages, JSON_UNESCAPED_UNICODE);
+
+    expect($encoded)->toContain('Earlier turns were compacted')
+        ->and($encoded)->toContain('Grupo Norte')
+        ->and($encoded)->toContain($recent)
+        ->and($encoded)->toContain('AGORA-RESPONDE')
+        ->and($encoded)->not->toContain($old)
+        ->and(collect($messages)->where('role', 'user')->last()['content'])->toBe('AGORA-RESPONDE')
+        ->and($conversation->messages->last()->content)->toBe('Continuo daqui.');
 });
 
 it('does not add a false failure to a valid visual-only answer', function () {

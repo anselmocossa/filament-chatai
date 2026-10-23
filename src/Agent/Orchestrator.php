@@ -321,7 +321,7 @@ class Orchestrator
         $files = ConversationFile::query()->where('conversation_id', $conversation->id)->where('kind', ConversationFile::KIND_UPLOAD)
             ->whereNotNull('message_id')->orderBy('id')->get()->groupBy('message_id');
 
-        return $conversation->messages()
+        $messages = $conversation->messages()
             ->where('status', '!=', Message::STATUS_ERROR)
             ->get()
             ->map(fn (Message $m): array => $this->withFiles(match ($m->role) {
@@ -336,6 +336,12 @@ class Orchestrator
                     : $this->withScreen($m)],
             }, $files->get($m->id)))
             ->all();
+
+        return HistoryWindow::fit(
+            $messages,
+            (int) config('chatai.history_budget_chars', 24_000),
+            (int) config('chatai.history_keep_chars', 8_000),
+        );
     }
 
     /**

@@ -54,6 +54,12 @@ return [
     // Tool results kept in the conversation history are cut to this size.
     'max_tool_result_bytes' => 20_000,
 
+    // When a conversation is longer than this, older turns become a short memory
+    // and the most recent turns stay verbatim. 0 disables compaction.
+    'history_budget_chars' => (int) env('CHATAI_HISTORY_BUDGET_CHARS', 24_000),
+
+    'history_keep_chars' => (int) env('CHATAI_HISTORY_KEEP_CHARS', 8_000),
+
     // Shown when the chat is empty: questions set here, plus ones for the page on screen
     // (edit, create, list). The shortcut opens/closes the chat with ⌘/Ctrl + that key (null = off).
     'starters' => [],

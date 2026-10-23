@@ -4,6 +4,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.5] - 2026-10-23
+
+### Added
+- Long conversations are compacted before the model is called. Older turns become a short memory (objective, decisions still waiting or already confirmed, tool results) and the recent turns stay verbatim, including a complete tool-call group. Set `history_budget_chars` or `history_keep_chars` to tune it; `0` turns it off.
+
 ## [1.3.4] - 2026-10-23
 
 ### Added
