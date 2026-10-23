@@ -640,7 +640,7 @@
 .fi-chatai-record { border: 1px solid var(--chatai-border); border-radius: 0.75rem; background: var(--chatai-bg); overflow: hidden; }
 .fi-chatai-record-header { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto; gap: 0.75rem; align-items: start; padding: 0.75rem 0.9rem; }
 .fi-chatai-record-identity { display: flex; gap: 0.65rem; align-items: flex-start; min-width: 0; }
-.fi-chatai-record-avatar { width: 2.75rem; height: 2.75rem; border-radius: 9999px; object-fit: cover; flex: none; }
+.fi-chatai-record-avatar { width: 3.5rem; height: 3.5rem; border-radius: 9999px; object-fit: cover; flex: none; align-self: flex-start; }
 .fi-chatai-record-naming { display: grid; gap: 0.15rem; min-width: 0; }
 .fi-chatai-record-title { font-weight: 600; font-size: 0.9rem; }
 .fi-chatai-record-subtitle { color: var(--chatai-muted); font-size: 0.78rem; }

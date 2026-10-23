@@ -4,6 +4,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.1] - 2026-10-23
+
+### Fixed
+- The picture on a record sheet was small enough to read as an icon next to the name; it is now the size of an avatar in a Filament list, and sits at the top of the heading.
+
 ## [1.3.0] - 2026-10-23
 
 ### Added
