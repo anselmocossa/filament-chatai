@@ -7,6 +7,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 ### Added
 - Interactive clarification questions in full-page, floating and tool editor chat: a compact Codex-style card fixed above the message composer with numbered options and an inline answer, one question per step with Back/Next and a progress indicator, selectable options, free-text answers and one submission that continues the conversation. The assistant pauses for answers; the original form keeps its answered summary after reload. Answers are validated against the saved conversation and cannot be submitted twice.
 
+## [1.3.3] - 2026-10-23
+
+### Fixed
+- A tool that takes a list (`"type": "array"`) could not be confirmed: the confirmation form turned the list into text and then refused it, because the text did not match the schema. The field now reads a list written as JSON or separated by commas or semicolons, and casts the items to what the schema asks for.
+
 ## [1.3.2] - 2026-10-23
 
 ### Security
