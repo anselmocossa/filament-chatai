@@ -4,6 +4,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.6] - 2026-10-23
+
+### Added
+- **Every page of the assistant is offered to the launchpad's card library** (`anselmocossa/filament-launchpad`), beside the assistant, the pending approvals and the cost: Providers, Models, Settings, Tools, Skills and Logs. A panel with the sidebar turned off reaches a page only through a card, and until now those had to be seeded by hand. Each tile is offered only to whoever may open that page, so the ones holding API keys stay out of everyone else's library.
+
 ## [1.3.5] - 2026-10-23
 
 ### Added
