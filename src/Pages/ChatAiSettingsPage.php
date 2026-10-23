@@ -104,6 +104,7 @@ class ChatAiSettingsPage extends Page
                         TagsInput::make('starters')->label($t('starters'))->helperText($t('starters_help'))->placeholder($t('starters_placeholder')),
                         Grid::make(2)->schema([
                             Toggle::make('starters_from_screen')->label($t('starters_from_screen'))->inline(false),
+                            Toggle::make('conversation_title')->label($t('conversation_title'))->helperText($t('conversation_title_help'))->inline(false),
                             TextInput::make('shortcut')->label($t('shortcut'))->helperText($t('shortcut_help'))->maxLength(1)->prefix('⌘ / Ctrl +'),
                         ]),
                         Toggle::make('memory.enabled')->label($t('memory_enabled'))->helperText($t('memory_enabled_help')),

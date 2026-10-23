@@ -109,11 +109,32 @@ final readonly class ChatAiContext
             }
         }
 
+        // A view page has no form: what the user reads there are infolist entries.
+        $entries = [];
+
+        foreach (array_slice((array) ($screen['entries'] ?? []), 0, 40) as $entry) {
+            if (is_array($entry) && filled($entry['label'] ?? null) && filled($entry['value'] ?? null)) {
+                $entries[] = array_filter([
+                    'label' => $str($entry['label'], 80),
+                    'value' => $str($entry['value'], 600),
+                    'section' => $str($entry['section'] ?? '', 80),
+                ], fn ($v) => $v !== '');
+            }
+        }
+
+        // A list with a content layout draws blocks instead of rows, so there is no table.
+        $records = array_values(array_filter(array_map(
+            fn ($record) => $str($record, 400),
+            array_slice((array) ($screen['records'] ?? []), 0, 15),
+        )));
+
         return array_filter([
             'heading' => $str($screen['heading'] ?? '', 160),
             'breadcrumbs' => $str($screen['breadcrumbs'] ?? '', 200),
             'fields' => $fields,
             'tables' => $tables,
+            'entries' => $entries,
+            'records' => $records,
         ]);
     }
 

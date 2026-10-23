@@ -4,6 +4,14 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.0] - 2026-10-23
+
+### Added
+- **The model names each conversation**, from the first exchange, in a few words, instead of the history showing the question cut at sixty characters. One short call with no tools, right before the answer ends, so the browser gets the title with it; if it fails, is stopped, or comes from the tool editor's test chat, the conversation keeps the title it had. Switch: **Settings** / `chatai.conversation_title`.
+
+### Fixed
+- **Reading the screen missed two whole kinds of page.** A view page shows an infolist, not a form, so "summarise this record" on an open record answered that it could not see anything; and a table with a content layout draws blocks instead of rows, with no `<table>` at all, so its records were invisible too. Both are now read, beside the form fields and the table rows.
+
 ## [1.2.0] - 2026-10-23
 
 ### Added

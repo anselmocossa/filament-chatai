@@ -267,6 +267,25 @@ document.addEventListener('alpine:init', () => {
             rows: [...table.querySelectorAll('tbody tr')].slice(0, 15).map((tr) => [...tr.querySelectorAll('td')].map(text).filter(Boolean).slice(0, 12)),
         }))
 
+    // A view page shows an infolist, not a form: nothing to fill in, but it is what
+    // the user is looking at, so the assistant must be able to read it.
+    const entriesOnScreen = () => [...document.querySelectorAll('.fi-main .fi-in-entry')]
+        .filter((entry) => !entry.closest(CHAT))
+        .map((entry) => ({
+            label: text(entry.querySelector('.fi-in-entry-label')),
+            value: text(entry.querySelector('.fi-in-entry-content-ctn, .fi-in-entry-content')).slice(0, 600),
+            section: text(entry.closest('.fi-section')?.querySelector('.fi-section-header-heading')) || undefined,
+        }))
+        .filter((entry) => entry.label && entry.value)
+        .slice(0, 40)
+
+    // A table with a content layout draws records as blocks, with no <table> at all.
+    const recordsOnScreen = () => [...document.querySelectorAll('.fi-main .fi-ta-record')]
+        .filter((record) => !record.closest(CHAT))
+        .map((record) => text(record).slice(0, 400))
+        .filter(Boolean)
+        .slice(0, 15)
+
     const readScreen = (config) => {
         if (!config.screen?.read || document.querySelector('.fi-chatai-page')) return undefined
 
@@ -276,6 +295,8 @@ document.addEventListener('alpine:init', () => {
                 breadcrumbs: text(document.querySelector('.fi-main .fi-breadcrumbs')),
                 fields: fieldsOnScreen(),
                 tables: tablesOnScreen(),
+                entries: entriesOnScreen(),
+                records: recordsOnScreen(),
             }
         } catch {
             return undefined

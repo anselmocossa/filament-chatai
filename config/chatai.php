@@ -58,6 +58,11 @@ return [
     // (edit, create, list). The shortcut opens/closes the chat with ⌘/Ctrl + that key (null = off).
     'starters' => [],
     'starters_from_screen' => true,
+
+    // After the first answer, the model names the conversation in a few words,
+    // instead of the history showing the question cut at 60 characters. One short
+    // call with no tools; if it fails, the conversation keeps the cut question.
+    'conversation_title' => true,
     'shortcut' => 'j',
 
     // With anselmocossa/filament-launchpad: the assistant's tiles (questions, pending approvals,

@@ -92,6 +92,8 @@ return [
         'starters_help' => 'Aparecem com o chat vazio (até 4), junto das que se adequam à página aberta.',
         'starters_placeholder' => 'Como correram as vendas esta semana?',
         'starters_from_screen' => 'Sugerir perguntas para a página aberta',
+        'conversation_title' => 'Deixar o modelo dar nome a cada conversa',
+        'conversation_title_help' => 'Depois da primeira resposta, em poucas palavras, em vez da pergunta cortada a meio.',
         'shortcut' => 'Atalho de teclado',
         'shortcut_help' => 'Abre e fecha o chat. Vazio = sem atalho.',
         'memory_enabled' => 'Memória',

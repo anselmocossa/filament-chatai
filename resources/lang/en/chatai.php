@@ -92,6 +92,8 @@ return [
         'starters_help' => 'Shown when the chat is empty (up to 4), with the ones for the page on screen.',
         'starters_placeholder' => 'How did sales go this week?',
         'starters_from_screen' => 'Suggest questions for the page on screen',
+        'conversation_title' => 'Let the model name each conversation',
+        'conversation_title_help' => 'After the first answer, in a few words, instead of the question cut short.',
         'shortcut' => 'Keyboard shortcut',
         'shortcut_help' => 'Opens and closes the chat. Empty = no shortcut.',
         'memory_enabled' => 'Memory',

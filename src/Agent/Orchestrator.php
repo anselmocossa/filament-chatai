@@ -266,6 +266,13 @@ class Orchestrator
 
         TurnCompleted::dispatch($user, $conversation, $model, $tokensIn, $tokensOut, $this->elapsedMs($startedAt), array_values(array_unique($toolsUsed)), $cacheRead, $cacheWrite, $answer->id);
 
+        // Named from the first exchange, so the history reads as a list of subjects
+        // and not of half-questions. Before DONE, which carries the title to the
+        // browser; skipped when the user stopped the turn.
+        if (! ($shouldStop !== null && $shouldStop())) {
+            ConversationTitle::write($conversation, $question, (string) $answer->content, $config, $this->llm);
+        }
+
         yield new AgentEvent(AgentEvent::DONE, [
             'conversation_id' => $conversation->id,
             'message_id' => $answer->id,
