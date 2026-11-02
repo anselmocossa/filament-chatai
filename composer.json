@@ -42,7 +42,7 @@
         "orchestra/testbench": "^9.0|^10.0|^11.0",
         "pestphp/pest": "^2.0|^3.0|^4.0",
         "pestphp/pest-plugin-laravel": "^2.0|^3.0|^4.0",
-        "spatie/laravel-permission": "^6.23"
+        "spatie/laravel-permission": "^8.3"
     },
     "suggest": {
         "laravel/mcp": "Expose your existing Laravel MCP tools to the assistant through LaravelMcpToolProvider.",
