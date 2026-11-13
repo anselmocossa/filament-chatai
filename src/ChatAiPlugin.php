@@ -167,6 +167,12 @@ class ChatAiPlugin implements Plugin
             ->renderHook(PanelsRenderHook::SCRIPTS_BEFORE, fn (): string => $this->isAccessible()
                 ? '<script src="'.e(FilamentAsset::getScriptSrc('chatai', 'anselmokossa/filament-chatai').'&build='.substr(hash_file('sha256', __DIR__.'/../resources/dist/chatai.js'), 0, 12)).'"></script>'
                 : '')
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_AFTER, fn (): string => $this->floatingWidget && $this->isAccessible() && $this->getLauncherPosition() !== 'floating'
+                ? view('filament-chatai::components.topbar-launcher', [
+                    'label' => $this->getLabel(),
+                    'avatarUrl' => $this->getAvatarUrl(),
+                ])->render()
+                : '')
             ->renderHook(PanelsRenderHook::BODY_END, fn (): string => $this->floatingWidget && $this->isAccessible()
                 ? Blade::render("@livewire('chatai-floating')")
                 : '');
@@ -513,6 +519,16 @@ class ChatAiPlugin implements Plugin
     public function hasFloatingWidget(): bool
     {
         return $this->floatingWidget;
+    }
+
+    public function getLauncherPosition(): string
+    {
+        ChatAiSettings::apply();
+
+        return match ($position = config('chatai.launcher_position')) {
+            'floating', 'both' => $position,
+            default => 'topbar',
+        };
     }
 
     /**

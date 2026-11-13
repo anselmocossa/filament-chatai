@@ -57,6 +57,7 @@
 }
 
 .fi-chatai-launcher:hover { transform: translateY(-2px) scale(1.03); }
+.fi-chatai-topbar-avatar img { border-radius: 9999px; object-fit: cover; }
 
 /* The assistant at work, minimised on the chat button (like ChatGPT's agent bar). */
 .fi-chatai-agent {
@@ -779,7 +780,7 @@
 }
 
 /* The full page already is the chat: no floating launcher on top of it. */
-body:has(.fi-chatai-page) .fi-chatai-floating { display: none; }
+body:has(.fi-chatai-page) :is(.fi-chatai-floating, .fi-chatai-topbar-launcher) { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
     .fi-chatai-floating *, .fi-chatai-page * { transition: none !important; animation: none !important; }

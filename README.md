@@ -313,6 +313,7 @@ Say *"remember that I look after the Maputo store"* or *"call me Boss and keep a
 
 ## Starters and shortcut
 
+- In **Settings → Assistant**, choose where the chat button appears. The top bar is the default, next to global search and before notifications. You can also use the floating button or both buttons. Both open the same chat. Panels without a top bar use the floating button.
 - With the chat empty it suggests up to four questions: for the page on screen (*"Summarise this record"*, *"Is anything odd or missing here?"* on an edit page; *"Help me fill in this form"* on a create page; *"Summarise this list"* on a list) plus the ones you set in **Settings → Assistant** or in code with `->starters(['How did sales go this week?'])` (or a closure receiving the user).
 - **⌘/Ctrl + J** opens and closes the chat; change the key or switch it off in Settings.
 

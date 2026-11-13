@@ -21,6 +21,7 @@ class FloatingChat extends Component
             'icon' => $plugin->getIcon(),
             'avatarUrl' => $plugin->getAvatarUrl(),
             'config' => $plugin->clientConfig(remember: true),
+            'showFloatingLauncher' => $plugin->getLauncherPosition() !== 'topbar' || ! filament()->hasTopbar(),
         ]);
     }
 }

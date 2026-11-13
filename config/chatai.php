@@ -144,6 +144,8 @@ return [
         'disk' => 'public',
     ],
 
+    'launcher_position' => 'topbar',
+
     // Attachments and generated documents (private disk; downloads check the conversation owner).
     'files' => [
         'disk' => env('CHATAI_FILES_DISK', 'local'),

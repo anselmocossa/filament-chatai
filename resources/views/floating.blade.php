@@ -32,6 +32,7 @@
         x-on:keydown.window="if (($event.metaKey || $event.ctrlKey) && ! $event.altKey && $event.key.toLowerCase() === @js($shortcut)) { $event.preventDefault(); togglePanel(! panelOpen) }"
     @endif
     x-on:chatai-agent.window="onAgent($event.detail)"
+    x-on:chatai-toggle-panel.window="togglePanel(! panelOpen)"
 >
     {{-- The minimised assistant at work, in place of the chat button --}}
     <div class="fi-chatai-agent" x-show="agent && ! panelOpen" x-cloak role="status" aria-live="polite"
@@ -66,22 +67,26 @@
         </button>
     </div>
 
-    <button
-        type="button"
-        class="fi-chatai-launcher"
-        x-show="! panelOpen && ! agent"
-        x-on:click="togglePanel(true)"
-        aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
-        title="{{ __('chatai::chatai.open', ['name' => $label]) }}{{ ($config['shortcut'] ?? null) ? ' (⌘/Ctrl+'.strtoupper($config['shortcut']).')' : '' }}"
-    >
-        @if ($avatarUrl)
-            @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-launcher-icon fi-chatai-launcher-avatar'])
-        @else
-            <x-filament::icon icon="heroicon-o-chat-bubble-left-right" class="fi-chatai-launcher-icon" />
-        @endif
-    </button>
+    @if ($showFloatingLauncher)
+        <button
+            type="button"
+            class="fi-chatai-launcher"
+            x-show="! panelOpen && ! agent"
+            x-on:click="togglePanel(true)"
+            aria-controls="chatai-panel"
+            aria-label="{{ __('chatai::chatai.open', ['name' => $label]) }}"
+            title="{{ __('chatai::chatai.open', ['name' => $label]) }}{{ ($config['shortcut'] ?? null) ? ' (⌘/Ctrl+'.strtoupper($config['shortcut']).')' : '' }}"
+        >
+            @if ($avatarUrl)
+                @include('filament-chatai::components.avatar', ['class' => 'fi-chatai-launcher-icon fi-chatai-launcher-avatar'])
+            @else
+                <x-filament::icon icon="heroicon-o-chat-bubble-left-right" class="fi-chatai-launcher-icon" />
+            @endif
+        </button>
+    @endif
 
     <section
+        id="chatai-panel"
         class="fi-chatai-panel"
         x-show="panelOpen"
         x-cloak

@@ -60,6 +60,28 @@ it('saves the assistant settings and keeps keys off this page', function () {
     expect(config('chatai.instructions'))->toBe('Valores sempre em MZN.');
 });
 
+it('saves the launcher position and renders the selected buttons for a single chat', function (string $position) {
+    adminPlugin()->canManageSettings(fn (): bool => true);
+    $this->actingAs(adminUser());
+
+    Livewire::test(ChatAiSettingsPage::class)
+        ->assertSet('data.launcher_position', 'topbar')
+        ->set('data.launcher_position', $position)
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(ChatAiSettingsPage::getUrl());
+
+    $page = $this->get('/admin/chatai/settings')->assertOk()->assertSee('class="fi-chatai-launcher"', false);
+
+    if ($position === 'both') {
+        $page->assertSee('fi-chatai-topbar-launcher', false);
+    } else {
+        $page->assertDontSee('fi-chatai-topbar-launcher', false);
+    }
+
+    expect(substr_count($page->getContent(), 'id="chatai-panel"'))->toBe(1);
+})->with(['floating', 'both']);
+
 it('shows cost and volume on the usage page', function () {
     adminPlugin()->canManageSettings(fn (): bool => true);
     config(['chatai.pricing.models' => [['model' => 'claude-opus-5-5', 'input' => 5, 'output' => 25]]]);

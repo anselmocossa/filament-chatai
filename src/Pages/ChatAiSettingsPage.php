@@ -52,7 +52,10 @@ class ChatAiSettingsPage extends Page
 
     public function mount(): void
     {
-        $this->form->fill(ChatAiSettings::formState());
+        $this->form->fill([
+            ...ChatAiSettings::formState(),
+            'launcher_position' => ChatAiPlugin::get()->getLauncherPosition(),
+        ]);
     }
 
     /** Icons offered for the assistant (any Heroicon name also works in config). */
@@ -100,6 +103,12 @@ class ChatAiSettingsPage extends Page
                         ]),
                         FileUpload::make('assistant.avatar')->label($t('assistant_avatar'))->helperText($t('assistant_avatar_help'))
                             ->image()->avatar()->disk(fn (): string => (string) config('chatai.assistant.disk', 'public'))->directory('chatai')->maxSize(1024),
+                        Select::make('launcher_position')->label($t('launcher_position'))->required()
+                            ->options([
+                                'topbar' => $t('launcher_topbar'),
+                                'floating' => $t('launcher_floating'),
+                                'both' => $t('launcher_both'),
+                            ]),
                         Textarea::make('instructions')->label($t('instructions'))->rows(8)->helperText($t('instructions_help')),
                         TagsInput::make('starters')->label($t('starters'))->helperText($t('starters_help'))->placeholder($t('starters_placeholder')),
                         Grid::make(2)->schema([
@@ -215,12 +224,18 @@ class ChatAiSettingsPage extends Page
             return;
         }
 
+        $positionChanged = $values['launcher_position'] !== ChatAiPlugin::get()->getLauncherPosition();
+
         ChatAiSettings::save($values);
 
         // Never keep a typed key in the component state after saving.
         $this->form->fill(ChatAiSettings::formState());
 
         Notification::make()->success()->title(__('chatai::chatai.settings.saved'))->send();
+
+        if ($positionChanged) {
+            $this->redirect(static::getUrl());
+        }
     }
 
     /**

@@ -4,6 +4,12 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+### Added
+- **Settings → Assistant** lets managers choose the chat button position: top bar, floating button, or both. Both buttons open the same chat.
+
+### Changed
+- The chat button now defaults to the Filament top bar, after global search and before notifications. Panels without a top bar use the floating button.
+
 ## [1.3.7] - 2026-11-13
 
 ### Added

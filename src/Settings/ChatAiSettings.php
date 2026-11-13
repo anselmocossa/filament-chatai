@@ -21,7 +21,7 @@ final class ChatAiSettings
         'speech.google.api_key', 'speech.google.voice',
         'pricing.currency', 'pricing.models', 'pricing.speech_per_million_characters', 'pricing.transcription_per_hour',
         'instructions', 'http_tools.allowed_hosts',
-        'assistant.name', 'assistant.icon', 'assistant.avatar',
+        'assistant.name', 'assistant.icon', 'assistant.avatar', 'launcher_position',
         'screen.read', 'screen.fill', 'screen.navigate', 'starters', 'starters_from_screen', 'conversation_title', 'shortcut', 'memory.enabled', 'actions.enabled', 'permissions.enabled', 'permissions.require_chat',
         'access.users', 'access.managers', 'builder.enabled', 'query_data.enabled',
         'files.disk', 'files.max_kb', 'files.max_per_message',

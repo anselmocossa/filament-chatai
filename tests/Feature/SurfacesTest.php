@@ -17,24 +17,37 @@ function plugin(): ChatAiPlugin
     return Filament::getPanel('admin')->getPlugin('chatai');
 }
 
-it('renders the floating launcher and the assets on panel pages', function () {
+it('renders the topbar launcher and the assets on panel pages by default', function () {
     $this->actingAs(surfaceUser())
         ->get('/admin/chatai')
         ->assertOk()
-        ->assertSee('fi-chatai-launcher', false)
+        ->assertSee('fi-chatai-topbar-launcher', false)
+        ->assertDontSee('fi-chatai-launcher', false)
         ->assertSee('chataiChat(', false)
         ->assertSee('chatai.js', false)
         ->assertSee('id="chatai-context"', false);
+});
+
+it('keeps a floating launcher on panels without a topbar', function () {
+    Filament::getPanel('admin')->topbar(false);
+
+    $this->actingAs(surfaceUser())->get('/admin/chatai')->assertOk()
+        ->assertSee('fi-chatai-launcher', false)
+        ->assertDontSee('fi-chatai-topbar-launcher', false);
 });
 
 it('hides the launcher when the floating widget is off or access is denied', function () {
     $this->actingAs(surfaceUser());
 
     plugin()->floatingWidget(false);
-    $this->get('/admin/chatai')->assertOk()->assertDontSee('fi-chatai-launcher', false);
+    $this->get('/admin/chatai')->assertOk()
+        ->assertDontSee('fi-chatai-launcher', false)
+        ->assertDontSee('fi-chatai-topbar-launcher', false);
 
     plugin()->floatingWidget(true)->canAccess(fn () => false);
-    $this->get('/admin')->assertDontSee('fi-chatai-launcher', false)->assertDontSee('chatai.js', false);
+    $this->get('/admin')->assertDontSee('fi-chatai-launcher', false)
+        ->assertDontSee('fi-chatai-topbar-launcher', false)
+        ->assertDontSee('chatai.js', false);
 });
 
 it('serves the full page only to users with access', function () {
