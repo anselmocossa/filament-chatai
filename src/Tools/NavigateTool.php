@@ -39,7 +39,8 @@ final class NavigateTool
         return new ChatAiTool(
             name: self::NAME,
             description: 'Open a place of this application for the user: a menu page, or a resource\'s list, create page, or one record (view or edit). '
-                .'Use it when they ask to go to, open or show a screen, or to start creating something. '
+                .'This is how you change screens. The page that is open does not limit you. Never say you cannot navigate or leave the current page. '
+                .'Use it when they ask to go to, open, show or look at a screen, or to start creating something. '
                 .'Resources: '.collect($resources)->map(fn ($r, $key) => "{$key} ({$r['label']})")->implode(', ').'. '
                 .($pages ? 'Menu pages: '.implode(', ', array_keys($pages)).'.' : ''),
             inputSchema: [

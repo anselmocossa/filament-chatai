@@ -4,6 +4,11 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.9] - 2026-11-13
+
+### Changed
+- The assistant is told it can leave the page that is open. `navigate` is how it changes screens, and it must not say that it cannot.
+
 ## [1.3.8] - 2026-11-13
 
 ### Added

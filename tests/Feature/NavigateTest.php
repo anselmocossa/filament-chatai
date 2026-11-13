@@ -19,7 +19,8 @@ it('opens a list, a create page and one record by its name', function () {
     $tool = NavigateTool::make();
     $key = collect($tool->inputSchema['properties']['resource']['enum'])->first(fn ($k) => str_contains($k, 'product'));
 
-    expect($tool->call(['resource' => $key])->component['url'])->toEndWith('/products')
+    expect($tool->description)->toContain('Never say you cannot navigate')
+        ->and($tool->call(['resource' => $key])->component['url'])->toEndWith('/products')
         ->and($tool->call(['resource' => $key, 'action' => 'create'])->component['url'])->toEndWith('/products/create');
 
     $open = $tool->call(['resource' => $key, 'action' => 'edit', 'record' => 'Classic Pillow']);

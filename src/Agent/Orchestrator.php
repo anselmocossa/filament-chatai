@@ -409,6 +409,10 @@ class Orchestrator
     {
         $hint = '';
 
+        if (isset($available[NavigateTool::NAME])) {
+            $hint .= "\n\nYou can change the screen with ".NavigateTool::NAME.', including to a page that is not the one open now. Never say you cannot change screens, navigate, or leave the current page. If the user asks you to go and look, call '.NavigateTool::NAME.'.';
+        }
+
         if (isset($available[QueryDataTool::NAME])) {
             $hint .= "\n\nWhen no other tool answers a question about the application's data (a total, a count, a list for one person or status), answer it yourself with "
                 .QueryDataTool::NAME.' (call '.BuilderTools::DESCRIBE.' first for the resource and its columns). Do not say you cannot, and do not send the user to filter a page to find it.';
