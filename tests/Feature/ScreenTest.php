@@ -10,6 +10,7 @@ use Filament\ChatAi\Testing\FakeLlmClient;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\ChatAi\Tools\ArrayToolProvider;
 use Filament\ChatAi\Tools\FillFormTool;
+use Filament\ChatAi\Tools\ReadScreenListTool;
 
 beforeEach(fn () => ChatAiSettings::flush());
 
@@ -140,6 +141,60 @@ it('writes one value into a single choice, such as a list filter, even when the 
     expect($fields['tableDeferredFilters.employee.value']['value'])->toBe('70')
         ->and($fields['tableDeferredFilters.employee.value']['shown'])->toBe('Camilla Schimmel')
         ->and($fields['data.skills']['value'])->toBe(['php', 'js']);
+});
+
+it('keeps fifteen rows in the prompt and gives the model the rest of the list when it asks', function () {
+    $rows = array_map(fn (int $i): array => ["Aluno {$i}", '12'], range(1, 20));
+    $context = ChatAiContext::fromArray('admin', ['screen' => [
+        'heading' => 'Notas da turma',
+        'tables' => [['headers' => ['Aluno', 'Nota'], 'rows' => $rows]],
+    ]]);
+
+    expect($context->screen['tables'][0]['rows'])->toHaveCount(ChatAiContext::PREVIEW_ROWS)
+        ->and($context->screen['tables'][0]['rows'][14][0])->toBe('Aluno 15')
+        ->and($context->screen['tables'][0])->toMatchArray(['total' => 20, 'more' => true])
+        ->and($context->lists[0]['rows'])->toHaveCount(20)
+        ->and($context->toArray())->not->toHaveKey('lists');
+
+    $page = ReadScreenListTool::make($context)->call(['offset' => 15]);
+
+    expect($page->isError())->toBeFalse()
+        ->and($page->data['returned'])->toBe(5)
+        ->and($page->data['remaining'])->toBe(0)
+        ->and($page->data['rows'][0][0])->toBe('Aluno 16')
+        ->and($page->data['rows'][4][0])->toBe('Aluno 20');
+
+    $llm = FakeLlmClient::script([['Ok.']]);
+    screenTurn($llm, $context);
+    $prompt = $llm->requests[0]['messages'][0]['content'];
+
+    expect($prompt)->toContain('Aluno 15')->not->toContain('Aluno 16')
+        ->and($prompt)->toContain('read_screen_list')
+        ->and(collect($llm->requests[0]['tools'])->pluck('function.name'))->toContain('read_screen_list');
+});
+
+it('stops a wide page before the tool result would be cut, and says how to continue', function () {
+    $row = array_fill(0, 12, str_repeat('a', 120));
+    $context = ChatAiContext::fromArray('admin', ['screen' => [
+        'tables' => [['headers' => ['A'], 'rows' => array_fill(0, 30, $row)]],
+    ]]);
+
+    $page = ReadScreenListTool::make($context)->call(['limit' => ReadScreenListTool::PAGE]);
+
+    expect($page->data['returned'])->toBeLessThan(30)
+        ->and($page->data['remaining'])->toBeGreaterThan(0)
+        ->and($page->data['note'])->toContain('offset '.$page->data['returned']);
+});
+
+it('keeps at most the stored cap and marks a longer list as cut', function () {
+    $rows = array_map(fn (int $i): array => ["Linha {$i}"], range(1, ChatAiContext::STORED_ROWS + 5));
+    $context = ChatAiContext::fromArray('admin', ['screen' => [
+        'tables' => [['headers' => ['Linha'], 'rows' => $rows]],
+    ]]);
+
+    expect($context->lists[0]['rows'])->toHaveCount(ChatAiContext::STORED_ROWS)
+        ->and($context->lists[0]['capped'])->toBeTrue()
+        ->and($context->screen['tables'][0]['capped'])->toBeTrue();
 });
 
 it('can type into the search box of the list on screen', function () {

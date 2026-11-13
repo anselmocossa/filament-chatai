@@ -3,6 +3,7 @@
 namespace Filament\ChatAi\Agent;
 
 use Filament\ChatAi\Support\ChatAiContext;
+use Filament\ChatAi\Tools\ReadScreenListTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 
 class SystemPrompt
@@ -14,9 +15,12 @@ class SystemPrompt
         $today = now()->toDateString();
 
         // What the user is looking at right now (only when reading the screen is switched on).
+        $preview = ChatAiContext::PREVIEW_ROWS;
+        $readList = ReadScreenListTool::NAME;
         $screen = $context->screen !== []
             ? "\nOn screen now (the user sees this; \"this\" or \"here\" means it): ".json_encode($context->screen, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                 .($context->fillableFields() !== [] && config('chatai.screen.fill', true) ? "\nTo fill in or change that form, call fill_form with the field paths; the user reviews and saves it themselves, so never say it is saved. When the screen shows a list and the user asks to search, find or filter in it (\"pesquisa por X\", \"procura X\", \"filtra por X\", \"mostra só X\"), do it on the list: call fill_form with \"tableSearch\" for a search, or the list's filter fields (tableDeferredFilters...) for a filter. They apply at once and the user sees the list change; then say in one short sentence what the list now shows (use a tool for figures if asked)." : '')
+                .($context->lists !== [] ? "\nLists on screen are a preview of the first {$preview} rows. Each one says its total, and more when that preview is not the whole list. When you need the whole list to count, compare or analyse, call {$readList} and repeat with offset until remaining is 0. Do not treat the preview as complete, and do not look up each row with another tool just because the preview was cut." : '')
             : '';
 
         $prompt = <<<PROMPT

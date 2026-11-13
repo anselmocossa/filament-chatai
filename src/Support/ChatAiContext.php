@@ -11,6 +11,12 @@ use Filament\ChatAi\Settings\ChatAiSettings;
  */
 final readonly class ChatAiContext
 {
+    /** Rows of a list copied into the prompt. The rest stays available to read_screen_list. */
+    public const PREVIEW_ROWS = 15;
+
+    /** Rows kept from the page, per list, for the model to read when it asks. */
+    public const STORED_ROWS = 400;
+
     public function __construct(
         public string $panelId,
         public ?string $url = null,
@@ -18,8 +24,14 @@ final readonly class ChatAiContext
         public ?string $recordId = null,
         public ?string $tenantId = null,
         public ?string $pageTitle = null,
-        /** What is on screen (heading, form fields with their values, visible table rows), when reading the screen is on. */
+        /** What is on screen (heading, form fields with their values, a preview of table rows), when reading the screen is on. */
         public array $screen = [],
+        /**
+         * Full lists captured from the page (tables, then record blocks). Not part of the prompt.
+         *
+         * @var list<array{headers: list<string>, rows: list<mixed>, total: int, capped: bool}>
+         */
+        public array $lists = [],
     ) {}
 
     /**
@@ -51,6 +63,8 @@ final readonly class ChatAiContext
             ? mb_substr((string) $data[$key], 0, $max)
             : null;
 
+        [$screen, $lists] = self::readsScreen() ? self::screen($data['screen'] ?? null) : [[], []];
+
         return new self(
             panelId: $panelId,
             url: $clean('url', 500),
@@ -58,7 +72,8 @@ final readonly class ChatAiContext
             recordId: $clean('record_id', 64),
             tenantId: $tenantId,
             pageTitle: $clean('page_title'),
-            screen: self::readsScreen() ? self::screen($data['screen'] ?? null) : [],
+            screen: $screen,
+            lists: $lists,
         );
     }
 
@@ -70,14 +85,14 @@ final readonly class ChatAiContext
     }
 
     /**
-     * Keeps the screen snapshot small and plain: strings only, capped.
+     * Keeps the prompt snapshot small. The full lists (up to STORED_ROWS) come back beside it.
      *
-     * @return array<string, mixed>
+     * @return array{0: array<string, mixed>, 1: list<array{headers: list<string>, rows: list<mixed>, total: int, capped: bool}>}
      */
     protected static function screen(mixed $screen): array
     {
         if (! is_array($screen)) {
-            return [];
+            return [[], []];
         }
 
         $str = fn ($v, int $max = 300): string => mb_substr(is_scalar($v) ? (string) $v : '', 0, $max);
@@ -99,13 +114,13 @@ final readonly class ChatAiContext
         }
 
         $tables = [];
+        $lists = [];
 
         foreach (array_slice((array) ($screen['tables'] ?? []), 0, 2) as $table) {
             if (is_array($table)) {
-                $tables[] = [
-                    'headers' => array_map(fn ($h) => $str($h, 60), array_slice((array) ($table['headers'] ?? []), 0, 12)),
-                    'rows' => array_map(fn ($r) => array_map(fn ($c) => $str($c, 120), array_slice((array) $r, 0, 12)), array_slice((array) ($table['rows'] ?? []), 0, 15)),
-                ];
+                $built = self::tableList($table, $str);
+                $tables[] = $built['preview'];
+                $lists[] = $built['list'];
             }
         }
 
@@ -123,19 +138,80 @@ final readonly class ChatAiContext
         }
 
         // A list with a content layout draws blocks instead of rows, so there is no table.
+        $rawRecords = (array) ($screen['records'] ?? []);
+        $recordsCapped = ($screen['records_capped'] ?? false) === true || count($rawRecords) > self::STORED_ROWS;
         $records = array_values(array_filter(array_map(
             fn ($record) => $str($record, 400),
-            array_slice((array) ($screen['records'] ?? []), 0, 15),
+            array_slice($rawRecords, 0, self::STORED_ROWS),
         )));
 
-        return array_filter([
+        if ($records !== []) {
+            $lists[] = [
+                'headers' => [],
+                'rows' => array_map(fn (string $record): array => [$record], $records),
+                'total' => count($records),
+                'capped' => $recordsCapped,
+            ];
+        }
+
+        $view = [
             'heading' => $str($screen['heading'] ?? '', 160),
             'breadcrumbs' => $str($screen['breadcrumbs'] ?? '', 200),
             'fields' => $fields,
             'tables' => $tables,
             'entries' => $entries,
-            'records' => $records,
-        ]);
+            'records' => array_slice($records, 0, self::PREVIEW_ROWS),
+        ];
+
+        if (count($records) > self::PREVIEW_ROWS) {
+            $view['records_total'] = count($records);
+            $view['records_more'] = true;
+        }
+
+        if ($recordsCapped && $records !== []) {
+            $view['records_capped'] = true;
+        }
+
+        return [array_filter($view), $lists];
+    }
+
+    /**
+     * @param  callable(mixed, int=): string  $str
+     * @return array{preview: array<string, mixed>, list: array{headers: list<string>, rows: list<list<string>>, total: int, capped: bool}}
+     */
+    protected static function tableList(array $table, callable $str): array
+    {
+        $headers = array_map(fn ($h) => $str($h, 60), array_slice((array) ($table['headers'] ?? []), 0, 12));
+        $raw = (array) ($table['rows'] ?? []);
+        $capped = ($table['capped'] ?? false) === true || count($raw) > self::STORED_ROWS;
+        $rows = array_map(
+            fn ($r) => array_map(fn ($c) => $str($c, 120), array_slice((array) $r, 0, 12)),
+            array_slice($raw, 0, self::STORED_ROWS),
+        );
+
+        $preview = [
+            'headers' => $headers,
+            'rows' => array_slice($rows, 0, self::PREVIEW_ROWS),
+            'total' => count($rows),
+        ];
+
+        if (count($rows) > self::PREVIEW_ROWS) {
+            $preview['more'] = true;
+        }
+
+        if ($capped) {
+            $preview['capped'] = true;
+        }
+
+        return [
+            'preview' => $preview,
+            'list' => [
+                'headers' => $headers,
+                'rows' => $rows,
+                'total' => count($rows),
+                'capped' => $capped,
+            ],
+        ];
     }
 
     /**

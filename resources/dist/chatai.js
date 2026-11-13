@@ -267,13 +267,22 @@ document.addEventListener('alpine:init', () => {
         return fields.slice(0, 60)
     }
 
+    // The prompt only shows a preview. The rest of each list stays available
+    // when the model calls read_screen_list, so a long table can still be analysed.
+    const SCREEN_LIST_CAP = 400
+
     const tablesOnScreen = () => [...document.querySelectorAll('.fi-main .fi-ta-table')]
         .filter((t) => !t.closest(CHAT))
         .slice(0, 2)
-        .map((table) => ({
-            headers: [...table.querySelectorAll('thead th')].map(text).filter(Boolean).slice(0, 12),
-            rows: [...table.querySelectorAll('tbody tr')].slice(0, 15).map((tr) => [...tr.querySelectorAll('td')].map(text).filter(Boolean).slice(0, 12)),
-        }))
+        .map((table) => {
+            const every = [...table.querySelectorAll('tbody tr')]
+
+            return {
+                headers: [...table.querySelectorAll('thead th')].map(text).filter(Boolean).slice(0, 12),
+                rows: every.slice(0, SCREEN_LIST_CAP).map((tr) => [...tr.querySelectorAll('td')].map(text).filter(Boolean).slice(0, 12)),
+                capped: every.length > SCREEN_LIST_CAP,
+            }
+        })
 
     // A view page shows an infolist, not a form: nothing to fill in, but it is what
     // the user is looking at, so the assistant must be able to read it.
@@ -288,11 +297,17 @@ document.addEventListener('alpine:init', () => {
         .slice(0, 40)
 
     // A table with a content layout draws records as blocks, with no <table> at all.
-    const recordsOnScreen = () => [...document.querySelectorAll('.fi-main .fi-ta-record')]
-        .filter((record) => !record.closest(CHAT))
-        .map((record) => text(record).slice(0, 400))
-        .filter(Boolean)
-        .slice(0, 15)
+    const recordsOnScreen = () => {
+        const every = [...document.querySelectorAll('.fi-main .fi-ta-record')]
+            .filter((record) => !record.closest(CHAT))
+            .map((record) => text(record).slice(0, 400))
+            .filter(Boolean)
+
+        return {
+            records: every.slice(0, SCREEN_LIST_CAP),
+            records_capped: every.length > SCREEN_LIST_CAP,
+        }
+    }
 
     const readScreen = (config) => {
         if (!config.screen?.read || document.querySelector('.fi-chatai-page')) return undefined
@@ -304,7 +319,7 @@ document.addEventListener('alpine:init', () => {
                 fields: fieldsOnScreen(),
                 tables: tablesOnScreen(),
                 entries: entriesOnScreen(),
-                records: recordsOnScreen(),
+                ...recordsOnScreen(),
             }
         } catch {
             return undefined

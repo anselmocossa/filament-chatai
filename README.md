@@ -381,6 +381,15 @@ On first visit, the Providers and Models pages import whatever is set here, so n
 At runtime a panel or tenant can still override the model (`->llm(fn () => new LlmConfig(...))`) and the
 voice (`->speech(fn () => new AzureSpeech(...))`).
 
+## Long conversations
+
+When the stored history grows past `history_budget_chars` (24 000 characters), older turns are replaced by a short memory before the model is called. That memory keeps the objective, decisions still waiting or already confirmed, and tool results. The most recent turns stay verbatim, up to `history_keep_chars` (8 000 characters), and a tool call is kept together with its results. The memory is taken from the messages already stored, so a second model call cannot rewrite what happened. Set either value to `0` to turn this off.
+
+```dotenv
+CHATAI_HISTORY_BUDGET_CHARS=24000
+CHATAI_HISTORY_KEEP_CHARS=8000
+```
+
 ## How it works
 
 `POST /{panel}/chatai/api/conversations/{id}/messages` streams server-sent events:

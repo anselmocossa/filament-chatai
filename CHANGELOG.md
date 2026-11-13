@@ -4,6 +4,12 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+### Added
+- The assistant can read the rest of a list that is on screen. The prompt still shows the first 15 rows. `read_screen_list` pages the rest until none remain.
+
+### Changed
+- The README documents history compaction and the `history_budget_chars` and `history_keep_chars` settings.
+
 ## [1.3.6] - 2026-10-23
 
 ### Added

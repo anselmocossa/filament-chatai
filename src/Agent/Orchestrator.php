@@ -24,6 +24,7 @@ use Filament\ChatAi\Tools\FillFormTool;
 use Filament\ChatAi\Tools\MemoryTool;
 use Filament\ChatAi\Tools\NavigateTool;
 use Filament\ChatAi\Tools\QueryDataTool;
+use Filament\ChatAi\Tools\ReadScreenListTool;
 use Filament\ChatAi\Tools\ShowUiTool;
 use Filament\ChatAi\Tools\ToolResult;
 use Filament\ChatAi\Ui\Catalog;
@@ -74,6 +75,7 @@ class Orchestrator
             ShowUiTool::make(),
             DocumentTool::make($conversation, $user),
             ...(FillFormTool::available($context) ? [FillFormTool::make($context)] : []),
+            ...(ReadScreenListTool::available($context) ? [ReadScreenListTool::make($context)] : []),
             ...(MemoryTool::available() && ! str_ends_with($conversation->panel_id, ':playground') ? [MemoryTool::make($user, $context)] : []),
             // Not in the tool editor's test chat, which tries one tool on its own.
             ...(NavigateTool::available() && ! str_ends_with($conversation->panel_id, ':playground') ? [NavigateTool::make()] : []),
