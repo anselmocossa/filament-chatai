@@ -4,7 +4,10 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.8] - 2026-11-13
+
 ### Added
+- A record still opens when its name is split across columns, such as a given name and a surname. `navigate` with action view takes the user to that record. A row number on a list is not the record id.
 - **Settings → Assistant** lets managers choose the chat button position: top bar, floating button, or both. Both buttons open the same chat.
 
 ### Changed

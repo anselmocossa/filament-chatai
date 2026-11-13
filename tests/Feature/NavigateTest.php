@@ -2,6 +2,7 @@
 
 use Filament\ChatAi\Settings\ChatAiSettings;
 use Filament\ChatAi\Tests\Fixtures\Shop\Product;
+use Filament\ChatAi\Tests\Fixtures\Shop\Student;
 use Filament\ChatAi\Tests\Fixtures\User;
 use Filament\ChatAi\Tools\NavigateTool;
 use Filament\Facades\Filament;
@@ -25,6 +26,23 @@ it('opens a list, a create page and one record by its name', function () {
 
     expect($open->component)->toMatchArray(['type' => 'navigate', 'label' => 'Classic Pillow'])
         ->and($open->component['url'])->toEndWith('/products/'.Product::query()->where('sku', 'P-1')->value('id').'/edit');
+});
+
+it('opens one record when the name is split across columns', function () {
+    Student::create(['nome' => 'Cremildo', 'apelido' => 'Macamo', 'numero' => '014']);
+    Student::create(['nome' => 'Cremildo', 'apelido' => 'Sitoe', 'numero' => '015']);
+
+    $tool = NavigateTool::make();
+    $key = collect($tool->inputSchema['properties']['resource']['enum'])->first(fn ($k) => str_contains($k, 'student'));
+    $open = $tool->call(['resource' => $key, 'action' => 'view', 'record' => 'Cremildo Macamo']);
+
+    expect($open->isError())->toBeFalse()
+        ->and($open->component['label'])->toBe('Cremildo Macamo')
+        ->and($open->component['url'])->toEndWith('/students/'.Student::query()->where('numero', '014')->value('id'));
+
+    expect($tool->call(['resource' => $key, 'action' => 'view', 'record' => 'Cremildo'])->error)
+        ->toContain('Cremildo Macamo')
+        ->toContain('Cremildo Sitoe');
 });
 
 it('asks which one when several records match, and refuses unknown places', function () {

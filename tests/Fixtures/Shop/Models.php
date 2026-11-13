@@ -52,6 +52,13 @@ class Address extends Model
     protected $guarded = [];
 }
 
+class Student extends Model
+{
+    protected $table = 'shop_students';
+
+    protected $guarded = [];
+}
+
 class OrderItem extends Model
 {
     protected $table = 'shop_order_items';

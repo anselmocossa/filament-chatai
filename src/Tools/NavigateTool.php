@@ -8,6 +8,10 @@ use Filament\Facades\Filament;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Resources\Resource;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -89,22 +93,16 @@ final class NavigateTool
 
         $model = ResourceInspector::model($resource);
         $title = $resource::getRecordTitleAttribute() ?: ResourceInspector::titleColumn($model);
-        $query = $resource::getEloquentQuery();
-        $matches = ctype_digit($search) ? (clone $query)->whereKey($search)->limit(2)->get() : collect();
-
-        if ($matches->isEmpty() && in_array($title, ResourceInspector::columns($model), true)) {
-            $matches = (clone $query)->where($title, $search)->limit(6)->get();
-            $matches = $matches->isEmpty() ? (clone $query)->where($title, 'like', '%'.addcslashes($search, '%_').'%')->limit(6)->get() : $matches;
-        }
+        $matches = self::matches($resource, $model, $title, $search);
 
         if ($matches->count() !== 1) {
             return ToolResult::error($matches->isEmpty()
                 ? "No {$resource::getModelLabel()} matches \"{$search}\"."
-                : 'More than one matches: '.$matches->pluck($title)->implode(', ').'. Ask which one.');
+                : 'More than one matches: '.$matches->map(fn (Model $record): string => self::label($resource, $record, $title))->implode(', ').'. Ask which one.');
         }
 
         $record = $matches->first();
-        $label = (string) ($record->getAttribute($title) ?? $record->getKey());
+        $label = self::label($resource, $record, $title);
 
         foreach ($action === 'edit' ? ['edit', 'view'] : ['view', 'edit'] as $page) {
             $allowed = $page === 'edit' ? $resource::canEdit($record) : $resource::canView($record);
@@ -115,6 +113,65 @@ final class NavigateTool
         }
 
         return ToolResult::error("The user cannot open this {$resource::getModelLabel()}.");
+    }
+
+    /**
+     * A name may live in one column, or split (given name and surname).
+     *
+     * @return Collection<int, Model>
+     */
+    protected static function matches(string $resource, ?Model $model, string $title, string $search): Collection
+    {
+        $query = $resource::getEloquentQuery();
+        $columns = ResourceInspector::columns($model);
+        $matches = ctype_digit($search) ? (clone $query)->whereKey($search)->limit(2)->get() : collect();
+
+        if ($matches->isEmpty() && in_array($title, $columns, true)) {
+            $matches = (clone $query)->where($title, $search)->limit(6)->get();
+            $matches = $matches->isEmpty()
+                ? (clone $query)->where($title, 'like', '%'.addcslashes($search, '%_').'%')->limit(6)->get()
+                : $matches;
+        }
+
+        if ($matches->isNotEmpty()) {
+            return $matches;
+        }
+
+        $named = array_values(array_intersect(
+            ['name', 'nome', 'title', 'titulo', 'label', 'number', 'numero', 'code', 'sku', 'email', 'apelido', 'surname', 'last_name', 'first_name'],
+            $columns,
+        ));
+        $words = array_values(array_filter(preg_split('/\s+/u', $search) ?: [], fn (string $word): bool => $word !== ''));
+
+        if ($named === [] || $words === []) {
+            return collect();
+        }
+
+        return (clone $query)->where(function (Builder $query) use ($named, $words): void {
+            foreach ($words as $word) {
+                $like = '%'.addcslashes($word, '%_').'%';
+                $query->where(function (Builder $part) use ($named, $like): void {
+                    foreach ($named as $column) {
+                        $part->orWhere($column, 'like', $like);
+                    }
+                });
+            }
+        })->limit(6)->get();
+    }
+
+    protected static function label(string $resource, Model $record, string $title): string
+    {
+        $named = $resource::getRecordTitle($record);
+
+        if ($named instanceof Htmlable) {
+            $named = trim(strip_tags($named->toHtml()));
+        }
+
+        if (is_string($named) && trim($named) !== '') {
+            return trim($named);
+        }
+
+        return (string) ($record->getAttribute($title) ?? $record->getKey());
     }
 
     protected static function open(string $url, string $label): ToolResult

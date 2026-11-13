@@ -33,6 +33,14 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('shop_students', function (Blueprint $table): void {
+            $table->id();
+            $table->string('nome');
+            $table->string('apelido');
+            $table->string('numero');
+            $table->timestamps();
+        });
+
         Schema::create('shop_order_items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('shop_order_id');
