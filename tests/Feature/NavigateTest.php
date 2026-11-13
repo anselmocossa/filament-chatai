@@ -46,6 +46,14 @@ it('opens one record when the name is split across columns', function () {
         ->toContain('Cremildo Sitoe');
 });
 
+it('a class name is not looked up as the record id', function () {
+    $tool = NavigateTool::make();
+    $key = collect($tool->inputSchema['properties']['resource']['enum'])->first(fn ($k) => str_contains($k, 'student'));
+
+    expect($tool->call(['resource' => $key, 'action' => 'view', 'record' => '10.ª A'])->error)
+        ->toContain('No');
+});
+
 it('asks which one when several records match, and refuses unknown places', function () {
     $tool = NavigateTool::make();
     $key = collect($tool->inputSchema['properties']['resource']['enum'])->first(fn ($k) => str_contains($k, 'product'));

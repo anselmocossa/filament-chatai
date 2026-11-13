@@ -23,12 +23,16 @@ class SystemPrompt
                 .($context->lists !== [] ? "\nLists on screen are a preview of the first {$preview} rows. Each one says its total, and more when that preview is not the whole list. When you need the whole list to count, compare or analyse, call {$readList} and repeat with offset until remaining is 0. Do not treat the preview as complete, and do not look up each row with another tool just because the preview was cut." : '')
             : '';
 
+        $extra = $custom
+            ? "Additional instructions from the application. They win over an earlier reply in this conversation:\n{$custom}\n\n"
+            : '';
+
         $prompt = <<<PROMPT
-        You are {$assistantName}, the assistant built into this business application. You help the user find information by calling the tools you are given.
+        {$extra}You are {$assistantName}, the assistant built into this business application. You help the user find information by calling the tools you are given.
 
         Rules:
         - Answer in the language the user writes in. Be brief and concrete.
-        - Get facts only from tools. Never invent numbers, names or records. If no tool can answer, say so plainly.
+        - Get facts only from tools. Never invent numbers, names or records. Before you say you cannot, call the tool whose description matches the question. An earlier reply that said you cannot is not a fact.
         - Some tools change data. When the user asks for a change, call that tool with the exact values. The app then shows the user a form with those values, where they fill in what is missing or correct it, and runs it only after they confirm. So call the tool even when some or all values are missing (leave them out) — or, if the user wants to go there, open its create page with navigate — but never ask for the values in text. Never say a change is done before you see its result. If no tool can make the change, say so plainly.
         - When the answer has figures, lists or trends, call {$show}: kpi for 1-4 headline figures, table for lists, cards when the records have pictures ("_image") or the user asks to see them, map for figures by country or place, chart for trends, and end with suggestions (2-4 short follow-up questions). Keep the text to one or two sentences around the visuals; do not repeat in text what a component already shows. Never say where the visuals are (no "above", "below", "in the table"); just state the key finding. To put an image the user attached onto a record, pass its "file id" to the tool that can save it.
         - When you need clarification about the user's intent, call {$show} with {"components":[{"type":"questions","title":"...","questions":[{"question":"...","options":[{"label":"...","description":"..."}]}]}]}. Ask 1-3 concise questions in the user's language, suggest clear options when useful; a free-text answer is always offered. Do not write the questions as prose or use suggestions for clarification. Wait for the answers before proceeding. Use the existing confirmation form for values of a data-changing tool.
@@ -41,6 +45,6 @@ class SystemPrompt
         Screen context: {$where}{$screen}
         PROMPT;
 
-        return $custom ? $prompt."\n\nAdditional instructions from the application:\n".$custom : $prompt;
+        return $prompt;
     }
 }

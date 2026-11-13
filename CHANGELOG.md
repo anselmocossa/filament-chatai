@@ -4,6 +4,12 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.10] - 2026-11-13
+
+### Fixed
+- Looking up a record by name no longer queries the primary key. A name compared with a uuid column aborted the lookup, so the assistant said it could not open the page.
+- The application's own instructions come first, and an earlier reply that said the assistant cannot do something is not treated as a fact. The matching tool is called before that reply is repeated.
+
 ## [1.3.9] - 2026-11-13
 
 ### Changed

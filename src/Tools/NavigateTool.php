@@ -125,9 +125,11 @@ final class NavigateTool
     {
         $query = $resource::getEloquentQuery();
         $columns = ResourceInspector::columns($model);
-        $matches = ctype_digit($search) ? (clone $query)->whereKey($search)->limit(2)->get() : collect();
+        $key = $model?->getKeyName();
+        $matches = self::searchIsKey($model, $search) ? (clone $query)->whereKey($search)->limit(2)->get() : collect();
 
-        if ($matches->isEmpty() && in_array($title, $columns, true)) {
+        // A name is not a primary key. Comparing it to a uuid column aborts the lookup.
+        if ($matches->isEmpty() && $title !== $key && in_array($title, $columns, true)) {
             $matches = (clone $query)->where($title, $search)->limit(6)->get();
             $matches = $matches->isEmpty()
                 ? (clone $query)->where($title, 'like', '%'.addcslashes($search, '%_').'%')->limit(6)->get()
@@ -158,6 +160,19 @@ final class NavigateTool
                 });
             }
         })->limit(6)->get();
+    }
+
+    protected static function searchIsKey(?Model $model, string $search): bool
+    {
+        if ($model === null) {
+            return false;
+        }
+
+        if ($model->getKeyType() === 'int') {
+            return ctype_digit($search);
+        }
+
+        return Str::isUuid($search) || (method_exists(Str::class, 'isUlid') && Str::isUlid($search));
     }
 
     protected static function label(string $resource, Model $record, string $title): string
