@@ -49,6 +49,9 @@
     place-items: center;
     width: 3.5rem;
     height: 3.5rem;
+    /* Never below the minimum touch target, whatever the panel sets. */
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 9999px;
     background: var(--chatai-accent);
     color: var(--chatai-accent-text);
@@ -58,6 +61,23 @@
 
 .fi-chatai-launcher:hover { transform: translateY(-2px) scale(1.03); }
 .fi-chatai-topbar-avatar img { border-radius: 9999px; object-fit: cover; }
+
+/* The launcher floats over the page: keep its area clear so it never covers
+ * the last button of a form or a table footer. The full-page chat has its own
+ * layout, and the top-bar button takes a slot instead of floating. */
+:root {
+    --chatai-launcher-space: 7rem;
+}
+
+body:has(.fi-chatai-floating .fi-chatai-launcher):not(:has(.fi-chatai-page)) .fi-main {
+    padding-bottom: var(--chatai-launcher-space);
+}
+
+@media (min-width: 1101px) {
+    body:has(.fi-chatai-floating .fi-chatai-launcher):not(:has(.fi-chatai-page)) .fi-main {
+        padding-inline-end: var(--chatai-launcher-space);
+    }
+}
 
 /* The assistant at work, minimised on the chat button (like ChatGPT's agent bar). */
 .fi-chatai-agent {

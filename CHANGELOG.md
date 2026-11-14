@@ -4,6 +4,12 @@ All notable changes to `filament-chatai` are documented in this file, following 
 
 ## Unreleased
 
+## [1.3.11] - 2026-11-14
+
+### Fixed
+- The floating launcher no longer sits on the last control of a page. The panel content reserves its area at the bottom, and on wide screens at the side too. The space follows the new `--chatai-launcher-space` variable, 7rem by default, and is not added when the button lives in the top bar or on the full-page chat.
+- The launcher keeps the 44 by 44 minimum touch target even if a panel shrinks the button.
+
 ## [1.3.10] - 2026-11-13
 
 ### Fixed
